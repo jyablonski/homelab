@@ -1,0 +1,26 @@
+persistence:
+  enabled: false
+
+controller:
+  type: StatefulSet
+
+hostNetwork: false
+hostPort:
+  enabled: false
+
+service:
+  type: NodePort
+  port: 8123
+  nodePort: 30123
+
+ingress:
+  enabled: false
+  external: false
+
+serviceMonitor:
+  enabled: true
+  scrapeInterval: 30s
+  labels:
+    release: prometheus
+
+replicaCount: 1

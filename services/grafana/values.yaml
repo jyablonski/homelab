@@ -1,0 +1,43 @@
+service:
+  type: NodePort
+  nodePort: 30080
+
+persistence:
+  enabled: false
+
+adminUser: admin
+adminPassword: admin
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 200m
+    memory: 512Mi
+
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus-operator-kube-p-prometheus.default.svc.cluster.local:9090
+        isDefault: true
+        editable: true
+
+sidecar:
+  dashboards:
+    enabled: true
+    label: grafana_dashboard
+    labelValue: "1"
+
+grafana.ini:
+  users:
+    allow_sign_up: false
+  security:
+    disable_initial_admin_password_change: true
+  auth.anonymous:
+    enabled: false
+    org_role: Viewer
