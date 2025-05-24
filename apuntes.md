@@ -2,6 +2,17 @@
 
 ## K3s Setup
 
+K3s is a lightweight distribution for self-hosted small Kubernetes clusters.
+
+- It uses containerd as a default container runtime instead of Docker
+- Kind is a competitor tool, but is mainly for ephemeral short-term testing and not long running clusters
+
+By default, k3s comes with Traefik pre-installed as its built-in ingress controller.
+
+- It installs Traefik into the kube-system namespace using static manifests.
+
+
+
 ``` sh
 curl -sfL https://get.k3s.io | sh -
 sudo kubectl get nodes
@@ -27,4 +38,29 @@ kubectl create configmap grafana-metrics-dashboard \
   --from-file=services/grafana/dashboards/metrics.json \
   --namespace kube-system \
   --dry-run=client -o yaml > grafana-dashboard-configmap.yaml
+
+kubectl get pods --all-namespaces
+
+kubectl get nodes --all-namespaces
+
 ```
+
+## MetalLB
+
+MetalLB is a LoadBalancer implementation for bare-metal Kubernetes clusters that don’t have a cloud provider’s load balancer.
+
+Normally, on cloud platforms (AWS, GCP, Azure), when you create a Service of type LoadBalancer, the cloud provider automatically provisions an external IP to expose your service. On bare-metal or local clusters like k3s, this doesn’t happen by default.
+
+MetalLB:
+
+- Assigns and manages a pool of external IP addresses for Kubernetes LoadBalancer services in your cluster
+- Makes your LoadBalancer service reachable from your local network
+- Listens for LoadBalancer services and announces the assigned IPs via standard network protocols (ARP or BGP). This way, network devices know where to route traffic to reach those IPs.
+
+## Pi-hole
+
+Pi-hole is a network-wide ad blocker and DNS sinkhole. It acts as a DNS server that filters out ads, trackers, and malicious domains for all devices on your network.
+
+Devices on your network query Pi-hole instead of your ISP’s DNS. Pi-hole blocks unwanted domains and returns the correct DNS records for allowed sites. It also offers a web interface to monitor and configure blocking rules.
+
+Pi-hole uses an IP from MetalLB's managed pool. After MetalLB assigns an IP, it announces it to the local network so other devices can send DNS queries to it.

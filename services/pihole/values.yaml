@@ -1,0 +1,27 @@
+ingress:
+  enabled: true
+  ingressClassName: "traefik"  # or whatever you're using
+  hosts:
+    - host: jyablonski.com
+      paths:
+        - path: /
+          pathType: Prefix
+
+serviceWeb:
+  type: ClusterIP
+
+adminPassword: "password"
+
+serviceDns:
+  type: LoadBalancer
+  loadBalancerIP: 192.168.1.100
+
+doh:
+  enabled: true
+  pullPolicy: Always
+  envVars:
+    DOH_UPSTREAM: "https://1.1.1.1/dns-query"
+
+persistence:
+  enabled: true
+  size: 5Gi
