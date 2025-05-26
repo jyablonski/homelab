@@ -1,0 +1,29 @@
+global:
+  postgresql:
+    auth:
+      username: jacob
+      password: postgres
+      postgresPassword: postgres
+      database: postgres
+
+primary:
+  service:
+    type: NodePort
+    ports:
+      postgresql: 5432
+    nodePorts:
+      postgresql: 30433
+  initdb:
+    scriptsConfigMap: postgres-bootstrap
+    # the user that will run the bootstrap scripts
+    user: postgres
+    password: postgres
+
+
+persistence:
+  enabled: true
+  size: 4Gi
+  storageClass: local-path
+
+volumePermissions:
+  enabled: true

@@ -1,0 +1,34 @@
+service:
+  type: NodePort
+  ports:
+    http: 80
+  nodePorts:
+    http: 30124
+
+metrics:
+  enabled: true
+  service:
+    ports:
+      metrics: 9000
+  serviceMonitor:
+    enabled: true
+    namespace: monitoring # Namespace where Prometheus is running
+    port: metrics
+    scheme: http
+    path: /metrics
+    interval: 30s
+    labels:
+      release: prometheus
+
+# TODO: didnt finish this
+postgresql:
+  enabled: true # Enable bundled PostgreSQL chart
+  persistence:
+    enabled: true
+    size: 4Gi
+    storageClass: local-path
+  auth:
+    postgresPassword: postgres # password for "postgres" admin user (keep secure)
+    username: keycloak # custom DB user Keycloak will use
+    password: keycloak # password for the custom user (replace with strong one)
+    database: keycloak # custom database name for Keycloak

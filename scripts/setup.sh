@@ -8,6 +8,7 @@ helm repo add grafana https://grafana.github.io/helm-charts
 helm repo add pajikos http://pajikos.github.io/home-assistant-helm-chart/
 helm repo add mojo2600 https://mojo2600.github.io/pihole-kubernetes/
 helm repo add metallb https://metallb.github.io/metallb
+helm repo add bitnami https://charts.bitnami.com/bitnami
 
 echo "Updating Helm repositories..."
 helm repo update
@@ -32,6 +33,14 @@ helm upgrade --install prometheus-operator prometheus-community/kube-prometheus-
 helm upgrade --install grafana grafana/grafana \
   -n monitoring \
   -f services/grafana/values.yaml
+
+kubectl create configmap postgres-bootstrap \
+  --namespace=postgres \
+  --from-file=services/postgres/bootstrap.sql
+
+helm upgrade --install postgres bitnami/postgresql \
+  -n postgres --create-namespace \
+  -f services/postgres/values.yaml
 
 # helm upgrade --install metallb metallb/metallb \
 #   -n metallb-system --create-namespace

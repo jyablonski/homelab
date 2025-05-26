@@ -43,6 +43,8 @@ kubectl get pods --all-namespaces
 
 kubectl get nodes --all-namespaces
 
+kubectl get pvc --all-namespaces
+kubectl delete pvc data-postgres-postgresql-0 -n postgres
 ```
 
 ## MetalLB
@@ -64,3 +66,8 @@ Pi-hole is a network-wide ad blocker and DNS sinkhole. It acts as a DNS server t
 Devices on your network query Pi-hole instead of your ISP’s DNS. Pi-hole blocks unwanted domains and returns the correct DNS records for allowed sites. It also offers a web interface to monitor and configure blocking rules.
 
 Pi-hole uses an IP from MetalLB's managed pool. After MetalLB assigns an IP, it announces it to the local network so other devices can send DNS queries to it.
+
+
+## Keycloak
+
+https://github.com/bitnami/charts/tree/main/bitnami
