@@ -3,6 +3,10 @@ SET search_path TO boobies;
 
 CREATE TABLE examples (
     id SERIAL PRIMARY KEY,
-    team_name VARCHAR(50) NOT NULL,
-    motto VARCHAR(100) NOT NULL
+    name VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+insert into examples (name) values
+('Team A'),
+('Team B');

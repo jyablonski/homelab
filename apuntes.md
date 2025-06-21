@@ -71,3 +71,40 @@ Pi-hole uses an IP from MetalLB's managed pool. After MetalLB assigns an IP, it 
 ## Keycloak
 
 https://github.com/bitnami/charts/tree/main/bitnami
+
+## UI Dashboard
+
+Multiple options:
+
+1. [Lens](https://k8slens.dev/)
+2. [Official K8s Dashboard](https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/)
+
+
+## Helmfile
+
+Install binary from [here](https://github.com/helmfile/helmfile) and then run `helmfile init` afterwards. there are multiple important commands:
+
+1. `helmfile diff` - shows the difference between what's in the Kubernetes cluster and what's in the `helmfile.yaml`
+2. `helmfile sync` - installs or upgrades all helm releases in `helmfile.yaml`, but doesn't delete releases that are not declared in the helmfile anymore
+    - Use this to force helm to install everything
+3. `helmfile apply` - runs helmfile diff and will sync afterwards if the diff is successful
+
+
+``` sh
+helmfile -l debug sync
+
+```
+
+## Cronjobs
+
+
+
+``` sh
+kubectl apply -f services/go-cron-test/cronjob.yaml
+
+kubectl get cronjobs
+kubectl get jobs
+
+kubectl get pods --selector=job-name -o wide
+
+```

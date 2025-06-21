@@ -1,0 +1,93 @@
+repositories:
+  - name: prometheus-community
+    url: https://prometheus-community.github.io/helm-charts
+  - name: grafana
+    url: https://grafana.github.io/helm-charts
+  - name: pajikos
+    url: http://pajikos.github.io/home-assistant-helm-chart/
+  - name: mojo2600
+    url: https://mojo2600.github.io/pihole-kubernetes/
+  - name: metallb
+    url: https://metallb.github.io/metallb
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami
+
+releases:
+  - name: prometheus-operator
+    namespace: monitoring
+    createNamespace: true
+    chart: prometheus-community/kube-prometheus-stack
+    values:
+      - services/prometheus/values.yaml
+
+  - name: grafana
+    namespace: monitoring
+    chart: grafana/grafana
+    values:
+      - services/grafana/values.yaml
+    hooks:
+      - events: ["postsync"]
+        showlogs: true
+        command: kubectl
+        args:
+          - apply
+          - -f
+          - services/grafana/dashboards/metrics-dashboard-configmap.yaml
+      - events: ["postsync"]
+        showlogs: true
+        command: kubectl
+        args:
+          - apply
+          - -f
+          - services/grafana/ingress.yaml
+
+  - name: postgres
+    namespace: postgres
+    createNamespace: true
+    chart: bitnami/postgresql
+    values:
+      - services/postgres/values.yaml
+    hooks:
+      - events: ["presync"]
+        showlogs: true
+        command: kubectl
+        args:
+          - create
+          - configmap
+          - postgres-bootstrap
+          - --namespace=postgres
+          - --from-file=services/postgres/bootstrap.sql
+
+  # - name: home-assistant
+  #   namespace: home-automation
+  #   createNamespace: true
+  #   chart: pajikos/home-assistant
+  #   values:
+  #     - services/home-assistant/values.yaml
+  #   hooks:
+  #     - events: ["postsync"]
+  #       showlogs: true
+  #       command: kubectl
+  #       args:
+  #         - apply
+  #         - -f
+  #         - services/home-assistant/ingress.yaml
+
+  # Uncomment to enable Pi-hole
+  # - name: pihole
+  #   namespace: pihole
+  #   createNamespace: true
+  #   chart: mojo2600/pihole
+  #   values:
+  #     - services/pihole/values.yaml
+
+  # Uncomment to enable MetalLB
+  # - name: metallb
+  #   namespace: metallb-system
+  #   createNamespace: true
+  #   chart: metallb/metallb
+# External resources to manually apply or automate separately:
+# kubectl apply -f services/grafana/dashboards/metrics-dashboard-configmap.yaml
+# kubectl apply -f services/metallb/config.yaml
+# kubectl apply -f services/grafana/ingress.yaml
+# kubectl apply -f services/home-assistant/ingress.yaml

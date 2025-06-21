@@ -23,7 +23,7 @@ datasources:
       - name: Prometheus
         type: prometheus
         access: proxy
-        url: http://prometheus-operator-kube-p-prometheus.default.svc.cluster.local:9090
+        url: http://prometheus-operator-kube-p-prometheus.monitoring.svc.cluster.local:9090
         isDefault: true
         editable: true
 
