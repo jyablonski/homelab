@@ -1,6 +1,6 @@
 service:
-  type: NodePort
-  nodePort: 30080
+  type: LoadBalancer
+  port: 3000
 
 persistence:
   enabled: false

@@ -1,5 +1,8 @@
 persistence:
-  enabled: false
+  enabled: true
+  accessMode: ReadWriteOnce
+  size: 5Gi
+  storageClass: longhorn
 
 controller:
   type: StatefulSet
@@ -9,9 +12,8 @@ hostPort:
   enabled: false
 
 service:
-  type: NodePort
+  type: LoadBalancer
   port: 8123
-  nodePort: 30123
 
 ingress:
   enabled: false
