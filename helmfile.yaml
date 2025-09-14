@@ -11,6 +11,8 @@ repositories:
     url: https://metallb.github.io/metallb
   - name: bitnami
     url: https://charts.bitnami.com/bitnami
+  - name: longhorn
+    url: https://charts.longhorn.io
 
 releases:
   - name: prometheus-operator
@@ -48,32 +50,43 @@ releases:
     values:
       - services/postgres/values.yaml
     hooks:
+      # have to use bash to enable idempotent `helmfile sync` operations
+      # without it, the command would fail on subsequent runs if the configmap already exists
       - events: ["presync"]
+        showlogs: true
+        command: bash
+        args:
+          - -c
+          - |
+            kubectl create namespace postgres --dry-run=client -o yaml | kubectl apply -f -
+            kubectl create configmap postgres-bootstrap \
+              --namespace=postgres \
+              --from-file=services/postgres/bootstrap.sql \
+              --dry-run=client -o yaml | kubectl apply -f -
+
+  - name: home-assistant
+    namespace: home-automation
+    createNamespace: true
+    chart: pajikos/home-assistant
+    values:
+      - services/home-assistant/values.yaml
+    hooks:
+      - events: ["postsync"]
         showlogs: true
         command: kubectl
         args:
-          - create
-          - configmap
-          - postgres-bootstrap
-          - --namespace=postgres
-          - --from-file=services/postgres/bootstrap.sql
+          - apply
+          - -f
+          - services/home-assistant/ingress.yaml
 
-  # - name: home-assistant
-  #   namespace: home-automation
-  #   createNamespace: true
-  #   chart: pajikos/home-assistant
-  #   values:
-  #     - services/home-assistant/values.yaml
-  #   hooks:
-  #     - events: ["postsync"]
-  #       showlogs: true
-  #       command: kubectl
-  #       args:
-  #         - apply
-  #         - -f
-  #         - services/home-assistant/ingress.yaml
+  - name: longhorn
+    namespace: longhorn-system
+    createNamespace: true
+    chart: longhorn/longhorn
+    values:
+      - services/longhorn/values.yaml
 
-  # Uncomment to enable Pi-hole
+  # this is a bitch to configure, it nukes my inter
   # - name: pihole
   #   namespace: pihole
   #   createNamespace: true

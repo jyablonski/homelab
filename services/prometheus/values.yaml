@@ -16,8 +16,8 @@ prometheus:
         cpu: 200m
         memory: 512Mi
   service:
-    type: NodePort
-    nodePort: 30090
+    type: LoadBalancer
+    port: 9090
 
 alertmanager:
   enabled: false

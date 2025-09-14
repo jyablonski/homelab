@@ -108,3 +108,30 @@ kubectl get jobs
 kubectl get pods --selector=job-name -o wide
 
 ```
+
+## Home Assistant
+
+``` sh
+# Check the PVC was created
+kubectl get pvc -n home-automation
+
+# Check the pod is running with the volume mounted
+kubectl describe pod -n home-automation -l app.kubernetes.io/name=home-assistant
+
+# see the actual storage
+kubectl get pv
+```
+
+## PVC
+
+
+The Flow:
+
+- StorageClass (local-path) = "I know how to create storage on local filesystem"
+- PVC = "I need 5GB of storage"
+- StorageClass automatically creates a PV to satisfy the PVC
+- Pod mounts the PVC → gets persistent data
+
+## Resources
+
+[K3s Homelab Repo Example 1](https://github.com/humansoftware/self-host-saas-k3s)

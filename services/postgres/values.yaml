@@ -8,11 +8,9 @@ global:
 
 primary:
   service:
-    type: NodePort
+    type: LoadBalancer
     ports:
       postgresql: 5432
-    nodePorts:
-      postgresql: 30433
   initdb:
     scriptsConfigMap: postgres-bootstrap
     # the user that will run the bootstrap scripts
@@ -23,7 +21,7 @@ primary:
 persistence:
   enabled: true
   size: 4Gi
-  storageClass: local-path
+  storageClass: longhorn
 
 volumePermissions:
   enabled: true
