@@ -1,6 +1,6 @@
 # Homelab
 
-Repo to store Homelab setup & resources
+Repo for personal Homelab using K3s and Helmfile
 
 Run `make up` to spin up a K3s Cluster which downloads & sets up the following services:
 
@@ -9,6 +9,9 @@ Run `make up` to spin up a K3s Cluster which downloads & sets up the following s
     - Username: `admin`
     - Password: `admin`
 3. [Home Assistant](http://localhost:8123/)
-4. [Postgres](http://)
+4. [Postgres](http://localhost:5432)
+    - Username: `jacob`
+    - Password: `password`
+5. Longhorn
 
 When finished, run `make down`

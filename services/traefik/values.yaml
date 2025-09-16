@@ -1,0 +1,46 @@
+deployment:
+  replicas: 2
+
+service:
+  type: LoadBalancer
+
+ingressRoute:
+  dashboard:
+    enabled: true
+    # Access via traefik.your-domain.com/dashboard/
+
+# Enable metrics for Prometheus
+metrics:
+  prometheus:
+    addEntryPointsLabels: true
+    addServicesLabels: true
+    buckets: "0.1,0.3,1.2,5.0"
+
+# Security headers
+globalArguments:
+  - "--api.dashboard=true"
+  - "--ping=true"
+  - "--entrypoints.web.address=:80"
+  - "--entrypoints.websecure.address=:443"
+  - "--providers.kubernetescrd"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 50Mi
+  limits:
+    cpu: 300m
+    memory: 150Mi
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - traefik
+          topologyKey: kubernetes.io/hostname

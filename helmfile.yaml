@@ -13,6 +13,8 @@ repositories:
     url: https://charts.bitnami.com/bitnami
   - name: longhorn
     url: https://charts.longhorn.io
+  - name: traefik
+    url: https://traefik.github.io/charts
 
 releases:
   - name: prometheus-operator
@@ -86,6 +88,12 @@ releases:
     values:
       - services/longhorn/values.yaml
 
+  - name: traefik
+    namespace: kube-system
+    chart: traefik/traefik
+    values:
+      - services/traefik/values.yaml
+
   # this is a bitch to configure, it nukes my inter
   # - name: pihole
   #   namespace: pihole
@@ -94,11 +102,22 @@ releases:
   #   values:
   #     - services/pihole/values.yaml
 
-  # Uncomment to enable MetalLB
-  # - name: metallb
-  #   namespace: metallb-system
-  #   createNamespace: true
-  #   chart: metallb/metallb
+  - name: metallb
+    namespace: metallb-system
+    createNamespace: true
+    chart: metallb/metallb
+    values:
+      - services/metallb/values.yaml
+    hooks:
+      - events: ["postsync"]
+        showlogs: true
+        command: bash
+        args:
+          - -c
+          - |
+            echo "Waiting for MetalLB webhook to be ready..."
+            kubectl wait --for=condition=ready pod -l app.kubernetes.io/component=controller -n metallb-system --timeout=60s
+            kubectl apply -f services/metallb/ip-pool.yaml
 # External resources to manually apply or automate separately:
 # kubectl apply -f services/grafana/dashboards/metrics-dashboard-configmap.yaml
 # kubectl apply -f services/metallb/config.yaml

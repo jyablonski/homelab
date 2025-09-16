@@ -59,6 +59,19 @@ MetalLB:
 - Makes your LoadBalancer service reachable from your local network
 - Listens for LoadBalancer services and announces the assigned IPs via standard network protocols (ARP or BGP). This way, network devices know where to route traffic to reach those IPs.
 
+MetalLB operates in two modes:Layer 2 Mode (simpler, good for your setup):
+
+- Assigns IP addresses from a pool you define
+- Uses ARP to announce IPs on your local network
+- One node "owns" each IP and handles all traffic
+- If that node fails, another node takes over the IP
+
+BGP Mode (more advanced):
+
+- Announces routes via BGP protocol
+- True load balancing across nodes
+- Requires BGP-capable router
+
 ## Pi-hole
 
 Pi-hole is a network-wide ad blocker and DNS sinkhole. It acts as a DNS server that filters out ads, trackers, and malicious domains for all devices on your network.
