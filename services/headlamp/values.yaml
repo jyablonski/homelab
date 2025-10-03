@@ -1,0 +1,24 @@
+service:
+  type: LoadBalancer
+  port: 8085
+
+# this didnt work - you still need to manually generate a token
+# to login to headlamp
+config:
+  pluginsDir: ""
+  oidcClientID: ""
+  oidcClientSecret: ""
+  oidcIssuerURL: ""
+
+clusterRoleBinding:
+  create: true
+
+replicaCount: 1
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi

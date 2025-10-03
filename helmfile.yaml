@@ -15,6 +15,8 @@ repositories:
     url: https://charts.longhorn.io
   - name: traefik
     url: https://traefik.github.io/charts
+  - name: headlamp
+    url: https://kubernetes-sigs.github.io/headlamp/
 
 releases:
   - name: prometheus-operator
@@ -72,6 +74,8 @@ releases:
     chart: pajikos/home-assistant
     values:
       - services/home-assistant/values.yaml
+    needs:
+      - monitoring/prometheus-operator
     hooks:
       - events: ["postsync"]
         showlogs: true
@@ -118,8 +122,9 @@ releases:
             echo "Waiting for MetalLB webhook to be ready..."
             kubectl wait --for=condition=ready pod -l app.kubernetes.io/component=controller -n metallb-system --timeout=60s
             kubectl apply -f services/metallb/ip-pool.yaml
-# External resources to manually apply or automate separately:
-# kubectl apply -f services/grafana/dashboards/metrics-dashboard-configmap.yaml
-# kubectl apply -f services/metallb/config.yaml
-# kubectl apply -f services/grafana/ingress.yaml
-# kubectl apply -f services/home-assistant/ingress.yaml
+
+  - name: headlamp
+    namespace: kube-system
+    chart: headlamp/headlamp
+    values:
+      - services/headlamp/values.yaml

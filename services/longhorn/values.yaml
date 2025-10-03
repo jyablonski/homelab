@@ -1,3 +1,9 @@
 defaultSettings:
-  defaultReplicaCount: 1 # Start with 1, scales to 3 nodes later
-  storageMinimalAvailablePercentage: 10
+  # have to be strings as of oct 2025, idfk bruh
+  defaultReplicaCount: "1"
+  storageMinimalAvailablePercentage: "10"
+
+service:
+  ui:
+    type: NodePort
+    nodePort: 30085
