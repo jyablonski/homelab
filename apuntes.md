@@ -57,7 +57,7 @@ MetalLB:
 - Makes your LoadBalancer service reachable from your local network
 - Listens for LoadBalancer services and announces the assigned IPs via standard network protocols (ARP or BGP). This way, network devices know where to route traffic to reach those IPs.
 
-MetalLB operates in two modes:Layer 2 Mode (simpler, good for your setup):
+MetalLB operates in two modes:Layer 2 Mode (simpler):
 
 - Assigns IP addresses from a pool you define
 - Uses ARP to announce IPs on your local network
