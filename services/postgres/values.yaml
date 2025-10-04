@@ -17,7 +17,6 @@ primary:
     user: postgres
     password: postgres
 
-
 persistence:
   enabled: true
   size: 4Gi

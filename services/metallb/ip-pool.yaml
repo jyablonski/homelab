@@ -1,17 +1,19 @@
 apiVersion: metallb.io/v1beta1
 kind: IPAddressPool
 metadata:
-  name: my-ip-pool
+  name: home-pool
   namespace: metallb-system
 spec:
+  # Updated for your 192.168.76.x network
   addresses:
-    - 192.168.1.240-192.168.1.250
+  - 192.168.76.240-192.168.76.250
+  
 ---
 apiVersion: metallb.io/v1beta1
 kind: L2Advertisement
 metadata:
-  name: example
+  name: home-advertisement
   namespace: metallb-system
 spec:
   ipAddressPools:
-    - my-ip-pool
+  - home-pool

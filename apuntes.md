@@ -11,9 +11,7 @@ By default, k3s comes with Traefik pre-installed as its built-in ingress control
 
 - It installs Traefik into the kube-system namespace using static manifests.
 
-
-
-``` sh
+```sh
 curl -sfL https://get.k3s.io | sh -
 sudo kubectl get nodes
 
@@ -59,6 +57,19 @@ MetalLB:
 - Makes your LoadBalancer service reachable from your local network
 - Listens for LoadBalancer services and announces the assigned IPs via standard network protocols (ARP or BGP). This way, network devices know where to route traffic to reach those IPs.
 
+MetalLB operates in two modes:Layer 2 Mode (simpler):
+
+- Assigns IP addresses from a pool you define
+- Uses ARP to announce IPs on your local network
+- One node "owns" each IP and handles all traffic
+- If that node fails, another node takes over the IP
+
+BGP Mode (more advanced):
+
+- Announces routes via BGP protocol
+- True load balancing across nodes
+- Requires BGP-capable router
+
 ## Pi-hole
 
 Pi-hole is a network-wide ad blocker and DNS sinkhole. It acts as a DNS server that filters out ads, trackers, and malicious domains for all devices on your network.
@@ -66,7 +77,6 @@ Pi-hole is a network-wide ad blocker and DNS sinkhole. It acts as a DNS server t
 Devices on your network query Pi-hole instead of your ISP’s DNS. Pi-hole blocks unwanted domains and returns the correct DNS records for allowed sites. It also offers a web interface to monitor and configure blocking rules.
 
 Pi-hole uses an IP from MetalLB's managed pool. After MetalLB assigns an IP, it announces it to the local network so other devices can send DNS queries to it.
-
 
 ## Keycloak
 
@@ -79,27 +89,23 @@ Multiple options:
 1. [Lens](https://k8slens.dev/)
 2. [Official K8s Dashboard](https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/)
 
-
 ## Helmfile
 
 Install binary from [here](https://github.com/helmfile/helmfile) and then run `helmfile init` afterwards. there are multiple important commands:
 
 1. `helmfile diff` - shows the difference between what's in the Kubernetes cluster and what's in the `helmfile.yaml`
 2. `helmfile sync` - installs or upgrades all helm releases in `helmfile.yaml`, but doesn't delete releases that are not declared in the helmfile anymore
-    - Use this to force helm to install everything
+   - Use this to force helm to install everything
 3. `helmfile apply` - runs helmfile diff and will sync afterwards if the diff is successful
 
-
-``` sh
+```sh
 helmfile -l debug sync
 
 ```
 
 ## Cronjobs
 
-
-
-``` sh
+```sh
 kubectl apply -f services/go-cron-test/cronjob.yaml
 
 kubectl get cronjobs
@@ -111,7 +117,7 @@ kubectl get pods --selector=job-name -o wide
 
 ## Home Assistant
 
-``` sh
+```sh
 # Check the PVC was created
 kubectl get pvc -n home-automation
 
@@ -124,7 +130,6 @@ kubectl get pv
 
 ## PVC
 
-
 The Flow:
 
 - StorageClass (local-path) = "I know how to create storage on local filesystem"
@@ -135,3 +140,9 @@ The Flow:
 ## Resources
 
 [K3s Homelab Repo Example 1](https://github.com/humansoftware/self-host-saas-k3s)
+
+## Headlamp
+
+```sh
+kubectl create token headlamp -n kube-system --duration=87600h
+```
