@@ -1,0 +1,38 @@
+authentik:
+  secret_key: "local-dev-secret-key-not-secure"
+  error_reporting:
+    enabled: false
+
+  postgresql:
+    host: "postgres-postgresql.postgres.svc.cluster.local"
+    name: "authentik"
+    user: "authentik"
+    password: "password"
+
+  redis:
+    host: "authentik-redis-master"
+
+server:
+  replicas: 1
+
+  service:
+    type: NodePort
+    nodePort: 30080
+
+  ingress:
+    enabled: false
+
+worker:
+  replicas: 1
+
+postgresql:
+  enabled: false
+
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: false
+  master:
+    service:
+      type: ClusterIP

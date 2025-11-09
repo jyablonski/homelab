@@ -17,6 +17,8 @@ repositories:
     url: https://traefik.github.io/charts
   - name: headlamp
     url: https://kubernetes-sigs.github.io/headlamp/
+  - name: authentik
+    url: https://charts.goauthentik.io
 
 releases:
   - name: prometheus-operator
@@ -128,3 +130,12 @@ releases:
     chart: headlamp/headlamp
     values:
       - services/headlamp/values.yaml
+
+  - name: authentik
+    namespace: authentik
+    createNamespace: true
+    chart: authentik/authentik
+    values:
+      - services/authentik/values.yaml
+    needs:
+      - postgres/postgres

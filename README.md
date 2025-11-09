@@ -14,5 +14,6 @@ Run `make up` to spin up a K3s Cluster which downloads & sets up the following s
    - Username: `jacob`
    - Password: `password`
 6. [Longhorn](http://localhost:30085)
+7. [Authentik](http://localhost:30080)
 
 When finished, run `make down`

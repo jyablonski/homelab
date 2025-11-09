@@ -135,7 +135,7 @@ The Flow:
 - StorageClass (local-path) = "I know how to create storage on local filesystem"
 - PVC = "I need 5GB of storage"
 - StorageClass automatically creates a PV to satisfy the PVC
-- Pod mounts the PVC → gets persistent data
+- Pod mounts the PVC -> gets persistent data
 
 ## Resources
 
@@ -146,3 +146,47 @@ The Flow:
 ```sh
 kubectl create token headlamp -n kube-system --duration=87600h
 ```
+
+## Authentik
+
+Authentik is an identity provider that enables Single Sign-On (SSO) across the homelab services. Instead of managing separate usernames and passwords for each service, you log in once through Authentik.
+
+Status: Deployed but not configured. Won't be used until the homelab runs 24/7 on dedicated hardware.
+
+### Setup Instructions (Future)
+
+Once the cluster is running 24/7:
+
+Option 1: Manual Setup
+
+1. Access Authentik at `http://localhost:30080/if/flow/initial-setup/`
+2. Set admin password and create an API token
+3. Create OAuth applications for each service (Grafana, Headlamp, Prometheus)
+4. Copy Client ID and Secret for each application
+5. Update `values.yaml` files for each service with the credentials
+6. Run `helmfile sync` to apply OAuth configuration
+7. Services will now show "Sign in with Authentik" option
+
+Option 2: Automated Setup with Terraform
+
+1. Access Authentik and create an API token (Admin Interface -> Tokens)
+2. Export the token: `export TF_VAR_authentik_token='your-token'`
+3. Run `make terraform-init && make terraform-apply`
+4. Terraform will automatically:
+   - Create OAuth applications for Grafana and Headlamp
+   - Generate and store credentials in Kubernetes secrets
+   - Configure services to use Authentik SSO
+5. Run `helmfile sync` to pick up the new configuration
+
+Note - for option 2, you'd also have to update the makefile command to do the following:
+
+1. Spin up the cluster & all srevices
+2. Verify that authentik & postgres are up
+3. Run `terraform apply` in that terraform repo
+4. Run `helmfile sync` to update the services after the secrets get built by terraform
+
+Services with SSO Support:
+
+- Grafana (native OAuth2 support)
+- Headlamp (native OIDC support)
+- Prometheus (requires Traefik Forward Auth - more complex setup)
