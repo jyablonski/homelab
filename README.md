@@ -1,5 +1,7 @@
 # Homelab
 
+![Validate](https://github.com/jyablonski/homelab/actions/workflows/validate.yaml/badge.svg?branch=main)
+
 Personal homelab infrastructure running on K3s with automated deployment via Helmfile.
 
 ## Overview
