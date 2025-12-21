@@ -1,4 +1,4 @@
-name: Validate
+name: Validation Pipeline
 
 on:
   push:
@@ -6,26 +6,32 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  HELMFILE_VERSION: v1.2.3
+  HELM_VERSION: v3.19.4
+
 jobs:
   validate:
+    name: Validation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - name: Add helm repos
-        uses: helmfile/helmfile-action@v2
+      - name: Install Helm
+        uses: azure/setup-helm@v4
         with:
-          helmfile-version: v0.169.2
-          helmfile-args: repos
+          version: ${{ env.HELM_VERSION }}
 
-      - name: Lint charts
-        uses: helmfile/helmfile-action@v2
-        with:
-          helmfile-version: v0.169.2
-          helmfile-args: lint
+      - name: Install Helmfile
+        run: |
+          curl -fsSL https://github.com/helmfile/helmfile/releases/download/${HELMFILE_VERSION}/helmfile_${HELMFILE_VERSION#v}_linux_amd64.tar.gz | tar xz
+          sudo mv helmfile /usr/local/bin/
 
-      - name: Template charts
-        uses: helmfile/helmfile-action@v2
-        with:
-          helmfile-version: v0.169.2
-          helmfile-args: template
+      - name: Add Helm Repos
+        run: helmfile repos
+
+      - name: Lint Charts
+        run: helmfile lint
+
+      - name: Template Charts
+        run: helmfile template > /dev/null
