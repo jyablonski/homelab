@@ -1,0 +1,41 @@
+name: Validation Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  HELMFILE_VERSION: v1.2.3
+  HELM_VERSION: v3.19.4
+
+jobs:
+  validate:
+    name: Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Install Helmfile
+        run: |
+          curl -fsSL https://github.com/helmfile/helmfile/releases/download/${HELMFILE_VERSION}/helmfile_${HELMFILE_VERSION#v}_linux_amd64.tar.gz | tar xz
+          sudo mv helmfile /usr/local/bin/
+
+        # validates all repos are valid and reachable
+      - name: Add Helm Repos
+        run: helmfile repos
+
+        # checks for syntax errors, missing required values, and common issues in your chart templates.
+      - name: Lint Charts
+        run: helmfile lint
+
+        # renders all helm charts into kubernetes yaml manifests, but doesn't apply them.
+        # it will error out if any chart is missing a required value or has a syntax error.
+      - name: Template Charts
+        run: helmfile template > /dev/null
