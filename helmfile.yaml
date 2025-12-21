@@ -25,39 +25,32 @@ releases:
     namespace: monitoring
     createNamespace: true
     chart: prometheus-community/kube-prometheus-stack
+    version: 80.6.0
     values:
       - services/prometheus/values.yaml
 
-  - name: grafana
+  - name: loki
     namespace: monitoring
-    chart: grafana/grafana
+    chart: grafana/loki
+    version: 6.49.0
     values:
-      - services/grafana/values.yaml
-    hooks:
-      - events: ["postsync"]
-        showlogs: true
-        command: kubectl
-        args:
-          - apply
-          - -f
-          - services/grafana/dashboards/metrics-dashboard-configmap.yaml
-      - events: ["postsync"]
-        showlogs: true
-        command: kubectl
-        args:
-          - apply
-          - -f
-          - services/grafana/ingress.yaml
+      - services/loki/values.yaml
+
+  - name: promtail
+    namespace: monitoring
+    chart: grafana/promtail
+    version: 6.17.1
+    values:
+      - services/promtail/values.yaml
 
   - name: postgres
     namespace: postgres
     createNamespace: true
     chart: bitnami/postgresql
+    version: 18.1.15
     values:
       - services/postgres/values.yaml
     hooks:
-      # have to use bash to enable idempotent `helmfile sync` operations
-      # without it, the command would fail on subsequent runs if the configmap already exists
       - events: ["presync"]
         showlogs: true
         command: bash
@@ -74,6 +67,7 @@ releases:
     namespace: home-automation
     createNamespace: true
     chart: pajikos/home-assistant
+    version: 0.3.36
     values:
       - services/home-assistant/values.yaml
     needs:
@@ -91,12 +85,14 @@ releases:
     namespace: longhorn-system
     createNamespace: true
     chart: longhorn/longhorn
+    version: 1.10.1
     values:
       - services/longhorn/values.yaml
 
   - name: traefik
     namespace: kube-system
     chart: traefik/traefik
+    version: 38.0.1
     values:
       - services/traefik/values.yaml
 
@@ -112,6 +108,7 @@ releases:
     namespace: metallb-system
     createNamespace: true
     chart: metallb/metallb
+    version: 0.15.3
     values:
       - services/metallb/values.yaml
     hooks:
@@ -128,6 +125,7 @@ releases:
   - name: headlamp
     namespace: kube-system
     chart: headlamp/headlamp
+    version: 0.39.0
     values:
       - services/headlamp/values.yaml
 
@@ -135,6 +133,7 @@ releases:
     namespace: authentik
     createNamespace: true
     chart: authentik/authentik
+    version: 2025.10.3
     values:
       - services/authentik/values.yaml
     needs:

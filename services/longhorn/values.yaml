@@ -3,6 +3,9 @@ defaultSettings:
   defaultReplicaCount: "1"
   storageMinimalAvailablePercentage: "10"
 
+persistence:
+  defaultClassReplicaCount: 1
+
 service:
   ui:
     type: NodePort

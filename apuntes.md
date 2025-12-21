@@ -190,3 +190,22 @@ Services with SSO Support:
 - Grafana (native OAuth2 support)
 - Headlamp (native OIDC support)
 - Prometheus (requires Traefik Forward Auth - more complex setup)
+
+## Scratch
+
+```sh
+helm show values headlamp/headlamp | grep -A 20 configp -A 20 config
+```
+
+## Headlamp Token
+
+- `kubectl create token headlamp -n kube-system --duration=8760h`
+
+- you have to generate a token that lasts a long time because headlamp doesn't support insecure auth yet for some fucking dumbass reason
+
+## Cron Jobs
+
+```sh
+kubectl get cronjobs
+kubectl get jobs
+```

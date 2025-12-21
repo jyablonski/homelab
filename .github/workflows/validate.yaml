@@ -1,0 +1,31 @@
+name: Validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add helm repos
+        uses: helmfile/helmfile-action@v2
+        with:
+          helmfile-version: v0.169.2
+          helmfile-args: repos
+
+      - name: Lint charts
+        uses: helmfile/helmfile-action@v2
+        with:
+          helmfile-version: v0.169.2
+          helmfile-args: lint
+
+      - name: Template charts
+        uses: helmfile/helmfile-action@v2
+        with:
+          helmfile-version: v0.169.2
+          helmfile-args: template
