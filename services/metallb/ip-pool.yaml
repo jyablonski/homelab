@@ -6,8 +6,8 @@ metadata:
 spec:
   # Updated for your 192.168.76.x network
   addresses:
-  - 192.168.76.240-192.168.76.250
-  
+    - 192.168.76.240-192.168.76.250
+
 ---
 apiVersion: metallb.io/v1beta1
 kind: L2Advertisement
@@ -16,4 +16,4 @@ metadata:
   namespace: metallb-system
 spec:
   ipAddressPools:
-  - home-pool
+    - home-pool

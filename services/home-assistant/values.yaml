@@ -25,4 +25,7 @@ serviceMonitor:
   labels:
     release: prometheus
 
+# TODO: leave at 1 even in HA, home assistant is stateful because the local devices
+# can only connect to 1 instance. the HA lives in longhorn storing the data w/ multiple
+# replicas incase of failure.
 replicaCount: 1

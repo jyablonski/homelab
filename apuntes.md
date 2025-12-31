@@ -209,3 +209,114 @@ helm show values headlamp/headlamp | grep -A 20 configp -A 20 config
 kubectl get cronjobs
 kubectl get jobs
 ```
+
+## Dashboard Layout
+
+```
+┌─────────────────────────────────────────────────────┐
+│ CLUSTER OVERVIEW                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │
+│ Nodes: 3/3 Ready    Pods: 47/48 Running             │
+│ CPU: 45%   RAM: 62%   Storage: 32% (320GB/1TB)      │
+└─────────────────────────────────────────────────────┘
+
+┌──────────────────┬──────────────────┬──────────────────┐
+│ BEELINK-1        │ BEELINK-2        │ BEELINK-3        │
+│ ━━━━━━━━━━━━━━━ │ ━━━━━━━━━━━━━━━ │ ━━━━━━━━━━━━━━━ │
+│ Status: Ready    │ Status: Ready    │ Status: Ready    │
+│ CPU: 35%         │ CPU: 52%         │ CPU: 48%         │
+│ RAM: 18GB/32GB   │ RAM: 21GB/32GB   │ RAM: 19GB/32GB   │
+│ Disk: 280GB/1TB  │ Disk: 310GB/1TB  │ Disk: 295GB/1TB  │
+│ Pods: 16         │ Pods: 15         │ Pods: 16         │
+│ Uptime: 47d      │ Uptime: 47d      │ Uptime: 23d      │
+└──────────────────┴──────────────────┴──────────────────┘
+
+┌─────────────────────────────────────────────────────┐
+│ LONGHORN STORAGE                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │
+│ Health: Healthy   Volumes: 12   Replicas: 36/36     │
+│ Capacity: 32% (320GB / 1TB)   Reserved: 100GB       │
+│ Degraded Replicas: 0   Scheduling: Enabled          │
+└─────────────────────────────────────────────────────┘
+
+┌──────────────────┬──────────────────────────────────┐
+│ HELM RELEASES    │ FAILED PODS                      │
+│ ━━━━━━━━━━━━━━━ │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │
+│ Deployed: 11/12  │ longhorn-system/driver-xyz       │
+│ Failed: 1        │   CrashLoopBackOff (3m)          │
+│ Pending: 0       │                                  │
+└──────────────────┴──────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────┐
+│ POWER CONSUMPTION                                    │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │
+│ Current: 87W    24h Avg: 92W    Monthly: 67kWh      │
+│ Cost (Month): $23.45   Est. Annual: $281            │
+│ [Graph: Power over last 24h]                        │
+└─────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────┐
+│ TOP RESOURCE CONSUMERS                               │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │
+│ CPU:   postgres-0 (23%), home-assistant (18%)       │
+│ RAM:   grafana (3.2GB), prometheus (2.8GB)          │
+│ Disk:  plex-data (180GB), backup-pvc (95GB)         │
+└─────────────────────────────────────────────────────┘
+```
+
+## Velero
+
+Velero is a tool to back up and restore Kubernetes cluster resources and persistent volumes. It provides disaster recovery, data migration, and backup scheduling capabilities.
+
+Probably unecessary for starting out, but good to know about for future improvements.
+
+It's just another helm chart you install into the cluster.
+
+## Frigate
+
+Frigate is a NVR (Network Video Recorder) solution for IP cameras with real-time object detection. It uses machine learning models to identify objects like people, vehicles, and pets in video streams.
+
+It integrates with Home Assistant for automation based on detected events, and also supports video storage and playback.
+
+It's another helm chart you can install into the cluster.
+
+For the cameras, there are 2 recommended options:
+
+- Power over Ethernet (PoE) cameras - single cable for power + data, but require running cables from the camera to the network rack
+- WiFi cameras - easier to install, but require power outlet nearby and can have connectivity issues
+
+If going PoE, you need a PoE switch at the network rack which the cameras connect to.
+
+- This PoE switch then connects to the main network switch for data.
+
+For video storage:
+
+- 3 days of 1080p footage from 4 cameras requires ~1 TB of storage
+- 7 days requires ~2 TB
+- Use Longhorn to create a PVC for Frigate with enough storage for the desired retention period.
+- This is probably the only significant storage consumer in the homelab.
+
+MQTT is required for Home Assistant integration, it's a lightweight messaging protocol for IoT devices.
+
+- Frigate -> MQTT Broker (e.g. Mosquitto) -> Home Assistant
+- It handles this messaging automatically once configured, you don't do shit
+
+``` yaml
+# Add MQTT first (Frigate needs it for HA integration)
+- name: mosquitto
+  namespace: home-automation
+  chart: k8s-at-home/mosquitto
+  version: 4.8.2
+  values:
+    - services/mosquitto/values.yaml
+
+# Then Frigate
+- name: frigate
+  namespace: home-automation
+  chart: blakeblackshear/frigate
+  version: 7.0.0
+  values:
+    - services/frigate/values.yaml
+  needs:
+    - home-automation/mosquitto
+```
