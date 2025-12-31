@@ -1,0 +1,19 @@
+persistence:
+  enabled: true
+  storageClass: longhorn
+  size: 1Gi # Just for config/logs, very small
+
+service:
+  type: ClusterIP # Only needs internal cluster access
+  port: 1883
+
+auth:
+  enabled: false # For homelab, no auth needed
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi

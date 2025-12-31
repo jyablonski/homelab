@@ -109,6 +109,35 @@ NAS typically uses RAID = Multiple drives working together
 - 1 drive fails means no data loss because it's been replicated
 - Usable: 50% (2x 4TB = 4TB Usable)
 
+NAS setup is expensive though. Cheapest option is a $800 Synology Drive which you have to buy storage separately for, easily $1000+ total.
+
+- Just buy Beelinks that have extra M.2 Slot and add SSDs there.
+
+With 3 Beelinks with 2 TB each, there will be 6 TB total, but with Longhorn replication factor of 3, there will be 2 TB usable storage in the cluster.
+
+- The only main usage for NAS here would be to store security camera footage w/ 3-7 day retention, all the other apps will have minimal storage needs over time.
+
+## Power Monitoring
+
+Start with TP-Link Kasa KP125 smart plugs (~$60 for 3):
+
+- Integrates with Home Assistant
+- Monitors real-time power usage per device
+- Easy Prometheus integration via Home Assistant
+- Enables tracking power consumption and cost over time in Grafana
+
+Setup steps:
+
+1. Buy 3x Kasa KP125 plugs (~$20 each)
+
+2. Plug them in:
+
+```
+   Wall -> Kasa-1 -> Beelink-1
+   Wall -> Kasa-2 -> Beelink-2
+   Wall -> Kasa-3 -> Beelink-3
+```
+
 ## Equipment
 
 1. Beelinks

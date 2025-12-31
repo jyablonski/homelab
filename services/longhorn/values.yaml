@@ -3,6 +3,13 @@ defaultSettings:
   defaultReplicaCount: "1"
   storageMinimalAvailablePercentage: "10"
 
+  # TODO: change these for prod setup w/ 3 beelinks
+  # storageMinimalAvailablePercentage: 20  # Stop scheduling if <20% free
+  # storageOverProvisioningPercentage: 100
+  # defaultReplicaCount: 3  # Highly available
+  # guaranteedEngineManagerCPU: 12  # Percentage
+  # guaranteedReplicaManagerCPU: 12
+
 # TODO: change this to 3 for HA in prod setup
 persistence:
   defaultClassReplicaCount: 1
