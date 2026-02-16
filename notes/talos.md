@@ -1,7 +1,3 @@
-Here's the updated document with the Longhorn/Image Factory section and related updates throughout:
-
----
-
 ## Talos
 
 ## Phase 1: Preparation (on your laptop)

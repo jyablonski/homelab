@@ -10,9 +10,3 @@ CREATE TABLE examples (
 insert into examples (name) values
 ('Team A'),
 ('Team B');
-
--- authentik
-CREATE DATABASE authentik;
-CREATE USER authentik WITH PASSWORD 'password';
-GRANT ALL PRIVILEGES ON DATABASE authentik TO authentik;
-ALTER DATABASE authentik OWNER TO authentik;
