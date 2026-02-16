@@ -61,14 +61,14 @@ kubectl get svc -A | grep LoadBalancer
 
 Default services:
 
-| Service        | URL                          | Credentials                        |
-| -------------- | ---------------------------- | ---------------------------------- |
-| Grafana        | http://localhost:3000         | admin / admin                      |
-| Prometheus     | http://localhost:9090         | -                                  |
-| Headlamp       | http://localhost:8085         | [Generate token](#headlamp-access) |
-| Home Assistant | http://localhost:8123         | Setup on first visit               |
-| Longhorn UI    | http://localhost:30085        | -                                  |
-| PostgreSQL     | localhost:5432               | postgres / postgres                |
+| Service        | URL                    | Credentials                        |
+| -------------- | ---------------------- | ---------------------------------- |
+| Grafana        | http://localhost:3000  | admin / admin                      |
+| Prometheus     | http://localhost:9090  | -                                  |
+| Headlamp       | http://localhost:8085  | [Generate token](#headlamp-access) |
+| Home Assistant | http://localhost:8123  | Setup on first visit               |
+| Longhorn UI    | http://localhost:30085 | -                                  |
+| PostgreSQL     | localhost:5432         | postgres / postgres                |
 
 #### Headlamp Access
 
