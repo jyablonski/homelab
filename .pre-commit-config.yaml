@@ -4,3 +4,4 @@ repos:
     hooks:
       - id: prettier
         types_or: [yaml]
+        exclude: ".*/chart/templates/.*"

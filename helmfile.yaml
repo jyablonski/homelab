@@ -9,8 +9,6 @@ repositories:
     url: https://mojo2600.github.io/pihole-kubernetes/
   - name: metallb
     url: https://metallb.github.io/metallb
-  - name: cnpg
-    url: https://cloudnative-pg.github.io/charts
   - name: longhorn
     url: https://charts.longhorn.io
   - name: traefik
@@ -19,112 +17,64 @@ repositories:
     url: https://kubernetes-sigs.github.io/headlamp/
   - name: authentik
     url: https://charts.goauthentik.io
-
 releases:
   - name: prometheus-operator
     namespace: monitoring
     createNamespace: true
     chart: prometheus-community/kube-prometheus-stack
-    version: 80.6.0
+    version: 82.10.2
     values:
       - services/prometheus/values.yaml
-
   - name: loki
     namespace: monitoring
     chart: grafana/loki
-    version: 6.49.0
+    version: 6.53.0
     values:
       - services/loki/values.yaml
-
   - name: promtail
     namespace: monitoring
     chart: grafana/promtail
     version: 6.17.1
     values:
       - services/promtail/values.yaml
-
-  # CNPG has a two-part architecture: this release installs the operator (CRDs +
-  # controller). The actual Postgres cluster is a raw CR manifest applied via the
-  # postsync hook below, NOT a separate helm release with a values.yaml.
-
-  # Why not use the cnpg/cluster chart? It has template bugs (v0.5.0):
-  # null externalClusters in standalone mode, and broken multiline SQL rendering.
-  # See services/postgres/cluster.yaml for details.
-
-  # The postsync hook creates the postgres namespace, superuser secret, bootstrap
-  # configmap, applies the Cluster CR, and waits for it to become healthy before
-  # helmfile moves on to releases that depend on it (e.g. authentik).
-  - name: cnpg-operator
-    namespace: cnpg-system
+  - name: postgres
+    namespace: postgres
     createNamespace: true
-    chart: cnpg/cloudnative-pg
-    version: 0.27.1
-    hooks:
-      - events: ["postsync"]
-        showlogs: true
-        command: bash
-        args:
-          - -c
-          - |
-            kubectl create namespace postgres --dry-run=client -o yaml | kubectl apply -f -
-            kubectl create secret generic postgres-superuser-secret \
-              --namespace=postgres \
-              --from-literal=username=postgres \
-              --from-literal=password=postgres \
-              --dry-run=client -o yaml | kubectl apply -f -
-            kubectl label secret postgres-superuser-secret \
-              --namespace=postgres \
-              cnpg.io/reload=true \
-              --overwrite
-            kubectl create configmap postgres-bootstrap \
-              --namespace=postgres \
-              --from-file=services/postgres/bootstrap.sql \
-              --dry-run=client -o yaml | kubectl apply -f -
-            kubectl apply -f services/postgres/cluster.yaml
-            echo "Waiting for CNPG Cluster to be ready..."
-            kubectl wait --for=condition=Ready cluster/postgres -n postgres --timeout=180s
-
+    chart: ./services/postgres/chart
+    needs:
+      - longhorn-system/longhorn
+    wait: true
   - name: home-assistant
     namespace: home-automation
     createNamespace: true
     chart: pajikos/home-assistant
-    version: 0.3.36
+    version: 0.3.47
     values:
       - services/home-assistant/values.yaml
     needs:
       - monitoring/prometheus-operator
     hooks:
-      - events: ["postsync"]
+      - events:
+          - postsync
         showlogs: true
         command: kubectl
         args:
           - apply
           - -f
           - services/home-assistant/ingress.yaml
-
   - name: longhorn
     namespace: longhorn-system
     createNamespace: true
     chart: longhorn/longhorn
-    version: 1.10.1
+    version: 1.11.0
     values:
       - services/longhorn/values.yaml
-
   - name: traefik
     namespace: kube-system
     chart: traefik/traefik
-    version: 38.0.1
+    version: 39.0.5
     values:
       - services/traefik/values.yaml
-
-  # this is a bitch to configure, it nukes my inter
-  # - name: pihole
-  #   namespace: pihole
-  #   createNamespace: true
-  #   chart: mojo2600/pihole
-  #   values:
-  #     - services/pihole/values.yaml
-
   - name: metallb
     namespace: metallb-system
     createNamespace: true
@@ -142,20 +92,18 @@ releases:
             echo "Waiting for MetalLB webhook to be ready..."
             kubectl wait --for=condition=ready pod -l app.kubernetes.io/component=controller -n metallb-system --timeout=60s
             kubectl apply -f services/metallb/ip-pool.yaml
-
   - name: headlamp
     namespace: kube-system
     chart: headlamp/headlamp
-    version: 0.39.0
+    version: 0.40.0
     values:
       - services/headlamp/values.yaml
-
   - name: authentik
     namespace: authentik
     createNamespace: true
     chart: authentik/authentik
-    version: 2025.10.3
+    version: 2026.2.1
     values:
       - services/authentik/values.yaml
     needs:
-      - cnpg-system/cnpg-operator
+      - postgres/postgres
