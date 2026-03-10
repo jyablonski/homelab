@@ -26,3 +26,8 @@ sync:
 down:
 	@echo "Stopping the Cluster..."
 	@sudo /usr/local/bin/k3s-uninstall.sh
+
+# check for helm chart updates; prompts y/n before writing helmfile.yaml
+.PHONY: update-charts
+update-charts:
+	@bash scripts/update-charts.sh

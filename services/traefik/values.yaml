@@ -16,13 +16,8 @@ metrics:
     addServicesLabels: true
     buckets: "0.1,0.3,1.2,5.0"
 
-# Security headers
-globalArguments:
-  - "--api.dashboard=true"
+additionalArguments:
   - "--ping=true"
-  - "--entrypoints.web.address=:80"
-  - "--entrypoints.websecure.address=:443"
-  - "--providers.kubernetescrd"
 
 resources:
   requests:

@@ -4,7 +4,7 @@ authentik:
     enabled: false
 
   postgresql:
-    host: "postgres-rw.postgres.svc.cluster.local"
+    host: "postgres.postgres.svc.cluster.local"
     name: "authentik"
     user: "authentik"
     password: "password"
