@@ -16,3 +16,6 @@ checks:
     - "drop-net-raw-capability"
     - "env-var-secret"
     - "latest-tag"
+    - "job-ttl-seconds-after-finished"
+    - "liveness-port"
+    - "startup-port"

@@ -14,15 +14,21 @@ data "authentik_flow" "default_authorization_flow" {
   slug = "default-provider-authorization-implicit-consent"
 }
 
+# Get default invalidation flow
+data "authentik_flow" "default_invalidation_flow" {
+  slug = "default-provider-invalidation-flow"
+}
+
 # Create OAuth2 Provider for Grafana
 resource "authentik_provider_oauth2" "grafana" {
   name               = "Grafana"
   client_id          = "grafana"
   client_secret      = random_password.grafana_secret.result
   authorization_flow = data.authentik_flow.default_authorization_flow.id
+  invalidation_flow  = data.authentik_flow.default_invalidation_flow.id
 
-  redirect_uris = [
-    "http://localhost:3000/login/generic_oauth"
+  allowed_redirect_uris = [
+    { matching_mode = "strict", url = "http://localhost:3000/login/generic_oauth" }
   ]
 
   property_mappings = [
@@ -45,9 +51,10 @@ resource "authentik_provider_oauth2" "headlamp" {
   client_id          = "headlamp"
   client_secret      = random_password.headlamp_secret.result
   authorization_flow = data.authentik_flow.default_authorization_flow.id
+  invalidation_flow  = data.authentik_flow.default_invalidation_flow.id
 
-  redirect_uris = [
-    "http://localhost:4466/oidc-callback"
+  allowed_redirect_uris = [
+    { matching_mode = "strict", url = "http://localhost:4466/oidc-callback" }
   ]
 
   property_mappings = [
