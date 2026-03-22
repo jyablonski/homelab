@@ -88,3 +88,122 @@ tests:
       - equal:
           path: spec.type
           value: LoadBalancer
+
+  - it: should have configmap with authentik bootstrap sql
+    documentIndex: 1
+    asserts:
+      - matchRegex:
+          path: data["01-authentik.sql"]
+          pattern: "CREATE DATABASE authentik"
+      - matchRegex:
+          path: data["01-authentik.sql"]
+          pattern: "CREATE USER authentik"
+      - isNotEmpty:
+          path: data["02-bootstrap.sql"]
+
+  - it: should reference the correct secret in deployment env vars
+    documentIndex: 3
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[0].valueFrom.secretKeyRef.name
+          value: postgres-secret
+      - equal:
+          path: spec.template.spec.containers[0].env[0].valueFrom.secretKeyRef.key
+          value: username
+      - equal:
+          path: spec.template.spec.containers[0].env[1].valueFrom.secretKeyRef.name
+          value: postgres-secret
+      - equal:
+          path: spec.template.spec.containers[0].env[1].valueFrom.secretKeyRef.key
+          value: password
+
+  - it: should set PGDATA to a subdirectory of the data mount
+    documentIndex: 3
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[3].name
+          value: PGDATA
+      - equal:
+          path: spec.template.spec.containers[0].env[3].value
+          value: /var/lib/postgresql/data/pgdata
+
+  - it: should mount data volume to the correct path
+    documentIndex: 3
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[0].name
+          value: data
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[0].mountPath
+          value: /var/lib/postgresql/data
+
+  - it: should mount init scripts to docker-entrypoint-initdb.d
+    documentIndex: 3
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[1].name
+          value: init
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[1].mountPath
+          value: /docker-entrypoint-initdb.d
+
+  - it: should reference the PVC in the data volume
+    documentIndex: 3
+    asserts:
+      - equal:
+          path: spec.template.spec.volumes[0].persistentVolumeClaim.claimName
+          value: postgres-pvc
+
+  - it: should reference the configmap in the init volume
+    documentIndex: 3
+    asserts:
+      - equal:
+          path: spec.template.spec.volumes[1].configMap.name
+          value: postgres-init
+
+  - it: should have matching selectors across deployment and services
+    documentIndex: 3
+    asserts:
+      - equal:
+          path: spec.selector.matchLabels.app
+          value: postgres
+
+  - it: should select the same app label in ClusterIP service
+    documentIndex: 4
+    asserts:
+      - equal:
+          path: spec.selector.app
+          value: postgres
+
+  - it: should select the same app label in LoadBalancer service
+    documentIndex: 5
+    asserts:
+      - equal:
+          path: spec.selector.app
+          value: postgres
+
+  - it: should use PVC access mode ReadWriteOnce
+    documentIndex: 2
+    asserts:
+      - equal:
+          path: spec.accessModes[0]
+          value: ReadWriteOnce
+
+  - it: should set all resources in the release namespace
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: metadata.namespace
+          value: NAMESPACE
+    release:
+      namespace: NAMESPACE
+
+  - it: should use readiness probe with pg_isready
+    documentIndex: 3
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.exec.command
+          value: ["pg_isready", "-U", "postgres"]
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.initialDelaySeconds
+          value: 10
