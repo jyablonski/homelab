@@ -9,6 +9,9 @@ on:
 env:
   HELMFILE_VERSION: v1.2.3
   HELM_VERSION: v3.19.4
+  KUBECONFORM_VERSION: v0.7.0
+  HELM_UNITTEST_VERSION: v1.0.3
+  TERRAFORM_VERSION: 1.14.7
 
 jobs:
   validate:
@@ -44,7 +47,7 @@ jobs:
         # catches invalid api versions, wrong field names, and bad resource specs.
       - name: Kubeconform
         run: |
-          curl -fsSL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz | tar xz
+          curl -fsSL https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz | tar xz
           sudo mv kubeconform /usr/local/bin/
 
           kubeconform \
@@ -75,10 +78,10 @@ jobs:
           version: ${{ env.HELM_VERSION }}
 
       - name: Install helm-unittest plugin
-        run: helm plugin install https://github.com/helm-unittest/helm-unittest.git
+        run: helm plugin install https://github.com/helm-unittest/helm-unittest.git --version ${HELM_UNITTEST_VERSION}
 
       - name: Run unit tests
-        run: helm unittest services/postgres/chart
+        run: helm unittest services/*/chart
 
   shellcheck:
     name: Shellcheck
@@ -86,6 +89,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # simple bash linter to catch common scripting mistakes and enforce best practices
       - name: Run Shellcheck
         run: shellcheck scripts/*.sh
 
@@ -100,12 +104,17 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
 
+      # ensure tf files are formatted correctly and don't have syntax errors
       - name: Terraform Format Check
         run: terraform fmt -check -diff
 
+      # init so we can run validate
       - name: Terraform Init
         run: terraform init -backend=false
 
+      # check hcl syntax and types etc
       - name: Terraform Validate
         run: terraform validate
