@@ -2,182 +2,79 @@
 
 ![Validate](https://github.com/jyablonski/homelab/actions/workflows/validate.yaml/badge.svg?branch=main)
 
-Personal homelab infrastructure running on K3s with automated deployment via Helmfile.
-
-## Overview
-
-This project provisions a single-node Kubernetes cluster with a complete observability stack, persistent storage, and home automation. Everything is declaratively managed through Helm charts with pinned versions for reproducible deployments.
-
-### What's Included
-
-| Component       | Purpose                                                 |
-| --------------- | ------------------------------------------------------- |
-| MetalLB         | Bare-metal load balancer - assigns LAN IPs to services  |
-| Traefik         | Ingress controller - routes HTTP traffic                |
-| Longhorn        | Distributed block storage - provides persistent volumes |
-| Prometheus      | Metrics collection and alerting                         |
-| Grafana         | Visualization for metrics and logs                      |
-| Loki + Promtail | Log aggregation and querying                            |
-| Headlamp        | Kubernetes dashboard UI                                 |
-| PostgreSQL      | Relational database                                     |
-| Home Assistant  | Home automation platform                                |
-| Authentik       | Identity provider / SSO (WIP)                           |
+Personal Kubernetes homelab running on [K3s](https://k3s.io/), fully declared in Git and deployed with [Helmfile](https://github.com/helmfile/helmfile).
 
 ## Quick Start
 
-### Prerequisites
-
-- Ubuntu/Debian-based Linux system
-- `curl`, `kubectl`, `helm`, `helmfile` installed
-- Sufficient disk space (the cluster needs ~15% free to avoid disk pressure)
-
-### Quick Start
+**Prerequisites:** Linux system with `curl`, `kubectl`, `helm`, and `helmfile` installed.
 
 ```bash
+# Bring up the cluster (installs K3s, creates namespaces, deploys all services)
 make up
-```
 
-This will:
+# Re-sync after config changes
+make sync
 
-1. Install K3s (with built-in Traefik disabled)
-2. Create required namespaces
-3. Deploy all services via Helmfile
-
-For teardown:
-
-```bash
+# Tear down everything (services, PVs, and K3s)
 make down
 ```
 
-This will uninstall all services, remove persistent volumes, and uninstall K3s.
-
-### Access Services
-
-After deployment, services are accessible via MetalLB-assigned IPs. Check assigned IPs:
+After deployment, find service IPs with:
 
 ```bash
 kubectl get svc -A | grep LoadBalancer
 ```
 
-Default services:
+### Default Access
 
-| Service        | URL                    | Credentials                        |
-| -------------- | ---------------------- | ---------------------------------- |
-| Grafana        | http://localhost:3000  | admin / admin                      |
-| Prometheus     | http://localhost:9090  | -                                  |
-| Headlamp       | http://localhost:8085  | [Generate token](#headlamp-access) |
-| Home Assistant | http://localhost:8123  | Setup on first visit               |
-| Longhorn UI    | http://localhost:30085 | -                                  |
-| PostgreSQL     | localhost:5432         | postgres / postgres                |
+| Service        | Port  | Credentials                                                     |
+| -------------- | ----- | --------------------------------------------------------------- |
+| Grafana        | 3000  | admin / admin                                                   |
+| Prometheus     | 9090  | —                                                               |
+| Home Assistant | 8123  | Setup on first visit                                            |
+| Headlamp       | 8085  | `kubectl create token headlamp -n kube-system --duration=8760h` |
+| Longhorn UI    | 30085 | —                                                               |
+| Frigate        | 5000  | —                                                               |
+| PostgreSQL     | 5432  | postgres / postgres                                             |
 
-#### Headlamp Access
+## Services
 
-Headlamp requires a service account token that has to be generated dynamically (insecure auth is not supported yet).
+| Service                                    | Description                                                     |
+| ------------------------------------------ | --------------------------------------------------------------- |
+| [MetalLB](services/metallb/)               | Bare-metal load balancer — assigns LAN IPs via L2/ARP           |
+| [Traefik](services/traefik/)               | Ingress controller — routes traffic by hostname                 |
+| [Longhorn](services/longhorn/)             | Distributed block storage — default StorageClass for all PVCs   |
+| [Prometheus](services/prometheus/)         | Metrics collection from pods, nodes, and Kubernetes internals   |
+| [Grafana](services/prometheus/)            | Dashboards for metrics and logs — bundled with Prometheus chart |
+| [Loki](services/loki/)                     | Log aggregation with 7-day retention                            |
+| [Promtail](services/promtail/)             | DaemonSet that ships pod logs to Loki                           |
+| [PostgreSQL](services/postgres/)           | Postgres 17 with bootstrap SQL for initial database setup       |
+| [Home Assistant](services/home-assistant/) | Home automation platform with Prometheus metrics                |
+| [Frigate](services/frigate/)               | NVR with ML object detection — monitors 4 cameras via RTSP      |
+| [Mosquitto](services/mosquito/)            | MQTT broker connecting Frigate events to Home Assistant         |
+| [Pi-hole](services/pihole/)                | DNS-level ad blocker with custom local DNS entries              |
+| [Headlamp](services/headlamp/)             | Kubernetes web dashboard                                        |
+| [Authentik](services/authentik/)           | SSO / OIDC identity provider (WIP)                              |
 
-```bash
-kubectl create token headlamp -n kube-system --duration=8760h
-```
-
-Paste the token into the Headlamp login screen. Your browser will remember it.
-
-## Project Structure
+## Project Layout
 
 ```
 homelab/
-├── helmfile.yaml              # Main deployment manifest - all releases with pinned versions
-├── Makefile                   # Cluster lifecycle commands (up/down)
+├── helmfile.yaml                 # All releases, versions, and repos in one file
+├── Makefile                      # Cluster lifecycle (up / down / sync)
 ├── scripts/
-│   └── setup.sh               # Post-install setup script
-└── services/
-    ├── authentik/
-    │   └── values.yaml
-    ├── loki/
-    │   └── values.yaml
-    ├── longhorn/
-    │   └── values.yaml
-    ├── prometheus/
-    │   └── values.yaml        # Includes Grafana config
-    ├── etc...                 # Other service charts and values
+│   ├── setup.sh                  # Namespace creation and post-install bootstrap
+│   └── update-charts.sh          # Detects available Helm chart updates
+├── terraform/                    # Authentik OAuth2 provider config (WIP)
+├── services/                     # Per-service Helm values and manifests
+│   ├── prometheus/               # Each service gets its own directory for Helm values and Kubernetes manifests
+│   └── ...                       # 
+└── notes/                        # Hardware planning, Talos setup, scratch notes
 ```
 
-## How It Works
+## Roadmap
 
-### Networking
-
-```
-Internet/LAN Request
-        ↓
-    MetalLB (assigns external IP from pool, e.g., 192.168.76.240-250)
-        ↓
-    Service (LoadBalancer type)
-        ↓
-    Pod
-```
-
-MetalLB assigns IPs from a configured pool to `LoadBalancer` services. Each service gets a dedicated IP accessible from your LAN.
-
-### Storage
-
-Longhorn provides persistent volumes backed by local disk. Volumes are stored at `/var/lib/longhorn/` and managed through Kubernetes PVCs.
-
-For single-node clusters, replica count is set to 1 (no redundancy). Data persists across pod restarts but not node failures.
-
-### Observability
-
-```
-Pods write to stdout/stderr
-        ↓
-Container runtime writes to /var/log/pods/
-        ↓
-Promtail (DaemonSet) tails logs, adds labels
-        ↓
-Loki stores and indexes logs
-        ↓
-Grafana queries both Prometheus (metrics) and Loki (logs)
-```
-
-- Prometheus scrapes metrics from pods, nodes, and Kubernetes components
-- Promtail collects logs from all pods on each node
-- Loki stores logs with 7-day retention
-- Grafana provides dashboards for node metrics as well as logs exploration
-
-### Chart Version Pinning
-
-All Helm charts are pinned to specific versions in `helmfile.yaml` for reproducible deployments. To upgrade a chart:
-
-1. Check available versions: `helm search repo <chart> --versions`
-2. Update the `version:` field in `helmfile.yaml`
-3. Run `helmfile sync`
-
-## Future State
-
-### Pi-hole
-
-Local DNS resolution to enable services to be accessed via hostnames instead of IPs or port numbers. Example:
-
-- `http://grafana.home`
-- `http://homeassistant.home`
-
-### Multi-Node Cluster
-
-Expand to 3+ nodes for high availability:
-
-- Longhorn replication across nodes (bump `defaultReplicaCount` to 3)
-- Pod scheduling across nodes for redundancy
-- Proper ingress with DNS-based routing via Traefik
-
-### Authentik SSO
-
-Centralized authentication for all services:
-
-- OIDC integration with Grafana, Headlamp, etc.
-- Single sign-on across the homelab
-- User management and access control
-
-### Ingress + DNS
-
-Replace direct LoadBalancer IPs with hostname-based routing:
-
-- Local DNS (Pi-hole or router) pointing `*.home.local` to Traefik IP
-- Traefik ingress rules routing by hostname
-- Optional: TLS with self-signed certs or Let's Encrypt
+- **Local DNS** — Pi-hole resolving `*.home` hostnames so services are reachable by name instead of IP
+- **Multi-node HA** — Expand to 3 nodes with Longhorn replication and pod anti-affinity
+- **Authentik SSO** — OIDC integration across Grafana, Headlamp, and other services
+- **Backups** — Velero for cluster resource and PV snapshots
