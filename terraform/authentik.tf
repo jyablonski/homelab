@@ -26,9 +26,9 @@ resource "authentik_provider_oauth2" "grafana" {
   ]
 
   property_mappings = [
-    data.authentik_scope_mapping.openid.id,
-    data.authentik_scope_mapping.email.id,
-    data.authentik_scope_mapping.profile.id,
+    data.authentik_property_mapping_provider_scope.openid.id,
+    data.authentik_property_mapping_provider_scope.email.id,
+    data.authentik_property_mapping_provider_scope.profile.id,
   ]
 }
 
@@ -51,9 +51,9 @@ resource "authentik_provider_oauth2" "headlamp" {
   ]
 
   property_mappings = [
-    data.authentik_scope_mapping.openid.id,
-    data.authentik_scope_mapping.email.id,
-    data.authentik_scope_mapping.profile.id,
+    data.authentik_property_mapping_provider_scope.openid.id,
+    data.authentik_property_mapping_provider_scope.email.id,
+    data.authentik_property_mapping_provider_scope.profile.id,
   ]
 }
 
@@ -65,15 +65,15 @@ resource "authentik_application" "headlamp" {
 }
 
 # Get default scope mappings
-data "authentik_scope_mapping" "openid" {
+data "authentik_property_mapping_provider_scope" "openid" {
   scope_name = "openid"
 }
 
-data "authentik_scope_mapping" "email" {
+data "authentik_property_mapping_provider_scope" "email" {
   scope_name = "email"
 }
 
-data "authentik_scope_mapping" "profile" {
+data "authentik_property_mapping_provider_scope" "profile" {
   scope_name = "profile"
 }
 

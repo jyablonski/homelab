@@ -61,7 +61,7 @@ jobs:
           curl -fsSL https://github.com/stackrox/kube-linter/releases/latest/download/kube-linter-linux.tar.gz | tar xz
           sudo mv kube-linter /usr/local/bin/
 
-          kube-linter lint /tmp/manifests.yaml
+          kube-linter lint --config .kube-linter.yaml /tmp/manifests.yaml
 
   helm-unittest:
     name: Helm Unit Tests
