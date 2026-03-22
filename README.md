@@ -39,22 +39,22 @@ kubectl get svc -A | grep LoadBalancer
 
 ## Services
 
-| Service                                    | Description                                                     | Config                                                                 |
-| ------------------------------------------ | --------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| [MetalLB](services/metallb/)               | Bare-metal load balancer — assigns LAN IPs via L2/ARP           | [ip-pool.yaml](services/metallb/ip-pool.yaml)                          |
-| [Traefik](services/traefik/)               | Ingress controller — routes traffic by hostname                 | [values.yaml](services/traefik/values.yaml)                            |
-| [Longhorn](services/longhorn/)             | Distributed block storage — default StorageClass for all PVCs   | [values.yaml](services/longhorn/values.yaml)                           |
-| [Prometheus](services/prometheus/)         | Metrics collection from pods, nodes, and Kubernetes internals   | [values.yaml](services/prometheus/values.yaml)                         |
-| [Grafana](services/prometheus/)            | Dashboards for metrics and logs — bundled with Prometheus chart | [dashboard](services/prometheus/metrics-dashboard-configmap.yaml)      |
-| [Loki](services/loki/)                     | Log aggregation with 7-day retention                            | [values.yaml](services/loki/values.yaml)                               |
-| [Promtail](services/promtail/)             | DaemonSet that ships pod logs to Loki                           | [values.yaml](services/promtail/values.yaml)                           |
-| [PostgreSQL](services/postgres/)           | Postgres 17 with bootstrap SQL for initial database setup       | [chart](services/postgres/chart/)                                      |
-| [Home Assistant](services/home-assistant/) | Home automation platform with Prometheus metrics                | [values.yaml](services/home-assistant/values.yaml)                     |
-| [Frigate](services/frigate/)               | NVR with ML object detection — monitors 4 cameras via RTSP      | [values.yaml](services/frigate/values.yaml)                            |
-| [Mosquitto](services/mosquito/)            | MQTT broker connecting Frigate events to Home Assistant         | [values.yaml](services/mosquito/values.yaml)                           |
-| [Pi-hole](services/pihole/)                | DNS-level ad blocker with custom local DNS entries              | [values.yaml](services/pihole/values.yaml)                             |
-| [Headlamp](services/headlamp/)             | Kubernetes web dashboard                                        | [values.yaml](services/headlamp/values.yaml)                           |
-| [Authentik](services/authentik/)           | SSO / OIDC identity provider (WIP)                              | [values.yaml](services/authentik/values.yaml), [terraform](terraform/) |
+| Service                                    | Description                                                     |
+| ------------------------------------------ | --------------------------------------------------------------- |
+| [MetalLB](services/metallb/)               | Bare-metal load balancer — assigns LAN IPs via L2/ARP           |
+| [Traefik](services/traefik/)               | Ingress controller — routes traffic by hostname                 |
+| [Longhorn](services/longhorn/)             | Distributed block storage — default StorageClass for all PVCs   |
+| [Prometheus](services/prometheus/)         | Metrics collection from pods, nodes, and Kubernetes internals   |
+| [Grafana](services/prometheus/)            | Dashboards for metrics and logs — bundled with Prometheus chart |
+| [Loki](services/loki/)                     | Log aggregation with 7-day retention                            |
+| [Promtail](services/promtail/)             | DaemonSet that ships pod logs to Loki                           |
+| [PostgreSQL](services/postgres/)           | Postgres 17 with bootstrap SQL for initial database setup       |
+| [Home Assistant](services/home-assistant/) | Home automation platform with Prometheus metrics                |
+| [Frigate](services/frigate/)               | NVR with ML object detection — monitors 4 cameras via RTSP      |
+| [Mosquitto](services/mosquito/)            | MQTT broker connecting Frigate events to Home Assistant         |
+| [Pi-hole](services/pihole/)                | DNS-level ad blocker with custom local DNS entries              |
+| [Headlamp](services/headlamp/)             | Kubernetes web dashboard                                        |
+| [Authentik](services/authentik/)           | SSO / OIDC identity provider (WIP)                              |
 
 ## Project Layout
 

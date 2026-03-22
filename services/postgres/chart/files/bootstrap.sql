@@ -1,5 +1,5 @@
-CREATE SCHEMA boobies;
-SET search_path TO boobies;
+CREATE SCHEMA source;
+SET search_path TO source;
 
 CREATE TABLE examples (
     id SERIAL PRIMARY KEY,

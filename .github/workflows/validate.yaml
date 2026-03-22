@@ -12,7 +12,7 @@ env:
 
 jobs:
   validate:
-    name: Validation
+    name: Helm Validation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -38,4 +38,74 @@ jobs:
         # renders all helm charts into kubernetes yaml manifests, but doesn't apply them.
         # it will error out if any chart is missing a required value or has a syntax error.
       - name: Template Charts
-        run: helmfile template > /dev/null
+        run: helmfile template > /tmp/manifests.yaml
+
+        # validates rendered manifests against the kubernetes openapi spec.
+        # catches invalid api versions, wrong field names, and bad resource specs.
+      - name: Kubeconform
+        run: |
+          curl -fsSL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz | tar xz
+          sudo mv kubeconform /usr/local/bin/
+
+          kubeconform \
+            -strict \
+            -summary \
+            -ignore-missing-schemas \
+            -kubernetes-version 1.31.0 \
+            /tmp/manifests.yaml
+
+        # checks rendered manifests for security issues and best-practice violations
+        # like missing resource limits, containers running as root, or missing probes.
+      - name: Kube-linter
+        run: |
+          curl -fsSL https://github.com/stackrox/kube-linter/releases/latest/download/kube-linter-linux.tar.gz | tar xz
+          sudo mv kube-linter /usr/local/bin/
+
+          kube-linter lint /tmp/manifests.yaml
+
+  helm-unittest:
+    name: Helm Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Install helm-unittest plugin
+        run: helm plugin install https://github.com/helm-unittest/helm-unittest.git
+
+      - name: Run unit tests
+        run: helm unittest services/postgres/chart
+
+  shellcheck:
+    name: Shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Run Shellcheck
+        run: shellcheck scripts/*.sh
+
+  terraform:
+    name: Terraform Validation
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -diff
+
+      - name: Terraform Init
+        run: terraform init -backend=false
+
+      - name: Terraform Validate
+        run: terraform validate
