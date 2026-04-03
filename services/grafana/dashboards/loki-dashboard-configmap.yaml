@@ -1,0 +1,75 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-loki-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  loki-logs.json: |-
+    {
+      "title": "Loki Logs",
+      "uid": "loki-logs",
+      "tags": ["loki", "logs"],
+      "schemaVersion": 38,
+      "version": 1,
+      "refresh": "30s",
+      "time": { "from": "now-1h", "to": "now" },
+      "templating": {
+        "list": [
+          {
+            "name": "namespace",
+            "label": "Namespace",
+            "type": "query",
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "query": "label_values(namespace)",
+            "refresh": 2,
+            "sort": 1,
+            "includeAll": true,
+            "allValue": ".+",
+            "multi": false,
+            "hide": 0
+          },
+          {
+            "name": "app",
+            "label": "App",
+            "type": "query",
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "query": "label_values({namespace=~\"$namespace\"}, app)",
+            "refresh": 2,
+            "sort": 1,
+            "includeAll": true,
+            "allValue": ".+",
+            "multi": false,
+            "hide": 0
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1,
+          "type": "logs",
+          "title": "Logs",
+          "gridPos": { "x": 0, "y": 0, "w": 24, "h": 25 },
+          "datasource": { "type": "loki", "uid": "Loki" },
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false,
+            "showCommonLabels": false,
+            "showLabels": false,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": false
+          },
+          "targets": [
+            {
+              "datasource": { "type": "loki", "uid": "Loki" },
+              "expr": "{namespace=~\"$namespace\", app=~\"$app\"}",
+              "refId": "A",
+              "queryType": "range"
+            }
+          ]
+        }
+      ]
+    }
