@@ -25,6 +25,15 @@ releases:
     version: 82.10.2
     values:
       - services/prometheus/values.yaml
+    hooks:
+      - events:
+          - postsync
+        showlogs: true
+        command: kubectl
+        args:
+          - apply
+          - -f
+          - services/grafana/dashboards/
   - name: loki
     namespace: monitoring
     chart: grafana/loki

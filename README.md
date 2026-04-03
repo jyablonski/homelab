@@ -66,8 +66,8 @@ homelab/
 │   ├── setup.sh                  # Namespace creation and post-install bootstrap
 │   └── update-charts.sh          # Detects available Helm chart updates
 ├── terraform/                    # Authentik OAuth2 provider config (WIP)
-├── services/                     # Per-service Helm values and manifests
-│   ├── prometheus/               # Each service gets its own directory for Helm values and Kubernetes manifests
+├── services/                     # Per-service Helm values and config options
+│   ├── prometheus/               # Each service gets its own directory
 │   └── ...                       # 
 └── notes/                        # Hardware planning, Talos setup, scratch notes
 ```

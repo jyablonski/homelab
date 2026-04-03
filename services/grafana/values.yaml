@@ -26,6 +26,11 @@ datasources:
         url: http://prometheus-operator-kube-p-prometheus.monitoring.svc.cluster.local:9090
         isDefault: true
         editable: true
+      - name: Loki
+        type: loki
+        access: proxy
+        url: http://loki-gateway.monitoring.svc.cluster.local
+        editable: true
 
 sidecar:
   dashboards:
