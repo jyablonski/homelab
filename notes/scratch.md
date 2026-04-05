@@ -301,7 +301,7 @@ MQTT is required for Home Assistant integration, it's a lightweight messaging pr
 - Frigate -> MQTT Broker (e.g. Mosquitto) -> Home Assistant
 - It handles this messaging automatically once configured, you don't do shit
 
-``` yaml
+```yaml
 # Add MQTT first (Frigate needs it for HA integration)
 - name: mosquitto
   namespace: home-automation
@@ -330,11 +330,11 @@ Grafana dashboard: [Kubernetes / Compute Resources / Cluster](http://localhost:3
 - The Memory utilization is reported at > 70% (~20 GB memory), which seems high when none of the pods add up anywhere close to 20 GB memory.
 
 The "Memory Utilisation" panel calculates `1 - (MemAvailable / MemTotal)` from the node exporter. This is the OS-level view, equivalent to the "available" column in `free -h`. It includes everything: container workloads, kernel page cache, slab caches, shared memory, and control plane overhead.
-  
+
 The per-namespace table uses cgroup metrics (`container_memory_working_set_bytes`), which only count memory directly allocated by container processes. The gap between ~2.6 GiB of visible pod usage and ~21 GiB node-level "used" is mostly Linux page cache driven by Longhorn's block I/O. The kernel manages page cache globally and doesn't attribute it to any pod's cgroup, so it's invisible in the namespace breakdown. This is a known Kubernetes observability limitation, not a problem.
 
 - Simply put, Longhorn is using like ~18 GB of memory for cache purposes. This is expected and a known limitation of the observability that's in place (because other applications will trigger write events that Longhorn has to write to PVCs), but it's expected and not really a big deal.
-- The observability limitation is just that Grafana can't tell you "Longhorn's I/O is responsible for X GiB of page cache" because the kernel doesn't track it that way. 
+- The observability limitation is just that Grafana can't tell you "Longhorn's I/O is responsible for X GiB of page cache" because the kernel doesn't track it that way.
 
 The 70% figure is not alarming on its own since most of the "used" memory is reclaimable cache. Watch for MemAvailable consistently below 2-3 GiB, OOMKill events, or increasing swap usage. For application-level pressure, sum `container_memory_working_set_bytes` across pods instead.
 

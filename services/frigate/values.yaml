@@ -54,7 +54,7 @@ config: |
         enabled: true
         retain:
           default: 14
-    
+
     garage_door:
       ffmpeg:
         inputs:
@@ -69,7 +69,7 @@ config: |
         retain:
           days: 7
           mode: all
-    
+
     side_gate:
       ffmpeg:
         inputs:
@@ -84,7 +84,7 @@ config: |
         retain:
           days: 7
           mode: all
-    
+
     backyard:
       ffmpeg:
         inputs:

@@ -43,13 +43,18 @@ jobs:
       - name: Template Charts
         run: helmfile template > /tmp/manifests.yaml
 
-        # validates rendered manifests against the kubernetes openapi spec.
-        # catches invalid api versions, wrong field names, and bad resource specs.
-      - name: Kubeconform
+      - name: Install Kube Validation Tools
         run: |
           curl -fsSL https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz | tar xz
           sudo mv kubeconform /usr/local/bin/
 
+          curl -fsSL https://github.com/stackrox/kube-linter/releases/latest/download/kube-linter-linux.tar.gz | tar xz
+          sudo mv kube-linter /usr/local/bin/
+
+        # validates rendered manifests against the kubernetes openapi spec.
+        # catches invalid api versions, wrong field names, and bad resource specs.
+      - name: Kubeconform
+        run: |
           kubeconform \
             -strict \
             -summary \
@@ -57,13 +62,13 @@ jobs:
             -kubernetes-version 1.31.0 \
             /tmp/manifests.yaml
 
+      - name: Validate Standalone Manifests
+        run: bash scripts/validate-manifests.sh
+
         # checks rendered manifests for security issues and best-practice violations
         # like missing resource limits, containers running as root, or missing probes.
       - name: Kube-linter
         run: |
-          curl -fsSL https://github.com/stackrox/kube-linter/releases/latest/download/kube-linter-linux.tar.gz | tar xz
-          sudo mv kube-linter /usr/local/bin/
-
           kube-linter lint --config .kube-linter.yaml /tmp/manifests.yaml
 
   helm-unittest:
@@ -84,14 +89,34 @@ jobs:
         run: helm unittest services/*/chart
 
   shellcheck:
-    name: Shellcheck
+    name: Shell And Workflow Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
 
+      - name: Lint GitHub Actions
+        uses: rhysd/actionlint@v1
+
       # simple bash linter to catch common scripting mistakes and enforce best practices
       - name: Run Shellcheck
         run: shellcheck scripts/*.sh
+
+  pre-commit:
+    name: Pre-commit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install pre-commit
+        run: python -m pip install pre-commit
+
+      - name: Run pre-commit
+        run: pre-commit run --all-files
 
   terraform:
     name: Terraform Validation

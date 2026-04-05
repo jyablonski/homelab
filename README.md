@@ -15,8 +15,21 @@ make up
 # Re-sync after config changes
 make sync
 
+# Run the fast local checks used by the pre-commit hook
+make validate-fast
+
+# Run the full local validation pass that mirrors CI
+make validate
+
 # Tear down everything (services, PVs, and K3s)
 make down
+```
+
+Install the local git hooks with:
+
+```bash
+pre-commit install
+pre-commit install --hook-type pre-push
 ```
 
 After deployment, find service IPs with:
@@ -68,7 +81,7 @@ homelab/
 ├── terraform/                    # Authentik OAuth2 provider config (WIP)
 ├── services/                     # Per-service Helm values and config options
 │   ├── prometheus/               # Each service gets its own directory
-│   └── ...                       # 
+│   └── ...                       #
 └── notes/                        # Hardware planning, Talos setup, scratch notes
 ```
 
