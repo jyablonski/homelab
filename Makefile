@@ -21,6 +21,49 @@ sync:
 	@echo "Syncing Helmfile..."
 	@helmfile sync
 
+# used to run the fast local checks that are reasonable on every commit
+.PHONY: validate-fast
+validate-fast:
+	@echo "Running fast validation..."
+	@if command -v shellcheck >/dev/null 2>&1; then \
+		shellcheck scripts/*.sh; \
+	else \
+		echo "Skipping shellcheck: not installed"; \
+	fi
+	@if command -v terraform >/dev/null 2>&1; then \
+		terraform -chdir=terraform fmt -check -diff; \
+	else \
+		echo "Skipping terraform fmt: terraform not installed"; \
+	fi
+
+# used to run the same validation flow locally that CI uses
+.PHONY: validate
+validate: validate-fast
+	@echo "Running full validation..."
+	@helmfile repos
+	@helmfile lint
+	@helmfile template > /tmp/homelab-manifests.yaml
+	@if command -v kubeconform >/dev/null 2>&1; then \
+		kubeconform -strict -summary -ignore-missing-schemas -kubernetes-version 1.31.0 /tmp/homelab-manifests.yaml; \
+	else \
+		echo "Skipping kubeconform: not installed"; \
+	fi
+	@if command -v kube-linter >/dev/null 2>&1; then \
+		kube-linter lint --config .kube-linter.yaml /tmp/homelab-manifests.yaml; \
+	else \
+		echo "Skipping kube-linter: not installed"; \
+	fi
+	@if command -v helm >/dev/null 2>&1 && helm plugin list 2>/dev/null | grep -q unittest; then \
+		helm unittest services/*/chart; \
+	else \
+		echo "Skipping helm unittest: helm-unittest plugin not installed"; \
+	fi
+	@if command -v kubeconform >/dev/null 2>&1 && command -v kube-linter >/dev/null 2>&1; then \
+		bash scripts/validate-manifests.sh; \
+	else \
+		echo "Skipping standalone manifest validation: kubeconform and/or kube-linter not installed"; \
+	fi
+
 # used to tear down the cluster
 .PHONY: down
 down:
