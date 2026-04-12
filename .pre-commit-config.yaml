@@ -4,7 +4,7 @@ repos:
     hooks:
       - id: check-yaml
         args: [--allow-multiple-documents]
-        exclude: ".*/chart/templates/.*"
+        exclude: '(^|.*/)(charts/.*/templates|services/.*/chart/templates)/.*\.ya?ml$'
       - id: end-of-file-fixer
       - id: trailing-whitespace
   - repo: https://github.com/rbubley/mirrors-prettier
@@ -12,7 +12,7 @@ repos:
     hooks:
       - id: prettier
         types_or: [yaml, markdown]
-        exclude: ".*/chart/templates/.*"
+        exclude: '(^|.*/)(charts/.*/templates|services/.*/chart/templates)/.*\.ya?ml$'
   - repo: local
     hooks:
       - id: validate-fast

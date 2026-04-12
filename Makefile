@@ -3,6 +3,12 @@
 
 up:
 	@echo "Starting up the application..."
+	@if ! command -v docker >/dev/null 2>&1; then \
+		echo "error: docker is required for app image builds during make up"; \
+		exit 1; \
+	fi
+	@echo "Configuring local registry host access..."
+	@bash ./scripts/setup-registry-home.sh
 	@echo "Creating k3s config directory..."
 	@sudo mkdir -p /etc/rancher/k3s
 	@echo "disable:" | sudo tee /etc/rancher/k3s/config.yaml
@@ -54,7 +60,7 @@ validate: validate-fast
 		echo "Skipping kube-linter: not installed"; \
 	fi
 	@if command -v helm >/dev/null 2>&1 && helm plugin list 2>/dev/null | grep -q unittest; then \
-		helm unittest services/*/chart; \
+		helm unittest charts/* services/*/chart; \
 	else \
 		echo "Skipping helm unittest: helm-unittest plugin not installed"; \
 	fi
@@ -74,3 +80,36 @@ down:
 .PHONY: update-charts
 update-charts:
 	@bash scripts/update-charts.sh
+
+# build or push an app-owned image from apps/<name>/Dockerfile
+.PHONY: image-build
+image-build:
+	@if [ -z "$(SERVICE)" ]; then \
+		echo "Usage: make image-build SERVICE=<app> [TAG=dev] [REGISTRY=registry.home:5000] [IMAGE_NAMESPACE=homelab]"; \
+		exit 1; \
+	fi
+	@bash scripts/service-image.sh build "$(SERVICE)" "$(or $(TAG),dev)" "$(or $(REGISTRY),registry.home:5000)" "$(or $(IMAGE_NAMESPACE),homelab)"
+
+.PHONY: image-push
+image-push:
+	@if [ -z "$(SERVICE)" ]; then \
+		echo "Usage: make image-push SERVICE=<app> [TAG=dev] [REGISTRY=registry.home:5000] [IMAGE_NAMESPACE=homelab]"; \
+		exit 1; \
+	fi
+	@bash scripts/service-image.sh push "$(SERVICE)" "$(or $(TAG),dev)" "$(or $(REGISTRY),registry.home:5000)" "$(or $(IMAGE_NAMESPACE),homelab)"
+
+.PHONY: image-build-push
+image-build-push:
+	@if [ -z "$(SERVICE)" ]; then \
+		echo "Usage: make image-build-push SERVICE=<app> [TAG=dev] [REGISTRY=registry.home:5000] [IMAGE_NAMESPACE=homelab]"; \
+		exit 1; \
+	fi
+	@bash scripts/service-image.sh build-push "$(SERVICE)" "$(or $(TAG),dev)" "$(or $(REGISTRY),registry.home:5000)" "$(or $(IMAGE_NAMESPACE),homelab)"
+
+.PHONY: image-ref
+image-ref:
+	@if [ -z "$(SERVICE)" ]; then \
+		echo "Usage: make image-ref SERVICE=<app> [TAG=dev] [REGISTRY=registry.home:5000] [IMAGE_NAMESPACE=homelab]"; \
+		exit 1; \
+	fi
+	@bash scripts/service-image.sh image-ref "$(SERVICE)" "$(or $(TAG),dev)" "$(or $(REGISTRY),registry.home:5000)" "$(or $(IMAGE_NAMESPACE),homelab)"

@@ -1,0 +1,75 @@
+image:
+  repository: registry.home:5000/homelab/lotus-frontend
+  tag: "dev"
+  pullPolicy: IfNotPresent
+
+replicaCount: 2
+
+containerPort: 3000
+
+env:
+  API_BASE_URL: https://lotus-api.home
+  NODE_ENV: production
+
+secretEnv:
+  - name: NEXT_PUBLIC_SENTRY_DSN
+    secretName: lotus-frontend-secrets
+    secretKey: next_public_sentry_dsn
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+startupProbe:
+  httpGet:
+    path: /
+    port: http
+  periodSeconds: 5
+  failureThreshold: 30
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+  periodSeconds: 10
+  failureThreshold: 3
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+  periodSeconds: 20
+  failureThreshold: 3
+
+service:
+  enabled: true
+  port: 80
+
+ingress:
+  enabled: true
+  className: traefik
+  hosts:
+    - host: lotus.home
+      paths:
+        - path: /
+          pathType: Prefix
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+
+serviceMonitor:
+  enabled: true
+  path: /metrics
+  interval: 30s
+  labels:
+    release: prometheus
+
+podLabels:
+  app.kubernetes.io/component: frontend

@@ -1,0 +1,11 @@
+service:
+  enabled: true
+
+ingress:
+  enabled: true
+  className: traefik
+  hosts:
+    - host: lotus.home
+      paths:
+        - path: /
+          pathType: Prefix

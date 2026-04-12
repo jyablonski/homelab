@@ -14,7 +14,7 @@ spec:
         spec:
           containers:
             - name: utc-logger
-              image: jyablonski/go-cron-test:latest
+              image: registry.home:5000/homelab/go-cron-test:dev
               imagePullPolicy: Always
               resources:
                 requests:

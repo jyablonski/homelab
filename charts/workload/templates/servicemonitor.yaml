@@ -1,0 +1,39 @@
+{{- if .Values.serviceMonitor.enabled }}
+{{- if not .Values.service.enabled }}
+{{- fail "serviceMonitor.enabled requires service.enabled" }}
+{{- end }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "workload.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "workload.labels" . | nindent 4 }}
+    {{- with .Values.serviceMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with .Values.serviceMonitor.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "workload.selectorLabels" . | nindent 6 }}
+  endpoints:
+    - port: {{ default .Values.portName .Values.serviceMonitor.port }}
+      path: {{ .Values.serviceMonitor.path | quote }}
+      scheme: {{ .Values.serviceMonitor.scheme | quote }}
+      interval: {{ .Values.serviceMonitor.interval | quote }}
+      {{- with .Values.serviceMonitor.scrapeTimeout }}
+      scrapeTimeout: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.serviceMonitor.relabelings }}
+      relabelings:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.serviceMonitor.metricRelabelings }}
+      metricRelabelings:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

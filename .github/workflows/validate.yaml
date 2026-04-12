@@ -86,7 +86,7 @@ jobs:
         run: helm plugin install https://github.com/helm-unittest/helm-unittest.git --version ${HELM_UNITTEST_VERSION}
 
       - name: Run unit tests
-        run: helm unittest services/*/chart
+        run: helm unittest charts/* services/*/chart
 
   shellcheck:
     name: Shell And Workflow Lint

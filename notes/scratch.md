@@ -106,7 +106,7 @@ helmfile -l debug sync
 ## Cronjobs
 
 ```sh
-kubectl apply -f services/go-cron-test/cronjob.yaml
+kubectl apply -f apps/go-cron-test/cronjob.yaml
 
 kubectl get cronjobs
 kubectl get jobs

@@ -1,0 +1,94 @@
+nameOverride: ""
+fullnameOverride: ""
+
+commonLabels: {}
+
+replicaCount: 1
+
+deploymentStrategy: {}
+
+image:
+  repository: ghcr.io/example/app
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+command: []
+args: []
+
+portName: http
+containerPort:
+
+hostPort:
+  enabled: false
+  port:
+  hostIP: ""
+
+env: {}
+envFrom: []
+secretEnv: []
+configMapEnv: []
+extraEnv: []
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+livenessProbe: {}
+readinessProbe: {}
+startupProbe: {}
+
+podLabels: {}
+podAnnotations: {}
+
+serviceAccount:
+  create: false
+  name: ""
+  annotations: {}
+  automount:
+
+service:
+  enabled: true
+  type: ClusterIP
+  annotations: {}
+  port: 80
+  targetPort:
+
+ingress:
+  enabled: false
+  className: traefik
+  annotations: {}
+  hosts: []
+  tls: []
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage:
+  behavior: {}
+
+serviceMonitor:
+  enabled: false
+  annotations: {}
+  labels: {}
+  interval: 30s
+  scrapeTimeout: ""
+  path: /metrics
+  scheme: http
+  port: ""
+  relabelings: []
+  metricRelabelings: []
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+extraVolumes: []
+extraVolumeMounts: []

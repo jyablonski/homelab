@@ -1,0 +1,4 @@
+mirrors:
+  "registry.home:5000":
+    endpoint:
+      - "http://registry.home:5000"
