@@ -7,12 +7,17 @@ up:
 		echo "error: docker is required for app image builds during make up"; \
 		exit 1; \
 	fi
+	@echo "Restoring default workstation DNS during cluster bootstrap..."
+	@bash ./scripts/setup-local-pihole-dns.sh disable
 	@echo "Configuring local registry host access..."
 	@bash ./scripts/setup-registry-home.sh
+	@echo "Configuring local ingress host access..."
+	@bash ./scripts/setup-ingress-home.sh
 	@echo "Creating k3s config directory..."
 	@sudo mkdir -p /etc/rancher/k3s
 	@echo "disable:" | sudo tee /etc/rancher/k3s/config.yaml
 	@echo "  - traefik" | sudo tee -a /etc/rancher/k3s/config.yaml
+	@echo "  - servicelb" | sudo tee -a /etc/rancher/k3s/config.yaml
 	@echo "Installing k3s..."
 	@curl -sfL https://get.k3s.io | sh -
 	@sleep 10
@@ -20,6 +25,11 @@ up:
 	@sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
 	@sudo chown $(shell echo $$USER):$(shell echo $$USER) ~/.kube/config
 	@./scripts/setup.sh
+	@echo "Waiting for Pi-hole deployment to become available..."
+	@kubectl -n pihole wait --for=condition=available deployment/pihole --timeout=180s
+	@echo "Enabling workstation Pi-hole DNS..."
+	@bash ./scripts/setup-local-pihole-dns.sh enable
+	@bash ./scripts/setup-local-pihole-dns.sh status
 
 # used to sync any helmfile changes to an existing cluster
 .PHONY: sync
@@ -74,6 +84,8 @@ validate: validate-fast
 .PHONY: down
 down:
 	@echo "Stopping the Cluster..."
+	@echo "Restoring default workstation DNS before cluster teardown..."
+	@bash ./scripts/setup-local-pihole-dns.sh disable
 	@sudo /usr/local/bin/k3s-uninstall.sh
 
 # check for helm chart updates; prompts y/n before writing helmfile.yaml
@@ -113,3 +125,15 @@ image-ref:
 		exit 1; \
 	fi
 	@bash scripts/service-image.sh image-ref "$(SERVICE)" "$(or $(TAG),dev)" "$(or $(REGISTRY),registry.home:5000)" "$(or $(IMAGE_NAMESPACE),homelab)"
+
+.PHONY: pihole-dns-enable
+pihole-dns-enable:
+	@bash ./scripts/setup-local-pihole-dns.sh enable
+
+.PHONY: pihole-dns-disable
+pihole-dns-disable:
+	@bash ./scripts/setup-local-pihole-dns.sh disable
+
+.PHONY: pihole-dns-status
+pihole-dns-status:
+	@bash ./scripts/setup-local-pihole-dns.sh status

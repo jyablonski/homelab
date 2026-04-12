@@ -1,6 +1,15 @@
 service:
-  type: LoadBalancer
+  type: ClusterIP
   port: 8085
+
+ingress:
+  enabled: true
+  ingressClassName: traefik
+  hosts:
+    - host: headlamp.home
+      paths:
+        - path: /
+          type: Prefix
 
 config:
   pluginsDir: ""

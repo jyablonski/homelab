@@ -12,12 +12,18 @@ hostPort:
   enabled: false
 
 service:
-  type: LoadBalancer
+  type: ClusterIP
   port: 8123
 
 ingress:
-  enabled: false
+  enabled: true
   external: false
+  className: traefik
+  hosts:
+    - host: homeassistant.home
+      paths:
+        - path: /
+          pathType: Prefix
 
 serviceMonitor:
   enabled: true
@@ -30,9 +36,18 @@ configuration:
   # Force merge of the chart-managed Prometheus integration into an existing
   # configuration.yaml so the ServiceMonitor has a real endpoint.
   forceInit: true
+  trusted_proxies:
+    - 10.42.0.0/16
   templateConfig: |-
     # Loads default set of integrations. Do not remove.
     default_config:
+
+    http:
+      use_x_forwarded_for: true
+      trusted_proxies:
+        {{- range .Values.configuration.trusted_proxies }}
+        - {{ . }}
+        {{- end }}
 
     frontend:
       themes: !include_dir_merge_named themes

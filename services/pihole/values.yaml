@@ -1,31 +1,52 @@
-ingress:
-  enabled: true
-  ingressClassName: traefik
-  hosts:
-    - pihole.com
-  paths:
-    - /
-
-persistentVolumeClaim:
-  enabled: true
-  storageClass: local-path
+replicaCount: 1
 
 adminPassword: pihole
 
-# Try these alternative service configurations
-service:
-  type: LoadBalancer
-
-# Or try this format:
-serviceWeb:
-  type: ClusterIP
+persistentVolumeClaim:
+  enabled: true
+  storageClass: longhorn
+  size: 2Gi
 
 serviceDns:
+  mixedService: true
   type: LoadBalancer
+  loadBalancerIP: 192.168.76.246
+  externalTrafficPolicy: Local
+
+serviceDhcp:
+  enabled: false
+
+serviceWeb:
+  type: ClusterIP
+  http:
+    enabled: true
+    port: 80
+  https:
+    enabled: false
+
+virtualHost: pihole.home
+
+ingress:
+  enabled: true
+  ingressClassName: traefik
+  path: /
+  pathType: Prefix
+  hosts:
+    - pihole.home
 
 dnsmasq:
+  enableCustomDnsMasq: true
   customDnsEntries:
-    - address=/homelab.com/192.168.76.132
-    - address=/grafana.com/192.168.76.132
-    - address=/prometheus.com/192.168.76.132
-    - address=/pihole.com/192.168.76.132
+    - address=/home/192.168.76.245
+    - address=/registry.home/192.168.76.250
+
+extraEnvVars:
+  FTLCONF_dns_listeningMode: "all"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 300m
+    memory: 256Mi

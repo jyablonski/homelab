@@ -101,6 +101,9 @@ tests:
       - equal:
           path: spec.type
           value: LoadBalancer
+      - equal:
+          path: spec.loadBalancerIP
+          value: 192.168.76.243
 
   - it: should have configmap with authentik bootstrap sql
     documentIndex: 1

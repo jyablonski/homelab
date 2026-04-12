@@ -20,7 +20,7 @@ This is a bare-bones example to test:
 - building and pushing an image to the local registry
 - scraping application metrics with Prometheus
 - collecting container stdout logs with Promtail/Loki
-- accessing the service on `localhost:10032` without `kubectl port-forward`
+- exposing an app-owned workload through Traefik on a shared `apps.home` host
 
 ## Build and push
 
@@ -34,30 +34,40 @@ make image-build-push SERVICE=workload-chart-example TAG=dev
 helmfile sync
 ```
 
-## Local curl test
+## Ingress curl test
 
-This example binds the pod to `127.0.0.1:10032` on the node via `hostPort`.
-Because that port can only be used by one pod at a time on a single node, the example also uses `deploymentStrategy.type: Recreate` to avoid rollout collisions during updates.
+This example is exposed at `http://apps.home/workload-chart/api`.
+Traefik strips the `/workload-chart/api` prefix before forwarding to the pod, so the Go app can keep serving its internal root-level routes:
 
-If your K3s node is the same machine where you are running `curl`, you can hit it directly:
+- `GET /random`
+- `GET /metrics`
+- `GET /health/live`
+- `GET /health/ready`
+
+`make up` runs `scripts/setup-ingress-home.sh`, which adds a persistent `/etc/hosts` entry for `apps.home` pointing at the pinned Traefik MetalLB IP. If you are syncing manually on a machine that has not run `make up`, run that script once or add the host entry yourself.
+
+Then you can hit it directly:
 
 ```bash
-curl http://localhost:10032/random
+curl http://apps.home/workload-chart/api/random
 ```
 
-You can also inspect metrics directly:
+You can also inspect health and metrics through the ingress path:
 
 ```bash
-curl http://localhost:10032/metrics
+curl http://apps.home/workload-chart/api/health/ready
+curl http://apps.home/workload-chart/api/metrics
 ```
 
 ## Metrics and logs
 
 - `/metrics` is served by the official Prometheus Go client library
-- Prometheus scraping is enabled through the chart `ServiceMonitor` and the internal `ClusterIP` service
+- Prometheus scraping is still enabled through the chart `ServiceMonitor` and the internal `ClusterIP` service
+- the liveness and readiness probes still hit the app's root-level health endpoints inside the cluster
 - Grafana can visualize the metrics through the existing Prometheus datasource
 - Request logs are written to stdout, so Promtail/Loki should ingest them automatically
+- the example now uses the chart HPA with a floor of 2 replicas and can scale up to 5 replicas at 80% average CPU utilization
 
 ## Important note
 
-`localhost:10032` only works on the machine that is actually running the pod. This example is meant for single-node or local-machine use, which is why it uses `replicaCount: 1` and an explicit `hostPort`.
+Because access now goes through a normal `ClusterIP` service plus Traefik ingress, this example no longer depends on `hostPort` or `deploymentStrategy.type: Recreate`. That removes the node-local port collision issue and gives the release a clean path to horizontal scaling.
