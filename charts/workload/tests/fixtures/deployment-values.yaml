@@ -1,0 +1,18 @@
+image:
+  repository: ghcr.io/acme/api
+  tag: "1.2.3"
+
+containerPort: 8080
+
+env:
+  LOG_LEVEL: info
+
+secretEnv:
+  - name: DATABASE_URL
+    secretName: acme-api
+    secretKey: database_url
+
+configMapEnv:
+  - name: FEATURE_FLAG
+    configMapName: acme-config
+    configMapKey: feature_flag

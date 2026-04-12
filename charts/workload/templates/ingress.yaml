@@ -22,9 +22,8 @@ spec:
   {{- end }}
   rules:
     {{- range .Values.ingress.hosts }}
-    -{{- with .host }}
-      host: {{ . | quote }}
-      {{- end }}
+    {{- if .host }}
+    - host: {{ .host | quote }}
       http:
         paths:
           {{- range .paths }}
@@ -36,6 +35,19 @@ spec:
                 port:
                   number: {{ $.Values.service.port }}
           {{- end }}
+    {{- else }}
+    - http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path | quote }}
+            pathType: {{ default "Prefix" .pathType }}
+            backend:
+              service:
+                name: {{ include "workload.fullname" $ }}
+                port:
+                  number: {{ $.Values.service.port }}
+          {{- end }}
+    {{- end }}
     {{- end }}
   {{- with .Values.ingress.tls }}
   tls:

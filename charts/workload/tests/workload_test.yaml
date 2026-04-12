@@ -3,17 +3,8 @@ templates:
   - templates/deployment.yaml
 tests:
   - it: renders a deployment with the requested image, env, and container port
-    set:
-      image.repository: ghcr.io/acme/api
-      image.tag: "1.2.3"
-      containerPort: 8080
-      env.LOG_LEVEL: info
-      secretEnv[0].name: DATABASE_URL
-      secretEnv[0].secretName: acme-api
-      secretEnv[0].secretKey: database_url
-      configMapEnv[0].name: FEATURE_FLAG
-      configMapEnv[0].configMapName: acme-config
-      configMapEnv[0].configMapKey: feature_flag
+    values:
+      - fixtures/deployment-values.yaml
     asserts:
       - isKind:
           of: Deployment
@@ -26,15 +17,27 @@ tests:
       - equal:
           path: spec.template.spec.containers[0].ports[0].containerPort
           value: 8080
-      - equal:
-          path: spec.template.spec.containers[0].env[0].name
-          value: LOG_LEVEL
-      - equal:
-          path: spec.template.spec.containers[0].env[1].valueFrom.secretKeyRef.name
-          value: acme-api
-      - equal:
-          path: spec.template.spec.containers[0].env[2].valueFrom.configMapKeyRef.name
-          value: acme-config
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LOG_LEVEL
+            value: info
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DATABASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: acme-api
+                key: database_url
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: FEATURE_FLAG
+            valueFrom:
+              configMapKeyRef:
+                name: acme-config
+                key: feature_flag
 
   - it: omits replicas when autoscaling is enabled
     set:
@@ -74,8 +77,9 @@ tests:
       - equal:
           path: spec.strategy.type
           value: Recreate
-      - isNull:
+      - equal:
           path: spec.strategy.rollingUpdate
+          value: null
 ---
 suite: workload service
 templates:
@@ -134,13 +138,8 @@ templates:
   - templates/ingress.yaml
 tests:
   - it: renders an ingress with the configured host and class
-    set:
-      service.enabled: true
-      ingress.enabled: true
-      ingress.className: traefik
-      ingress.hosts[0].host: lotus.home
-      ingress.hosts[0].paths[0].path: /
-      ingress.hosts[0].paths[0].pathType: Prefix
+    values:
+      - fixtures/ingress-values.yaml
     asserts:
       - isKind:
           of: Ingress
