@@ -93,8 +93,6 @@ releases:
 - Resource names default to the Helm release name, so a release named `lotus-frontend` renders to `lotus-frontend` rather than `lotus-frontend-workload`.
 - The chart gives first-class values to the common cases and keeps only a small escape hatch for mounted config through `extraVolumes` and `extraVolumeMounts`.
 - Replicated or autoscaled workloads get a default preferred pod anti-affinity unless you provide an explicit `affinity:` block, which keeps the chart aligned with this repo's linting and HA direction.
-- `hostPort` is available as an opt-in escape hatch for cases where you intentionally want a workload reachable on the node itself, including `localhost` when the node is the same machine. It is not the default because it constrains scheduling and port reuse.
-- If you use `hostPort` on a single node, prefer `deploymentStrategy.type: Recreate` in the service values. Default rolling updates briefly create a second pod, which cannot bind the same host port on the same node.
 - For app-owned services in this repo, the clean default is a normal `ClusterIP` service plus Traefik ingress. If you want a shared `apps.home` host with per-app path prefixes, the chart can attach a Traefik `StripPrefix` middleware so the application still serves `/`-rooted routes internally.
 - If a workload eventually needs a different controller type, multiple ports, sidecars, or persistence, that is a good signal for a separate chart rather than stretching this one too far.
 

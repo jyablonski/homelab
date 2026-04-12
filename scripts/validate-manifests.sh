@@ -9,13 +9,11 @@ for cmd in kubeconform kube-linter mktemp; do
 done
 
 standalone_manifests=(
-  services/grafana/ingress.yaml
-  services/home-assistant/ingress.yaml
   services/metallb/ip-pool.yaml
   apps/go-cron-test/cronjob.yaml
 )
 
-tmp_manifest="$(mktemp)"
+tmp_manifest="$(mktemp /tmp/homelab-standalone-manifests.XXXXXX.yaml)"
 trap 'rm -f "$tmp_manifest"' EXIT
 
 for manifest in "${standalone_manifests[@]}"; do
