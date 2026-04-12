@@ -1,0 +1,5 @@
+apiVersion: v2
+name: workload
+description: Reusable single-workload Helm chart for application services
+type: application
+version: 0.1.0

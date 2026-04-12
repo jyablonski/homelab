@@ -12,7 +12,7 @@ standalone_manifests=(
   services/grafana/ingress.yaml
   services/home-assistant/ingress.yaml
   services/metallb/ip-pool.yaml
-  services/go-cron-test/cronjob.yaml
+  apps/go-cron-test/cronjob.yaml
 )
 
 tmp_manifest="$(mktemp)"

@@ -17,10 +17,14 @@ repositories:
     url: https://kubernetes-sigs.github.io/headlamp/
   - name: authentik
     url: https://charts.goauthentik.io
+  - name: twuni
+    url: https://twuni.github.io/docker-registry.helm
 releases:
   - name: prometheus-operator
     namespace: monitoring
     createNamespace: true
+    labels:
+      bootstrap: infra
     chart: prometheus-community/kube-prometheus-stack
     version: 82.10.2
     values:
@@ -36,12 +40,16 @@ releases:
           - services/grafana/dashboards/
   - name: loki
     namespace: monitoring
+    labels:
+      bootstrap: infra
     chart: grafana/loki
     version: 6.53.0
     values:
       - services/loki/values.yaml
   - name: promtail
     namespace: monitoring
+    labels:
+      bootstrap: infra
     chart: grafana/promtail
     version: 6.17.1
     values:
@@ -49,6 +57,8 @@ releases:
   - name: postgres
     namespace: postgres
     createNamespace: true
+    labels:
+      bootstrap: infra
     chart: ./services/postgres/chart
     needs:
       - longhorn-system/longhorn
@@ -56,6 +66,8 @@ releases:
   - name: home-assistant
     namespace: home-automation
     createNamespace: true
+    labels:
+      bootstrap: infra
     chart: pajikos/home-assistant
     version: 0.3.47
     values:
@@ -74,12 +86,41 @@ releases:
   - name: longhorn
     namespace: longhorn-system
     createNamespace: true
+    labels:
+      bootstrap: infra
     chart: longhorn/longhorn
     version: 1.11.0
     values:
       - services/longhorn/values.yaml
+  - name: registry
+    namespace: registry
+    createNamespace: true
+    labels:
+      bootstrap: infra
+    chart: twuni/docker-registry
+    version: 3.0.0
+    values:
+      - services/registry/values.yaml
+    needs:
+      - longhorn-system/longhorn
+      - metallb-system/metallb
+      - monitoring/prometheus-operator
+    wait: true
+  - name: workload-chart-example
+    namespace: apps
+    createNamespace: true
+    labels:
+      bootstrap: app
+    chart: ./charts/workload
+    values:
+      - apps/workload-chart-example/values.yaml
+    needs:
+      - monitoring/prometheus-operator
+      - registry/registry
   - name: traefik
     namespace: kube-system
+    labels:
+      bootstrap: infra
     chart: traefik/traefik
     version: 39.0.5
     values:
@@ -87,6 +128,8 @@ releases:
   - name: metallb
     namespace: metallb-system
     createNamespace: true
+    labels:
+      bootstrap: infra
     chart: metallb/metallb
     version: 0.15.3
     values:
@@ -103,6 +146,8 @@ releases:
             kubectl apply -f services/metallb/ip-pool.yaml
   - name: headlamp
     namespace: kube-system
+    labels:
+      bootstrap: infra
     chart: headlamp/headlamp
     version: 0.40.0
     values:
@@ -110,6 +155,8 @@ releases:
   - name: authentik
     namespace: authentik
     createNamespace: true
+    labels:
+      bootstrap: infra
     chart: authentik/authentik
     version: 2026.2.1
     values:

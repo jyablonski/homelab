@@ -25,6 +25,25 @@ serviceMonitor:
   labels:
     release: prometheus
 
+configuration:
+  enabled: true
+  # Force merge of the chart-managed Prometheus integration into an existing
+  # configuration.yaml so the ServiceMonitor has a real endpoint.
+  forceInit: true
+  templateConfig: |-
+    # Loads default set of integrations. Do not remove.
+    default_config:
+
+    frontend:
+      themes: !include_dir_merge_named themes
+
+    automation: !include automations.yaml
+    script: !include scripts.yaml
+    scene: !include scenes.yaml
+
+    prometheus:
+      requires_auth: false
+
 # TODO: leave at 1 even in HA, home assistant is stateful because the local devices
 # can only connect to 1 instance. the HA lives in longhorn storing the data w/ multiple
 # replicas incase of failure.

@@ -1,0 +1,59 @@
+image:
+  repository: registry.home:5000/homelab/workload-chart-example
+  tag: "dev"
+  pullPolicy: Always
+
+replicaCount: 1
+
+deploymentStrategy:
+  type: Recreate
+
+containerPort: 8080
+
+hostPort:
+  enabled: true
+  port: 10032
+  hostIP: 127.0.0.1
+
+env:
+  PORT: "8080"
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 64Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi
+
+readinessProbe:
+  httpGet:
+    path: /health/ready
+    port: http
+  periodSeconds: 10
+  failureThreshold: 3
+
+livenessProbe:
+  httpGet:
+    path: /health/live
+    port: http
+  periodSeconds: 20
+  failureThreshold: 3
+
+service:
+  enabled: true
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: false
+
+serviceMonitor:
+  enabled: true
+  path: /metrics
+  interval: 30s
+  labels:
+    release: prometheus
+
+podLabels:
+  app.kubernetes.io/component: api

@@ -1,0 +1,83 @@
+image:
+  repository: registry.home:5000/homelab/lotus-api
+  tag: "dev"
+  pullPolicy: IfNotPresent
+
+replicaCount: 2
+
+command:
+  - gunicorn
+args:
+  - lotus.wsgi:application
+  - --bind=0.0.0.0:8000
+  - --workers=2
+
+containerPort: 8000
+
+env:
+  DJANGO_SETTINGS_MODULE: lotus.settings.production
+
+envFrom:
+  - configMapRef:
+      name: lotus-api-config
+  - secretRef:
+      name: lotus-api-secrets
+
+secretEnv:
+  - name: DATABASE_URL
+    secretName: lotus-api-secrets
+    secretKey: database_url
+  - name: REDIS_URL
+    secretName: lotus-api-secrets
+    secretKey: redis_url
+
+configMapEnv:
+  - name: LOG_LEVEL
+    configMapName: lotus-api-config
+    configMapKey: log_level
+    optional: true
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+readinessProbe:
+  httpGet:
+    path: /health/ready
+    port: http
+  periodSeconds: 10
+  failureThreshold: 3
+
+livenessProbe:
+  httpGet:
+    path: /health/live
+    port: http
+  periodSeconds: 20
+  failureThreshold: 3
+
+service:
+  enabled: true
+  port: 8000
+
+ingress:
+  enabled: false
+
+serviceAccount:
+  create: true
+
+extraVolumes:
+  - name: lotus-api-settings
+    configMap:
+      name: lotus-api-settings
+
+extraVolumeMounts:
+  - name: lotus-api-settings
+    mountPath: /app/config
+    readOnly: true
+
+podLabels:
+  app.kubernetes.io/component: api
