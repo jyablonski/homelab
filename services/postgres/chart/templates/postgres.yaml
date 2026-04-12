@@ -115,6 +115,9 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   type: LoadBalancer
+  {{- with .Values.loadBalancerService.loadBalancerIP }}
+  loadBalancerIP: {{ . }}
+  {{- end }}
   selector:
     app: postgres
   ports:

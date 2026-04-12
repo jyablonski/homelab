@@ -16,8 +16,16 @@ prometheus:
         cpu: 200m
         memory: 512Mi
   service:
-    type: LoadBalancer
+    type: ClusterIP
     port: 9090
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts:
+      - prometheus.home
+    paths:
+      - /
+    pathType: Prefix
 
 alertmanager:
   enabled: false
@@ -27,8 +35,13 @@ pushgateway:
 
 grafana:
   service:
-    type: LoadBalancer
+    type: ClusterIP
     port: 3000
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts:
+      - grafana.home
   adminPassword: admin
   additionalDataSources:
     - name: Loki

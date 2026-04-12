@@ -7,7 +7,7 @@ Reusable Helm chart for a single deployable application workload. It is designed
 - Single `Deployment`
 - Single application container
 - Optional `Service`
-- Optional `Ingress`
+- Optional `Ingress`, including a small Traefik strip-prefix helper for shared-host path routing
 - Optional HPA
 - Optional `ServiceMonitor`
 - Plain env vars, secret-backed env vars, and `envFrom`
@@ -93,9 +93,43 @@ releases:
 - Resource names default to the Helm release name, so a release named `lotus-frontend` renders to `lotus-frontend` rather than `lotus-frontend-workload`.
 - The chart gives first-class values to the common cases and keeps only a small escape hatch for mounted config through `extraVolumes` and `extraVolumeMounts`.
 - Replicated or autoscaled workloads get a default preferred pod anti-affinity unless you provide an explicit `affinity:` block, which keeps the chart aligned with this repo's linting and HA direction.
-- `hostPort` is available as an opt-in escape hatch for cases where you intentionally want a workload reachable on the node itself, including `localhost` when the node is the same machine. It is not the default because it constrains scheduling and port reuse.
-- If you use `hostPort` on a single node, prefer `deploymentStrategy.type: Recreate` in the service values. Default rolling updates briefly create a second pod, which cannot bind the same host port on the same node.
+- For app-owned services in this repo, the clean default is a normal `ClusterIP` service plus Traefik ingress. If you want a shared `apps.home` host with per-app path prefixes, the chart can attach a Traefik `StripPrefix` middleware so the application still serves `/`-rooted routes internally.
 - If a workload eventually needs a different controller type, multiple ports, sidecars, or persistence, that is a good signal for a separate chart rather than stretching this one too far.
+
+## Ingress patterns
+
+Host-based ingress works well for standalone UIs:
+
+```yaml
+ingress:
+  enabled: true
+  className: traefik
+  hosts:
+    - host: lotus.home
+      paths:
+        - path: /
+          pathType: Prefix
+```
+
+For app-owned APIs on the shared `apps.home` host, use a path prefix and let Traefik strip it before the request reaches the pod:
+
+```yaml
+ingress:
+  enabled: true
+  className: traefik
+  hosts:
+    - host: apps.home
+      paths:
+        - path: /lotus-api/api
+          pathType: Prefix
+  traefik:
+    stripPrefix:
+      enabled: true
+      prefixes:
+        - /lotus-api/api
+```
+
+That keeps the application code, probes, and `ServiceMonitor` paths simple because they can continue to use `/health/*`, `/metrics`, and other root-level routes internally.
 
 ## Examples
 

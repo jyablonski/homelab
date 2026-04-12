@@ -3,17 +3,9 @@ image:
   tag: "dev"
   pullPolicy: Always
 
-replicaCount: 1
-
-deploymentStrategy:
-  type: Recreate
+replicaCount: 2
 
 containerPort: 8080
-
-hostPort:
-  enabled: true
-  port: 10032
-  hostIP: 127.0.0.1
 
 env:
   PORT: "8080"
@@ -25,6 +17,12 @@ resources:
   limits:
     cpu: 100m
     memory: 128Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
 
 readinessProbe:
   httpGet:
@@ -45,8 +43,20 @@ service:
   type: ClusterIP
   port: 8080
 
+# this means the app will be available at http://apps.home/workload-chart/api
 ingress:
-  enabled: false
+  enabled: true
+  className: traefik
+  hosts:
+    - host: apps.home
+      paths:
+        - path: /workload-chart/api
+          pathType: Prefix
+  traefik:
+    stripPrefix:
+      enabled: true
+      prefixes:
+        - /workload-chart/api
 
 serviceMonitor:
   enabled: true

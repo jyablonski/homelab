@@ -1,0 +1,22 @@
+{{- $stripPrefix := .Values.ingress.traefik.stripPrefix | default dict }}
+{{- if and (not .Values.ingress.enabled) $stripPrefix.enabled }}
+{{- fail "ingress.traefik.stripPrefix.enabled requires ingress.enabled" }}
+{{- end }}
+{{- if and .Values.ingress.enabled $stripPrefix.enabled }}
+{{- if eq (len $stripPrefix.prefixes) 0 }}
+{{- fail "ingress.traefik.stripPrefix.enabled requires at least one ingress.traefik.stripPrefix.prefixes entry" }}
+{{- end }}
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "workload.traefikStripPrefixMiddlewareName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "workload.labels" . | nindent 4 }}
+spec:
+  stripPrefix:
+    prefixes:
+      {{- range $stripPrefix.prefixes }}
+      - {{ . | quote }}
+      {{- end }}
+{{- end }}

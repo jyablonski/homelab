@@ -35,3 +35,11 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- default "" .Values.serviceAccount.name -}}
 {{- end -}}
 {{- end -}}
+
+{{- define "workload.traefikStripPrefixMiddlewareName" -}}
+{{- printf "%s-strip-prefix" (include "workload.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- define "workload.traefikStripPrefixMiddlewareRef" -}}
+{{- printf "%s-%s@kubernetescrd" .Release.Namespace (include "workload.traefikStripPrefixMiddlewareName" .) -}}
+{{- end -}}

@@ -152,6 +152,37 @@ tests:
       - equal:
           path: spec.rules[0].http.paths[0].backend.service.name
           value: RELEASE-NAME
+  - it: renders a Traefik strip-prefix middleware and annotation for path-routed apps
+    values:
+      - fixtures/ingress-strip-prefix-values.yaml
+    release:
+      name: workload-chart-example
+      namespace: apps
+    asserts:
+      - equal:
+          path: metadata.annotations
+          value:
+            traefik.ingress.kubernetes.io/router.middlewares: apps-workload-chart-example-strip-prefix@kubernetescrd
+---
+suite: workload ingress middleware
+templates:
+  - templates/ingress-middleware.yaml
+tests:
+  - it: renders a Traefik strip-prefix middleware for path-routed apps
+    values:
+      - fixtures/ingress-strip-prefix-values.yaml
+    release:
+      name: workload-chart-example
+      namespace: apps
+    asserts:
+      - isKind:
+          of: Middleware
+      - equal:
+          path: metadata.name
+          value: workload-chart-example-strip-prefix
+      - equal:
+          path: spec.stripPrefix.prefixes[0]
+          value: /workload-chart/api
 ---
 suite: workload hpa
 templates:

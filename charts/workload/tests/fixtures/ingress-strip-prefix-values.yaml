@@ -1,0 +1,16 @@
+service:
+  enabled: true
+
+ingress:
+  enabled: true
+  className: traefik
+  hosts:
+    - host: apps.home
+      paths:
+        - path: /workload-chart/api
+          pathType: Prefix
+  traefik:
+    stripPrefix:
+      enabled: true
+      prefixes:
+        - /workload-chart/api

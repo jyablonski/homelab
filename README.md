@@ -25,24 +25,76 @@ make validate
 make down
 ```
 
-Install the local git hooks with:
+`make up` bootstraps persistent local host mappings for the pinned homelab endpoints:
+
+- `registry.home` -> `192.168.76.250`
+- `apps.home` -> `192.168.76.245`
+
+Those `/etc/hosts` entries stay in place across repeated `make down` / `make up` cycles. The IPs stay stable because both the registry and Traefik are pinned inside the MetalLB pool.
+
+`make up` also flips this workstation to the in-cluster Pi-hole automatically after Pi-hole is healthy, and `make down` flips it back to normal DHCP-provided DNS before teardown.
+
+If you need to toggle that behavior manually on this machine, use:
 
 ```bash
-pre-commit install
-pre-commit install --hook-type pre-push
+make pihole-dns-enable
+make pihole-dns-disable
+make pihole-dns-status
+```
+
+That points this machine's active NetworkManager connection at the cluster Pi-hole DNS service without changing the rest of the LAN. This enables all services to be accessible by their `.home` hostnames without additional configuration on this machine.
+
+## Network Flow
+
+Example request flow. Most browser-facing services resolve through Pi-hole and route through Traefik, while a few direct endpoints like the local registry still bypass Traefik.
+
+- Pi-hole handles all DNS for the `.home` domain, resolving to cluster services or forwarding to upstream DNS as needed.
+- Traefik routes incoming HTTP requests by hostname to the appropriate ClusterIP services.
+
+```mermaid
+flowchart LR
+  subgraph Client["Workstation"]
+    browser["Browser / curl"]
+    docker["Docker build / push"]
+  end
+
+  subgraph Cluster["K3s Cluster"]
+    pihole["Pi-hole DNS<br/>192.168.76.246:53"]
+    traefik["Traefik ingress<br/>192.168.76.245:80/443"]
+    app["workload-chart-example<br/>ClusterIP service"]
+    grafana["Grafana<br/>ClusterIP service"]
+    prometheus["Prometheus<br/>ClusterIP service"]
+    homeassistant["Home Assistant<br/>ClusterIP service"]
+    registry["Registry<br/>192.168.76.250:5000"]
+  end
+
+  browser -. "DNS lookup for *.home" .-> pihole
+  pihole -. "apps.home, grafana.home,<br/>prometheus.home, homeassistant.home, ..." .-> browser
+
+  browser -->|"HTTP Host: apps.home,<br/>grafana.home, prometheus.home, ..."| traefik
+  traefik --> app
+  traefik --> grafana
+  traefik --> prometheus
+  traefik --> homeassistant
+
+  docker -. "DNS lookup for registry.home" .-> pihole
+  pihole -. "registry.home -> 192.168.76.250" .-> docker
+  docker -->|"push/pull registry.home:5000"| registry
 ```
 
 ### Default Access
 
-| Service        | Access                                        | Credentials                                                     |
-| -------------- | --------------------------------------------- | --------------------------------------------------------------- |
-| Grafana        | [localhost:3000](http://localhost:3000)       | admin / admin                                                   |
-| Prometheus     | [localhost:9090](http://localhost:9090)       | —                                                               |
-| Home Assistant | [localhost:8123](http://localhost:8123)       | Setup on first visit                                            |
-| Headlamp       | [localhost:8085](http://localhost:8085)       | `kubectl create token headlamp -n kube-system --duration=8760h` |
-| Longhorn UI    | [localhost:30085](http://localhost:30085)     | —                                                               |
-| Frigate        | [localhost:5000](http://localhost:5000)       | —                                                               |
-| PostgreSQL     | [localhost:5432](postgresql://localhost:5432) | postgres / postgres                                             |
+| Service        | Access                                          | Credentials                                                     |
+| -------------- | ----------------------------------------------- | --------------------------------------------------------------- |
+| Grafana        | [grafana.home](http://grafana.home)             | admin / admin                                                   |
+| Prometheus     | [prometheus.home](http://prometheus.home)       | —                                                               |
+| Home Assistant | [homeassistant.home](http://homeassistant.home) | Setup on first visit                                            |
+| Headlamp       | [headlamp.home](http://headlamp.home)           | `kubectl create token headlamp -n kube-system --duration=8760h` |
+| Longhorn UI    | [longhorn.home](http://longhorn.home)           | —                                                               |
+| Pi-hole        | [pihole.home/admin/](http://pihole.home/admin/) | admin / `pihole`                                                |
+| Apps           | [apps.home](http://apps.home)                   | —                                                               |
+| Frigate        | Not deployed by default                         | —                                                               |
+| PostgreSQL     | [localhost:5432](postgresql://localhost:5432)   | postgres / postgres                                             |
 
 ## Services
 
@@ -115,7 +167,6 @@ make image-ref SERVICE=lotus-api TAG=dev
 
 ## Roadmap
 
-- **Local DNS** — Pi-hole resolving `*.home` hostnames so services are reachable by name instead of IP
 - **Multi-node HA** — Expand to 3 nodes with Longhorn replication and pod anti-affinity
 - **Authentik SSO** — OIDC integration across Grafana, Headlamp, and other services
 - **Backups** — Velero for cluster resource and PV snapshots

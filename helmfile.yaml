@@ -74,15 +74,6 @@ releases:
       - services/home-assistant/values.yaml
     needs:
       - monitoring/prometheus-operator
-    hooks:
-      - events:
-          - postsync
-        showlogs: true
-        command: kubectl
-        args:
-          - apply
-          - -f
-          - services/home-assistant/ingress.yaml
   - name: longhorn
     namespace: longhorn-system
     createNamespace: true
@@ -105,6 +96,20 @@ releases:
       - longhorn-system/longhorn
       - metallb-system/metallb
       - monitoring/prometheus-operator
+    wait: true
+  - name: pihole
+    namespace: pihole
+    createNamespace: true
+    labels:
+      bootstrap: infra
+    chart: mojo2600/pihole
+    version: 2.35.0
+    values:
+      - services/pihole/values.yaml
+    needs:
+      - longhorn-system/longhorn
+      - metallb-system/metallb
+      - kube-system/traefik
     wait: true
   - name: workload-chart-example
     namespace: apps

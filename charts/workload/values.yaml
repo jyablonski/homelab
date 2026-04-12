@@ -65,6 +65,10 @@ ingress:
   annotations: {}
   hosts: []
   tls: []
+  traefik:
+    stripPrefix:
+      enabled: false
+      prefixes: []
 
 autoscaling:
   enabled: false
