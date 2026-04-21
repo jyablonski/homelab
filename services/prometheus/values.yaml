@@ -42,7 +42,6 @@ grafana:
     ingressClassName: traefik
     hosts:
       - grafana.home
-  adminPassword: admin
   additionalDataSources:
     - name: Loki
       type: loki

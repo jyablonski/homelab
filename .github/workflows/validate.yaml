@@ -9,6 +9,8 @@ on:
 env:
   HELMFILE_VERSION: v1.2.3
   HELM_VERSION: v3.19.4
+  HELM_SECRETS_VERSION: v4.6.11
+  SOPS_VERSION: v3.12.2
   KUBECONFORM_VERSION: v0.7.0
   HELM_UNITTEST_VERSION: v1.0.3
   TERRAFORM_VERSION: 1.14.7
@@ -29,6 +31,39 @@ jobs:
         run: |
           curl -fsSL https://github.com/helmfile/helmfile/releases/download/${HELMFILE_VERSION}/helmfile_${HELMFILE_VERSION#v}_linux_amd64.tar.gz | tar xz
           sudo mv helmfile /usr/local/bin/
+
+      - name: Install SOPS Tools
+        run: |
+          helm plugin install https://github.com/jkroepke/helm-secrets.git --version ${HELM_SECRETS_VERSION}
+
+          curl -fsSL \
+            -o sops \
+            https://github.com/getsops/sops/releases/download/${SOPS_VERSION}/sops-${SOPS_VERSION}.linux.amd64
+          chmod +x sops
+          sudo mv sops /usr/local/bin/
+
+      # setting sops age key from repo secret so helmfile can decrypt secrets during validation
+      - name: Configure SOPS Age Key
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        run: |
+          if [ -z "${SOPS_AGE_KEY}" ]; then
+            echo "::error::SOPS_AGE_KEY repository secret is required to decrypt Helmfile secrets in CI."
+            exit 1
+          fi
+
+          install -d -m 700 "${RUNNER_TEMP}/sops"
+          printf '%s\n' "${SOPS_AGE_KEY}" > "${RUNNER_TEMP}/sops/age-keys.txt"
+          chmod 600 "${RUNNER_TEMP}/sops/age-keys.txt"
+          echo "SOPS_AGE_KEY_FILE=${RUNNER_TEMP}/sops/age-keys.txt" >> "${GITHUB_ENV}"
+
+      # validation check to ensure an expected value can be decrypted from a sops file
+      - name: Validate SOPS Secret Decryption
+        run: |
+          if [ "$(sops --decrypt --extract '["grafana"]["adminPassword"]' services/prometheus/secrets.sops.yaml)" != "admin" ]; then
+            echo "::error::Failed to decrypt expected Grafana admin password from services/prometheus/secrets.sops.yaml."
+            exit 1
+          fi
 
         # validates all repos are valid and reachable
       - name: Add Helm Repos

@@ -28,7 +28,5 @@ postgresql:
     size: 4Gi
     storageClass: local-path
   auth:
-    postgresPassword: postgres # password for "postgres" admin user (keep secure)
     username: keycloak # custom DB user Keycloak will use
-    password: keycloak # password for the custom user (replace with strong one)
     database: keycloak # custom database name for Keycloak

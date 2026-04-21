@@ -1,5 +1,4 @@
 authentik:
-  secret_key: "local-dev-secret-key-not-secure"
   error_reporting:
     enabled: false
 
@@ -7,7 +6,6 @@ authentik:
     host: "postgres.postgres.svc.cluster.local"
     name: "authentik"
     user: "authentik"
-    password: "password"
 
   redis:
     host: "authentik-redis-master"

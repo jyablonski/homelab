@@ -6,8 +6,19 @@ metadata:
   namespace: {{ .Release.Namespace }}
 type: Opaque
 stringData:
-  username: postgres
-  password: postgres
+  username: {{ required "postgres.username is required" .Values.postgres.username | quote }}
+  password: {{ required "postgres.password is required" .Values.postgres.password | quote }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: authentik-db-secret
+  namespace: {{ .Release.Namespace }}
+type: Opaque
+stringData:
+  database: {{ required "authentik.database.name is required" .Values.authentik.database.name | quote }}
+  username: {{ required "authentik.database.username is required" .Values.authentik.database.username | quote }}
+  password: {{ required "authentik.database.password is required" .Values.authentik.database.password | quote }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -15,11 +26,20 @@ metadata:
   name: postgres-init
   namespace: {{ .Release.Namespace }}
 data:
-  01-authentik.sql: |
-    CREATE DATABASE authentik;
-    CREATE USER authentik WITH PASSWORD 'password';
-    GRANT ALL PRIVILEGES ON DATABASE authentik TO authentik;
-    ALTER DATABASE authentik OWNER TO authentik;
+  01-authentik.sh: |
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    psql \
+      --username "$POSTGRES_USER" \
+      --set=authentik_db_name="$AUTHENTIK_DB_NAME" \
+      --set=authentik_db_user="$AUTHENTIK_DB_USER" \
+      --set=authentik_db_password="$AUTHENTIK_DB_PASSWORD" <<'SQL'
+    CREATE DATABASE :"authentik_db_name";
+    CREATE USER :"authentik_db_user" WITH PASSWORD :'authentik_db_password';
+    GRANT ALL PRIVILEGES ON DATABASE :"authentik_db_name" TO :"authentik_db_user";
+    ALTER DATABASE :"authentik_db_name" OWNER TO :"authentik_db_user";
+    SQL
   02-bootstrap.sql: |
 {{ .Files.Get "files/bootstrap.sql" | indent 4 }}
 ---
@@ -65,6 +85,21 @@ spec:
                 secretKeyRef:
                   name: postgres-secret
                   key: password
+            - name: AUTHENTIK_DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: authentik-db-secret
+                  key: database
+            - name: AUTHENTIK_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: authentik-db-secret
+                  key: username
+            - name: AUTHENTIK_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: authentik-db-secret
+                  key: password
             - name: POSTGRES_DB
               value: postgres
             - name: PGDATA
@@ -85,6 +120,7 @@ spec:
         - name: init
           configMap:
             name: postgres-init
+            defaultMode: 0555
   volumeClaimTemplates:
     - metadata:
         name: data

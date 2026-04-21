@@ -44,6 +44,26 @@ make pihole-dns-status
 
 That points this machine's active NetworkManager connection at the cluster Pi-hole DNS service without changing the rest of the LAN. This enables all services to be accessible by their `.home` hostnames without additional configuration on this machine.
 
+## Secrets
+
+Sensitive Helm values live in encrypted `secrets.sops.yaml` files next to each service's `values.yaml`.
+
+When Helmfile syncs, it decrypts and merges any `secrets.sops.yaml` files it finds into the release values. This keeps secrets out of plaintext Git history while still allowing them to be managed alongside regular config.
+
+To create or edit a sops secrets file, run:
+
+```bash
+sops services/<service>/secrets.sops.yaml
+```
+
+To view decrypted contents:
+
+```bash
+sops -d services/<service>/secrets.sops.yaml
+```
+
+Add new secret files to the release's `secrets:` list in `helmfile.yaml` so Helmfile decrypts and merges them during `helmfile sync`.
+
 ## Network Flow
 
 Example request flow. Most browser-facing services resolve through Pi-hole and route through Traefik, while a few direct endpoints like the local registry still bypass Traefik.
