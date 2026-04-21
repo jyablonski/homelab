@@ -42,6 +42,20 @@ jobs:
           chmod +x sops
           sudo mv sops /usr/local/bin/
 
+      - name: Configure SOPS Age Key
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        run: |
+          if [ -z "${SOPS_AGE_KEY}" ]; then
+            echo "::error::SOPS_AGE_KEY repository secret is required to decrypt Helmfile secrets in CI."
+            exit 1
+          fi
+
+          install -d -m 700 "${RUNNER_TEMP}/sops"
+          printf '%s\n' "${SOPS_AGE_KEY}" > "${RUNNER_TEMP}/sops/age-keys.txt"
+          chmod 600 "${RUNNER_TEMP}/sops/age-keys.txt"
+          echo "SOPS_AGE_KEY_FILE=${RUNNER_TEMP}/sops/age-keys.txt" >> "${GITHUB_ENV}"
+
         # validates all repos are valid and reachable
       - name: Add Helm Repos
         run: helmfile repos
