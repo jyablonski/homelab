@@ -29,6 +29,8 @@ releases:
     version: 82.10.2
     values:
       - services/prometheus/values.yaml
+    secrets:
+      - services/prometheus/secrets.sops.yaml
     hooks:
       - events:
           - postsync
@@ -60,6 +62,8 @@ releases:
     labels:
       bootstrap: infra
     chart: ./services/postgres/chart
+    secrets:
+      - services/postgres/secrets.sops.yaml
     needs:
       - longhorn-system/longhorn
     wait: true
@@ -106,6 +110,8 @@ releases:
     version: 2.35.0
     values:
       - services/pihole/values.yaml
+    secrets:
+      - services/pihole/secrets.sops.yaml
     needs:
       - longhorn-system/longhorn
       - metallb-system/metallb
@@ -166,5 +172,7 @@ releases:
     version: 2026.2.1
     values:
       - services/authentik/values.yaml
+    secrets:
+      - services/authentik/secrets.sops.yaml
     needs:
       - postgres/postgres

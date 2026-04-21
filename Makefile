@@ -137,3 +137,11 @@ pihole-dns-disable:
 .PHONY: pihole-dns-status
 pihole-dns-status:
 	@bash ./scripts/setup-local-pihole-dns.sh status
+
+.PHONY: sops-age-generate
+sops-age-generate:
+	@if [ -z "$(BACKUP_KEY_PATH)" ]; then \
+		echo "Usage: make sops-age-generate BACKUP_KEY_PATH=<path>"; \
+		exit 1; \
+	fi
+	@bash ./scripts/setup-sops-age.sh "$(BACKUP_KEY_PATH)"

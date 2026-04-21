@@ -2,7 +2,7 @@ defaultSettings:
   # have to be strings as of oct 2025, idfk bruh
   defaultReplicaCount: "1"
   storageMinimalAvailablePercentage: "10"
-  managerUrl: http://longhorn.home
+  managerUrl: http://longhorn-backend:9500
 
   # TODO: change these for prod setup w/ 3 beelinks
   # storageMinimalAvailablePercentage: 20  # Stop scheduling if <20% free

@@ -1,7 +1,5 @@
 replicaCount: 1
 
-adminPassword: pihole
-
 persistentVolumeClaim:
   enabled: true
   storageClass: longhorn

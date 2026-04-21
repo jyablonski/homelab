@@ -1,2 +1,12 @@
+postgres:
+  username: postgres
+  password: replace-me
+
+authentik:
+  database:
+    name: authentik
+    username: authentik
+    password: replace-me
+
 loadBalancerService:
   loadBalancerIP: 192.168.76.243

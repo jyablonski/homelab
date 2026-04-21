@@ -1,1 +1,5 @@
 .codex
+*.dec
+*.decrypted
+.decrypted/
+notes/plans
