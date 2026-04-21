@@ -42,6 +42,7 @@ jobs:
           chmod +x sops
           sudo mv sops /usr/local/bin/
 
+      # setting sops age key from repo secret so helmfile can decrypt secrets during validation
       - name: Configure SOPS Age Key
         env:
           SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
@@ -55,6 +56,14 @@ jobs:
           printf '%s\n' "${SOPS_AGE_KEY}" > "${RUNNER_TEMP}/sops/age-keys.txt"
           chmod 600 "${RUNNER_TEMP}/sops/age-keys.txt"
           echo "SOPS_AGE_KEY_FILE=${RUNNER_TEMP}/sops/age-keys.txt" >> "${GITHUB_ENV}"
+
+      # validation check to ensure an expected value can be decrypted from a sops file
+      - name: Validate SOPS Secret Decryption
+        run: |
+          if [ "$(sops --decrypt --extract '["grafana"]["adminPassword"]' services/prometheus/secrets.sops.yaml)" != "admin" ]; then
+            echo "::error::Failed to decrypt expected Grafana admin password from services/prometheus/secrets.sops.yaml."
+            exit 1
+          fi
 
         # validates all repos are valid and reachable
       - name: Add Helm Repos
