@@ -1,0 +1,64 @@
+image:
+  repository: registry.home:5000/homelab/django
+  tag: "dev"
+  pullPolicy: Always
+
+replicaCount: 1
+
+containerPort: 8000
+
+env:
+  DJANGO_DEBUG: "false"
+  DJANGO_ALLOWED_HOSTS: "*"
+  DB_HOST: "postgres.postgres.svc.cluster.local"
+  DB_PORT: "5432"
+  DB_NAME: "postgres"
+  DB_SEARCH_PATH: "source,public"
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 128Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
+
+readinessProbe:
+  httpGet:
+    path: /django/healthz
+    port: http
+    httpHeaders:
+      - name: Host
+        value: apps.home
+  periodSeconds: 10
+  failureThreshold: 3
+
+livenessProbe:
+  httpGet:
+    path: /django/healthz
+    port: http
+    httpHeaders:
+      - name: Host
+        value: apps.home
+  periodSeconds: 20
+  failureThreshold: 3
+
+service:
+  enabled: true
+  type: ClusterIP
+  port: 8000
+
+ingress:
+  enabled: true
+  className: traefik
+  hosts:
+    - host: apps.home
+      paths:
+        - path: /django
+          pathType: Prefix
+  traefik:
+    stripPrefix:
+      enabled: false
+
+podLabels:
+  app.kubernetes.io/component: django

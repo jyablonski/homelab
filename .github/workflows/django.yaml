@@ -1,0 +1,46 @@
+name: Django CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/django/**"
+      - ".github/workflows/django.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/django/**"
+      - ".github/workflows/django.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  COVERAGE_THRESHOLD: 80
+  UV_VERSION: "0.11.7"
+  PYTHON_VERSION: "3.13"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Django tests
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: apps/django/uv.lock
+
+      - name: Install dependencies
+        working-directory: apps/django
+        run: uv sync --locked --dev
+
+      - name: Run test suite
+        working-directory: apps/django
+        run: uv run pytest --cov=core --cov-report=term-missing --cov-fail-under=${COVERAGE_THRESHOLD}
