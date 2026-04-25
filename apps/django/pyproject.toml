@@ -1,0 +1,39 @@
+[project]
+name = "homelab-django-admin"
+version = "0.1.0"
+description = "Django admin and migrations service for homelab Postgres"
+requires-python = ">=3.13"
+dependencies = ["Django>=6.0.4", "psycopg2-binary>=2.9.10"]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.4.2",
+  "pytest-cov>=7.1.0",
+  "pytest-django>=4.11.1",
+  "testcontainers[postgres]>=4.13.2",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "core.settings"
+pythonpath = ["src"]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+  "-v",
+  "--tb=short",
+  "--strict-markers",
+  "--cov=core",
+  "--cov-report=term-missing",
+  "--cov-report=html",
+  "--color=yes",
+]
+markers = [
+  "unit: Unit tests that don't require external dependencies",
+  "integration: Integration tests that require external services (e.g., database)",
+  "django_db: Django database tests",
+]

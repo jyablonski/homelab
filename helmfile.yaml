@@ -128,6 +128,18 @@ releases:
     needs:
       - monitoring/prometheus-operator
       - registry/registry
+  - name: django
+    namespace: apps
+    labels:
+      bootstrap: app
+    chart: ./charts/workload
+    values:
+      - apps/django/values.yaml
+    secrets:
+      - apps/django/secrets.sops.yaml
+    needs:
+      - postgres/postgres
+      - registry/registry
   - name: traefik
     namespace: kube-system
     labels:

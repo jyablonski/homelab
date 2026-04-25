@@ -1,5 +1,5 @@
-CREATE SCHEMA source;
-SET search_path TO source;
+CREATE SCHEMA bootstrap_example;
+SET search_path TO bootstrap_example;
 
 CREATE TABLE examples (
     id SERIAL PRIMARY KEY,

@@ -13,6 +13,14 @@ repos:
       - id: prettier
         types_or: [yaml, markdown]
         exclude: '(^|.*/)(charts/.*/templates|services/.*/chart/templates)/.*\.ya?ml$'
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.12
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+        types_or: [python, pyi]
+      - id: ruff-format
+        types_or: [python, pyi]
   - repo: local
     hooks:
       - id: validate-fast
