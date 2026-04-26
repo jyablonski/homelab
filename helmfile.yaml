@@ -128,6 +128,19 @@ releases:
     needs:
       - monitoring/prometheus-operator
       - registry/registry
+  - name: api
+    namespace: apps
+    labels:
+      bootstrap: app
+    chart: ./charts/workload
+    values:
+      - apps/api/values.yaml
+    secrets:
+      - apps/api/secrets.sops.yaml
+    needs:
+      - monitoring/prometheus-operator
+      - postgres/postgres
+      - registry/registry
   - name: django
     namespace: apps
     labels:

@@ -1,16 +1,16 @@
-name: Django CI
+name: API CI
 
 on:
   push:
     branches: [main]
     paths:
-      - "apps/django/**"
-      - ".github/workflows/django.yaml"
+      - "apps/api/**"
+      - ".github/workflows/api.yaml"
   pull_request:
     branches: [main]
     paths:
-      - "apps/django/**"
-      - ".github/workflows/django.yaml"
+      - "apps/api/**"
+      - ".github/workflows/api.yaml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -19,12 +19,12 @@ concurrency:
 env:
   COVERAGE_THRESHOLD: 80
   UV_VERSION: "0.11.7"
-  PYTHON_VERSION: "3.13"
+  PYTHON_VERSION: "3.14"
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    name: Django tests
+    name: API tests
 
     steps:
       - uses: actions/checkout@v5
@@ -35,13 +35,13 @@ jobs:
           version: ${{ env.UV_VERSION }}
           python-version: ${{ env.PYTHON_VERSION }}
           enable-cache: true
-          cache-dependency-glob: apps/django/uv.lock
+          cache-dependency-glob: apps/api/uv.lock
 
       - name: Install dependencies
-        working-directory: apps/django
+        working-directory: apps/api
         run: uv sync --locked --dev
 
       - name: Run test suite
-        working-directory: apps/django
-        run: uv run pytest --cov=core --cov-report=term-missing
+        working-directory: apps/api
+        run: uv run pytest --cov=src --cov-report=term-missing
           --cov-fail-under=${COVERAGE_THRESHOLD}

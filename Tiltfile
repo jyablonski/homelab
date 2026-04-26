@@ -9,7 +9,7 @@ def app_image_ref(name):
 def render_app_release(name):
     return local("helmfile -l name=%s template" % name, quiet=True)
 
-def app_release(name, context_dir, live_update_steps=[]):
+def app_release(name, context_dir, live_update_steps=[], links=[]):
     docker_build(
         app_image_ref(name),
         context_dir,
@@ -17,7 +17,7 @@ def app_release(name, context_dir, live_update_steps=[]):
         live_update=live_update_steps,
     )
     k8s_yaml(render_app_release(name))
-    k8s_resource(name)
+    k8s_resource(name, links=links)
 
 
 # Django: live sync source changes, rebuild when dependency/build files change.
@@ -32,6 +32,31 @@ app_release(
         sync("apps/django/src", "/app/src"),
         sync("apps/django/tests", "/app/tests"),
     ],
+    links=[
+        link("http://apps.home/django/admin", "Django admin"),
+        link("http://apps.home/django/healthz", "Health"),
+    ],
+)
+
+
+# API: live sync source/test changes, rebuild when dependency/build/secret files change.
+app_release(
+    "api",
+    "apps/api",
+    live_update_steps=[
+        fall_back_on("apps/api/pyproject.toml"),
+        fall_back_on("apps/api/uv.lock"),
+        fall_back_on("apps/api/Dockerfile"),
+        fall_back_on("apps/api/entrypoint.sh"),
+        fall_back_on("apps/api/secrets.sops.yaml"),
+        sync("apps/api/src", "/app/src"),
+        sync("apps/api/tests", "/app/tests"),
+    ],
+    links=[
+        link("http://apps.home/api/docs", "API docs"),
+        link("http://apps.home/api/healthz", "Health"),
+        link("http://apps.home/api/metrics", "Metrics"),
+    ],
 )
 
 
@@ -44,5 +69,9 @@ app_release(
         fall_back_on("apps/workload-chart-example/go.sum"),
         fall_back_on("apps/workload-chart-example/Dockerfile"),
         sync("apps/workload-chart-example/src", "/app/src"),
+    ],
+    links=[
+        link("http://apps.home/workload-chart/api/health/ready", "Health"),
+        link("http://apps.home/workload-chart/api/metrics", "Metrics"),
     ],
 )
