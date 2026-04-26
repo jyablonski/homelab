@@ -1,4 +1,5 @@
 import importlib
+from typing import Any, cast
 
 from core.models import Reminder
 from django.test import override_settings
@@ -78,6 +79,7 @@ def test_create_superuser_creates_or_updates_user(monkeypatch):
 
     migration_module.create_or_update_superuser(FakeApps(), None)
 
+    assert fake_manager.kwargs is not None
     assert fake_manager.kwargs["username"] == "postgres"
     assert fake_manager.kwargs["defaults"] == {"is_staff": True, "is_superuser": True}
     assert fake_user.is_staff is True
@@ -109,10 +111,10 @@ def test_source_schema_migration_shape():
 
 def test_default_database_search_path_prefers_source():
     settings_module = importlib.import_module("core.settings")
-    assert (
-        "search_path=source,public"
-        in settings_module.DATABASES["default"]["OPTIONS"]["options"]
-    )
+    default_database = cast(dict[str, Any], settings_module.DATABASES["default"])
+    database_options = cast(dict[str, str], default_database["OPTIONS"])
+
+    assert "search_path=source,public" in database_options["options"]
 
 
 @override_settings(SESSION_ENGINE="django.contrib.sessions.backends.signed_cookies")

@@ -22,4 +22,6 @@ class Reminder(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"{self.reminder_type}: {self.reminder_message[:64]}"
+        reminder_type = str(self.reminder_type)
+        reminder_message = str(self.reminder_message)
+        return f"{reminder_type}: {reminder_message[:64]}"

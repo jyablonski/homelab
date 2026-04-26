@@ -136,8 +136,9 @@ When adding an app:
 2. Add a Helmfile release with `chart: ./charts/workload`.
 3. Set `labels.bootstrap: app`.
 4. Add `needs:` for required infra such as Prometheus or registry.
-5. Build and push with `make image-build-push SERVICE=<app> TAG=dev`.
-6. Validate Helmfile rendering; add chart tests if chart behavior changed.
+5. Add or update the app section in `Tiltfile` so the local dev loop builds, renders, and live-syncs the new app.
+6. Build and push with `make image-build-push SERVICE=<app> TAG=dev`.
+7. Validate Helmfile rendering; add chart tests if chart behavior changed.
 
 ## Workload Chart
 

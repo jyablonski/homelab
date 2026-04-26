@@ -129,6 +129,7 @@ flowchart LR
 | [Promtail](services/promtail/)                         | DaemonSet that ships pod logs to Loki                           |
 | [PostgreSQL](services/postgres/)                       | Postgres 17 with bootstrap SQL for initial database setup       |
 | [Registry](services/registry/)                         | Local OCI registry for homelab-owned application images         |
+| [API](apps/api/)                                       | FastAPI app scaffold backed by Postgres                         |
 | [Workload Chart Example](apps/workload-chart-example/) | Minimal example Go app using the workload chart                 |
 | [Home Assistant](services/home-assistant/)             | Home automation platform with Prometheus metrics                |
 | [Frigate](services/frigate/)                           | NVR with ML object detection — monitors 4 cameras via RTSP      |
@@ -153,40 +154,8 @@ homelab/
 │   ├── prometheus/               # Each deployed service gets its own directory
 │   └── ...                       #
 ├── apps/                         # App-owned code, Dockerfiles, and workload values
+│   ├── api/
 │   ├── workload-chart-example/
 │   └── ...
 └── notes/                        # Hardware planning, Talos setup, scratch notes
 ```
-
-## App-Owned Services
-
-For applications you build and run yourself, the intended golden path is:
-
-```text
-apps/
-└── lotus-api/
-    ├── Dockerfile
-    ├── <source files>
-    └── values.yaml
-```
-
-The directory name becomes the image name and Helm release name. Build and push with:
-
-```bash
-make image-build SERVICE=lotus-api TAG=dev
-make image-push SERVICE=lotus-api TAG=dev
-# or in one step
-make image-build-push SERVICE=lotus-api TAG=dev
-```
-
-By default this targets `registry.home:5000/homelab/<service>:<tag>`. You can print the resolved image name with:
-
-```bash
-make image-ref SERVICE=lotus-api TAG=dev
-```
-
-## Roadmap
-
-- **Multi-node HA** — Expand to 3 nodes with Longhorn replication and pod anti-affinity
-- **Authentik SSO** — OIDC integration across Grafana, Headlamp, and other services
-- **Backups** — Velero for cluster resource and PV snapshots

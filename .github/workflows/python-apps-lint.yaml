@@ -1,0 +1,90 @@
+name: Python Apps Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/**/*.py"
+      - "apps/**/pyproject.toml"
+      - "apps/**/uv.lock"
+      - "ruff.toml"
+      - ".github/workflows/python-quality.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_VERSION: "0.11.7"
+
+jobs:
+  ruff:
+    name: Ruff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Ruff
+        uses: astral-sh/ruff-action@v3
+        with:
+          version: "0.15.12"
+
+      - name: Ruff check
+        run: ruff check .
+
+      - name: Ruff format
+        run: ruff format --check .
+
+  detect-changes:
+    name: Detect Python App Changes
+    runs-on: ubuntu-latest
+    outputs:
+      services:
+        ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+        '["api","django"]' || steps.filter.outputs.changes }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Detect changed apps
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            api:
+              - "apps/api/**"
+              - "ruff.toml"
+              - ".github/workflows/python-quality.yaml"
+            django:
+              - "apps/django/**"
+              - "ruff.toml"
+              - ".github/workflows/python-quality.yaml"
+
+  ty:
+    name: Ty (${{ matrix.service }})
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.services != '[]' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJSON(needs.detect-changes.outputs.services) }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: ${{ matrix.service == 'api' && '3.14' || '3.13' }}
+          enable-cache: true
+          cache-dependency-glob: apps/${{ matrix.service }}/uv.lock
+
+      - name: Install dependencies
+        working-directory: apps/${{ matrix.service }}
+        run: uv sync --locked --all-groups
+
+      - name: Run ty
+        working-directory: apps/${{ matrix.service }}
+        run: uv run ty check --output-format github --extra-search-path src src tests
