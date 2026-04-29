@@ -9,6 +9,7 @@ containerPort: 8000
 
 env:
   API_ENV: "production"
+  API_LOG_LEVEL: "INFO"
   API_ROOT_PATH: "/api"
   API_WAIT_FOR_DB: "true"
   DB_CONNECT_TIMEOUT: "5"

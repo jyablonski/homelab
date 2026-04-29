@@ -1,14 +1,14 @@
+import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, HTTPException, Query, status
 
 from crud import reminders
-from database import get_db_session
+from dependencies import DatabaseSession
 from database_models.reminder import Reminder, ReminderCreate, ReminderUpdate
 
 router = APIRouter(prefix="/reminders", tags=["reminders"])
-DatabaseSession = Annotated[Session, Depends(get_db_session)]
+logger = logging.getLogger(__name__)
 
 
 @router.get("", response_model=list[Reminder])
@@ -41,6 +41,13 @@ def get_reminder(reminder_id: int, session: DatabaseSession) -> Reminder:
 def create_reminder(reminder: ReminderCreate, session: DatabaseSession) -> Reminder:
     created_reminder = reminders.create_reminder(reminder, session=session)
     session.commit()
+    logger.info(
+        "reminder created",
+        extra={
+            "reminder_id": created_reminder.id,
+            "reminder_type": created_reminder.reminder_type,
+        },
+    )
     return created_reminder
 
 
@@ -50,9 +57,10 @@ def update_reminder(
     reminder: ReminderUpdate,
     session: DatabaseSession,
 ) -> Reminder:
+    changes = reminder.model_dump(exclude_unset=True)
     updated_reminder = reminders.update_reminder(
         reminder_id,
-        reminder.model_dump(exclude_unset=True),
+        changes,
         session=session,
     )
     if updated_reminder is None:
@@ -61,4 +69,12 @@ def update_reminder(
             detail="reminder not found",
         )
     session.commit()
+    logger.info(
+        "reminder updated",
+        extra={
+            "reminder_id": updated_reminder.id,
+            "changed_fields": sorted(changes),
+            "is_completed": updated_reminder.is_completed,
+        },
+    )
     return updated_reminder

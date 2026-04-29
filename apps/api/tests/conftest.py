@@ -6,7 +6,7 @@ from sqlalchemy import text
 from testcontainers.postgres import PostgresContainer
 
 from config import Settings, get_settings
-from database import Base, get_engine
+from database import Base, get_engine, get_session_factory
 from main import create_app
 
 
@@ -43,10 +43,12 @@ def api_database_env(postgres_settings):
     )
     get_settings.cache_clear()
     get_engine.cache_clear()
+    get_session_factory.cache_clear()
     yield
     restore_env()
     get_settings.cache_clear()
     get_engine.cache_clear()
+    get_session_factory.cache_clear()
 
 
 @pytest.fixture()
@@ -65,10 +67,12 @@ def unavailable_database_env():
     )
     get_settings.cache_clear()
     get_engine.cache_clear()
+    get_session_factory.cache_clear()
     yield
     restore_env()
     get_settings.cache_clear()
     get_engine.cache_clear()
+    get_session_factory.cache_clear()
 
 
 @pytest.fixture()

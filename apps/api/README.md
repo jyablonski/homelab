@@ -21,8 +21,12 @@ apps/api/
 │   ├── routers/                   # FastAPI routers
 │   ├── config.py                  # Settings and shared configuration
 │   ├── database.py                # Postgres connectivity helpers
+│   ├── dependencies.py            # Shared FastAPI dependency aliases
+│   ├── log_context.py             # Request-scoped logging context
+│   ├── logging_config.py          # Structured logging configuration
 │   ├── main.py                    # App factory and ASGI app
 │   ├── metrics.py                 # Prometheus metrics endpoint + middleware
+│   ├── request_logging.py         # Structured HTTP request logging middleware
 │   └── version.py                 # Application version
 ├── tests/
 │   ├── conftest.py                # Testcontainers fixtures
@@ -44,6 +48,31 @@ uv run pytest
 ```
 
 Integration tests use `testcontainers` and skip automatically when the Docker socket is unavailable.
+
+## Logging
+
+The API writes structured JSON logs to stdout so Kubernetes, Promtail, and Loki can collect them without sidecar or file-based logging. Uvicorn's default access log is disabled in the container because `request_logging.py` emits one structured request log per HTTP request.
+
+Request logs include:
+
+- `request_id`: propagated from `X-Request-ID` or generated per request.
+- `method`, `path`, `route`, `status_code`, `duration_ms`, and `client_ip`.
+- `app`, `environment`, and `version` from application settings.
+
+Application logs use normal `logging.getLogger(__name__)`. The active `request_id` is attached automatically when a log is emitted while handling a request, so endpoint and service logs can be correlated with the request log in Loki.
+
+Use `API_LOG_LEVEL` to control verbosity. The Helm values default it to `INFO`.
+
+Example Loki queries:
+
+```logql
+{app="api"} | json
+{app="api"} | json | request_id="..."
+{app="api"} | json | logger="routers.reminders"
+{app="api"} | json | status_code >= 500
+```
+
+Keep Loki labels low-cardinality. Query request-specific fields such as `request_id`, `path`, `route`, and `reminder_id` from the JSON log body instead of promoting them to labels.
 
 ## Deployment
 

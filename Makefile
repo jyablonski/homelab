@@ -7,29 +7,21 @@ up:
 		echo "error: docker is required for app image builds during make up"; \
 		exit 1; \
 	fi
-	@echo "Restoring default workstation DNS during cluster bootstrap..."
-	@bash ./scripts/setup-local-pihole-dns.sh disable
-	@echo "Configuring local registry host access..."
-	@bash ./scripts/setup-registry-home.sh
-	@echo "Configuring local ingress host access..."
-	@bash ./scripts/setup-ingress-home.sh
-	@echo "Creating k3s config directory..."
-	@sudo mkdir -p /etc/rancher/k3s
-	@echo "disable:" | sudo tee /etc/rancher/k3s/config.yaml
-	@echo "  - traefik" | sudo tee -a /etc/rancher/k3s/config.yaml
-	@echo "  - servicelb" | sudo tee -a /etc/rancher/k3s/config.yaml
-	@echo "Installing k3s..."
-	@curl -sfL https://get.k3s.io | sh -
-	@sleep 10
-	@mkdir -p ~/.kube
-	@sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
-	@sudo chown $(shell echo $$USER):$(shell echo $$USER) ~/.kube/config
+	@echo "Preparing sudo access..."
+	@sudo -v
+	@./scripts/run-step.sh "Running DNS bootstrap" -- bash ./scripts/setup-local-pihole-dns.sh disable
+	@./scripts/run-step.sh "Configuring registry access" -- bash ./scripts/setup-registry-home.sh
+	@./scripts/run-step.sh "Configuring ingress access" -- bash ./scripts/setup-ingress-home.sh
+	@./scripts/run-step.sh "Writing K3s config" -- bash -c 'sudo mkdir -p /etc/rancher/k3s && printf "%s\n" "disable:" "  - traefik" "  - servicelb" | sudo tee /etc/rancher/k3s/config.yaml >/dev/null'
+	@./scripts/run-step.sh "Installing K3s" -- bash -c 'curl -sfL https://get.k3s.io | sh -'
+	@./scripts/run-step.sh "Waiting for K3s startup" -- sleep 10
+	@./scripts/run-step.sh "Configuring kubeconfig" -- bash -c 'mkdir -p ~/.kube && sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config && sudo chown "$$(id -un):$$(id -gn)" ~/.kube/config'
+	@echo "Starting cluster services..."
 	@./scripts/setup.sh
-	@echo "Waiting for Pi-hole deployment to become available..."
-	@kubectl -n pihole wait --for=condition=available deployment/pihole --timeout=180s
-	@echo "Enabling workstation Pi-hole DNS..."
-	@bash ./scripts/setup-local-pihole-dns.sh enable
-	@bash ./scripts/setup-local-pihole-dns.sh status
+	@./scripts/run-step.sh "Checking Pi-hole readiness" -- kubectl -n pihole wait --for=condition=available deployment/pihole --timeout=180s
+	@./scripts/run-step.sh "Enabling workstation DNS" -- bash ./scripts/setup-local-pihole-dns.sh enable
+	@./scripts/run-step.sh "Checking workstation DNS" -- bash ./scripts/setup-local-pihole-dns.sh status
+	@echo "Cluster startup complete."
 
 # used to sync any helmfile changes to an existing cluster
 .PHONY: sync

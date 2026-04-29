@@ -5,7 +5,6 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from database import get_session
 from database_models.reminder import Reminder, ReminderCreate, ReminderRow
 
 UPDATE_FIELDS = {
@@ -20,20 +19,11 @@ UPDATE_FIELDS = {
 
 def list_reminders(
     *,
+    session: Session,
     include_completed: bool = False,
     limit: int = 100,
     offset: int = 0,
-    session: Session | None = None,
 ) -> list[Reminder]:
-    if session is None:
-        with get_session() as managed_session:
-            return list_reminders(
-                include_completed=include_completed,
-                limit=limit,
-                offset=offset,
-                session=managed_session,
-            )
-
     statement = select(ReminderRow).order_by(
         ReminderRow.reminder_start_date.asc(),
         ReminderRow.id.asc(),
@@ -48,12 +38,8 @@ def list_reminders(
 def get_reminder(
     reminder_id: int,
     *,
-    session: Session | None = None,
+    session: Session,
 ) -> Reminder | None:
-    if session is None:
-        with get_session() as managed_session:
-            return get_reminder(reminder_id, session=managed_session)
-
     row = session.get(ReminderRow, reminder_id)
     return Reminder.model_validate(row) if row else None
 
@@ -61,14 +47,8 @@ def get_reminder(
 def create_reminder(
     reminder: ReminderCreate,
     *,
-    session: Session | None = None,
+    session: Session,
 ) -> Reminder:
-    if session is None:
-        with get_session() as managed_session:
-            created_reminder = create_reminder(reminder, session=managed_session)
-            managed_session.commit()
-            return created_reminder
-
     row = ReminderRow(**reminder.model_dump())
     session.add(row)
     session.flush()
@@ -80,18 +60,8 @@ def update_reminder(
     reminder_id: int,
     changes: Mapping[str, Any],
     *,
-    session: Session | None = None,
+    session: Session,
 ) -> Reminder | None:
-    if session is None:
-        with get_session() as managed_session:
-            updated_reminder = update_reminder(
-                reminder_id,
-                changes,
-                session=managed_session,
-            )
-            managed_session.commit()
-            return updated_reminder
-
     update_values = {
         key: value for key, value in changes.items() if key in UPDATE_FIELDS
     }

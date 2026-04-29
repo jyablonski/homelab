@@ -73,13 +73,13 @@ create_namespace home-automation
 create_namespace metallb-system
 
 echo "Running Helmfile infra bootstrap..."
-helmfile sync --selector bootstrap=infra
+"$repo_root/scripts/run-with-service-status.sh" bootstrap=infra -- helmfile sync --selector bootstrap=infra
 
 wait_for_registry
 build_and_push_local_apps
 
 echo "Running Helmfile app bootstrap..."
-helmfile sync --selector bootstrap=app
+"$repo_root/scripts/run-with-service-status.sh" bootstrap=app -- helmfile sync --selector bootstrap=app
 
 # this works to apply the cron job, but ive disabled for now
 # feel free to use it to test loki for logs querying as an example

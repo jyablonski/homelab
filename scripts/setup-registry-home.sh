@@ -21,6 +21,25 @@ run_as_root() {
   fi
 }
 
+file_exists() {
+  local target_path="$1"
+
+  run_as_root test -f "$target_path"
+}
+
+file_has_content() {
+  local target_path="$1"
+
+  run_as_root test -s "$target_path"
+}
+
+file_contains_fixed() {
+  local target_path="$1"
+  local pattern="$2"
+
+  run_as_root grep -Fq "$pattern" "$target_path"
+}
+
 write_file_as_root() {
   local target_path="$1"
   local tmp_file
@@ -49,13 +68,13 @@ ensure_hosts_entry() {
 }
 
 ensure_docker_config() {
-  if [[ -f "$docker_config_path" ]]; then
-    if grep -Fq "\"${registry_ref}\"" "$docker_config_path"; then
+  if file_exists "$docker_config_path"; then
+    if file_contains_fixed "$docker_config_path" "\"${registry_ref}\""; then
       echo "$docker_config_path already trusts ${registry_ref}"
       return
     fi
 
-    if [[ ! -s "$docker_config_path" ]]; then
+    if ! file_has_content "$docker_config_path"; then
       :
     else
       echo "error: $docker_config_path already exists but does not include ${registry_ref}" >&2
@@ -74,13 +93,13 @@ EOF
 }
 
 ensure_k3s_registry_config() {
-  if [[ -f "$k3s_registry_config_path" ]]; then
-    if grep -Fq "\"${registry_ref}\"" "$k3s_registry_config_path" && grep -Fq "\"http://${registry_ref}\"" "$k3s_registry_config_path"; then
+  if file_exists "$k3s_registry_config_path"; then
+    if file_contains_fixed "$k3s_registry_config_path" "\"${registry_ref}\"" && file_contains_fixed "$k3s_registry_config_path" "\"http://${registry_ref}\""; then
       echo "$k3s_registry_config_path already trusts ${registry_ref}"
       return
     fi
 
-    if [[ ! -s "$k3s_registry_config_path" ]]; then
+    if ! file_has_content "$k3s_registry_config_path"; then
       :
     else
       echo "error: $k3s_registry_config_path already exists but does not include ${registry_ref}" >&2
