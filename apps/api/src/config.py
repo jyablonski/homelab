@@ -8,6 +8,7 @@ class Settings:
     app_name: str = field(default_factory=lambda: getenv("API_APP_NAME", "Homelab API"))
     environment: str = field(default_factory=lambda: getenv("API_ENV", "local"))
     root_path: str = field(default_factory=lambda: getenv("API_ROOT_PATH", ""))
+    log_level: str = field(default_factory=lambda: getenv("API_LOG_LEVEL", "INFO"))
     database_url: str = field(default_factory=lambda: getenv("DATABASE_URL", ""))
     db_host: str = field(default_factory=lambda: getenv("DB_HOST", "localhost"))
     db_port: str = field(default_factory=lambda: getenv("DB_PORT", "5432"))

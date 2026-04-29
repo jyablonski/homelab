@@ -26,13 +26,17 @@ def get_engine(settings: Settings | None = None) -> Engine:
     )
 
 
-@contextmanager
-def get_session(settings: Settings | None = None) -> Iterator[Session]:
-    session_factory = sessionmaker(
+@lru_cache
+def get_session_factory(settings: Settings | None = None) -> sessionmaker[Session]:
+    return sessionmaker(
         bind=get_engine(settings),
         expire_on_commit=False,
     )
-    session = session_factory()
+
+
+@contextmanager
+def get_session(settings: Settings | None = None) -> Iterator[Session]:
+    session = get_session_factory(settings)()
     try:
         yield session
     except Exception:
