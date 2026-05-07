@@ -6,7 +6,7 @@ Personal Kubernetes homelab running on [K3s](https://k3s.io/), fully declared in
 
 ## Quick Start
 
-**Prerequisites:** Linux system with `curl`, `kubectl`, `helm`, and `helmfile` installed.
+**Prerequisites:** Linux system with `kubectl`, `helm`, and `helmfile` installed.
 
 ```bash
 # Bring up the cluster (installs K3s, deploys infra, builds local app images, deploys local apps)
