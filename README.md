@@ -113,30 +113,39 @@ flowchart LR
 | Longhorn UI    | [longhorn.home](http://longhorn.home)           | —                                                               |
 | Pi-hole        | [pihole.home/admin/](http://pihole.home/admin/) | admin / `pihole`                                                |
 | Apps           | [apps.home](http://apps.home)                   | —                                                               |
-| Frigate        | Not deployed by default                         | —                                                               |
-| PostgreSQL     | [localhost:5432](postgresql://localhost:5432)   | postgres / postgres                                             |
+| PostgreSQL     | `192.168.76.243:5432` / in-cluster service      | SOPS-managed postgres credentials                               |
 
 ## Services
 
-| Service                                                | Description                                                     |
-| ------------------------------------------------------ | --------------------------------------------------------------- |
-| [MetalLB](services/metallb/)                           | Bare-metal load balancer — assigns LAN IPs via L2/ARP           |
-| [Traefik](services/traefik/)                           | Ingress controller — routes traffic by hostname                 |
-| [Longhorn](services/longhorn/)                         | Distributed block storage — default StorageClass for all PVCs   |
-| [Prometheus](services/prometheus/)                     | Metrics collection from pods, nodes, and Kubernetes internals   |
-| [Grafana](services/prometheus/)                        | Dashboards for metrics and logs — bundled with Prometheus chart |
-| [Loki](services/loki/)                                 | Log aggregation with 7-day retention                            |
-| [Promtail](services/promtail/)                         | DaemonSet that ships pod logs to Loki                           |
-| [PostgreSQL](services/postgres/)                       | Postgres 17 with bootstrap SQL for initial database setup       |
-| [Registry](services/registry/)                         | Local OCI registry for homelab-owned application images         |
-| [API](apps/api/)                                       | FastAPI app scaffold backed by Postgres                         |
-| [Workload Chart Example](apps/workload-chart-example/) | Minimal example Go app using the workload chart                 |
-| [Home Assistant](services/home-assistant/)             | Home automation platform with Prometheus metrics                |
-| [Frigate](services/frigate/)                           | NVR with ML object detection — monitors 4 cameras via RTSP      |
-| [Mosquitto](services/mosquito/)                        | MQTT broker connecting Frigate events to Home Assistant         |
-| [Pi-hole](services/pihole/)                            | DNS-level ad blocker with custom local DNS entries              |
-| [Headlamp](services/headlamp/)                         | Kubernetes web dashboard                                        |
-| [Authentik](services/authentik/)                       | SSO / OIDC identity provider (WIP)                              |
+### Deployed by Helmfile
+
+| Service                                                | Description                                                    |
+| ------------------------------------------------------ | -------------------------------------------------------------- |
+| [MetalLB](services/metallb/)                           | Manages static LAN IPs for Kubernetes services                 |
+| [Traefik](services/traefik/)                           | Ingress controller for browser-facing services                 |
+| [Longhorn](services/longhorn/)                         | Persistent storage for Kubernetes workloads                    |
+| [Prometheus](services/prometheus/)                     | Collects CPU, memory, and other metrics from Kubernetes        |
+| [Grafana](services/prometheus/)                        | Dashboards for metrics and logs, bundled with Prometheus chart |
+| [Loki](services/loki/)                                 | Aggregates and stores logs from Kubernetes workloads           |
+| [Promtail](services/promtail/)                         | DaemonSet that ships pod logs to Loki                          |
+| [PostgreSQL](services/postgres/)                       | Shared database for homelab-owned applications                 |
+| [Registry](services/registry/)                         | Local registry for Docker images built from `apps/`            |
+| [Home Assistant](services/home-assistant/)             | Home automation platform                                       |
+| [Pi-hole](services/pihole/)                            | DNS and `.home` records                                        |
+| [Headlamp](services/headlamp/)                         | Kubernetes dashboard; optional if `kubectl` is enough          |
+| [Authentik](services/authentik/)                       | SSO / OIDC identity provider (WIP)                             |
+| [API](apps/api/)                                       | REST API app for custom workloads                              |
+| [Django](apps/django/)                                 | Database migration tool and admin interface                    |
+| [Workload Chart Example](apps/workload-chart-example/) | Deployed reference app using the workload chart                |
+
+### Prepared / Not Deployed
+
+| Service                            | Status                                                   |
+| ---------------------------------- | -------------------------------------------------------- |
+| [Frigate](services/frigate/)       | Values and secrets are prepared; no Helmfile release yet |
+| [Mosquitto](services/mosquitto/)   | Values are prepared; no Helmfile release yet             |
+| [Keycloak](services/keycloak/)     | Values and secrets exist; no Helmfile release yet        |
+| [go-cron-test](apps/go-cron-test/) | Standalone CronJob example used for validation only      |
 
 ## Project Layout
 
@@ -145,17 +154,17 @@ homelab/
 ├── helmfile.yaml                 # All releases, versions, and repos in one file
 ├── Makefile                      # Cluster lifecycle (up / down / sync)
 ├── charts/                       # Reusable local Helm charts shared across apps
-│   └── workload/                 # Base single-workload application chart
+│   └── workload/                 # Golden path chart for custom `apps/` workloads
 ├── scripts/
 │   ├── setup.sh                  # Namespace creation and post-install bootstrap
-│   └── update-charts.sh          # Detects available Helm chart updates
+│   └── ...
 ├── terraform/                    # Authentik OAuth2 provider config (WIP)
-├── services/                     # Infra and third-party service values/config
-│   ├── prometheus/               # Each deployed service gets its own directory
-│   └── ...                       #
-├── apps/                         # App-owned code, Dockerfiles, and workload values
+├── services/                     # Deployed and prepared third-party service config
+│   ├── prometheus/               # Each service gets values.yaml and optional sops secrets
+│   └── ...
+├── apps/                         # Custom, in-house workloads deployed to the cluster
 │   ├── api/
 │   ├── workload-chart-example/
 │   └── ...
-└── notes/                        # Hardware planning, Talos setup, scratch notes
+└── notes/                        # Reference notes
 ```
