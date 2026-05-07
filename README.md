@@ -44,25 +44,41 @@ make pihole-dns-status
 
 That points this machine's active NetworkManager connection at the cluster Pi-hole DNS service without changing the rest of the LAN. This enables all services to be accessible by their `.home` hostnames without additional configuration on this machine.
 
-## Secrets
+### Default Access
 
-Sensitive Helm values live in encrypted `secrets.sops.yaml` files next to each service's `values.yaml`.
+| Service        | Access                                          | Credentials                                                     |
+| -------------- | ----------------------------------------------- | --------------------------------------------------------------- |
+| Grafana        | [grafana.home](http://grafana.home)             | admin / admin                                                   |
+| Prometheus     | [prometheus.home](http://prometheus.home)       | —                                                               |
+| Home Assistant | [homeassistant.home](http://homeassistant.home) | Setup on first visit                                            |
+| Headlamp       | [headlamp.home](http://headlamp.home)           | `kubectl create token headlamp -n kube-system --duration=8760h` |
+| Longhorn UI    | [longhorn.home](http://longhorn.home)           | —                                                               |
+| Pi-hole        | [pihole.home/admin/](http://pihole.home/admin/) | admin / `pihole`                                                |
+| Apps           | [apps.home](http://apps.home)                   | —                                                               |
+| PostgreSQL     | `192.168.76.243:5432` / in-cluster service      | SOPS-managed postgres credentials                               |
 
-When Helmfile syncs, it decrypts and merges any `secrets.sops.yaml` files it finds into the release values. This keeps secrets out of plaintext Git history while still allowing them to be managed alongside regular config.
+## Services
 
-To create or edit a sops secrets file, run:
+### Deployed by Helmfile
 
-```bash
-sops services/<service>/secrets.sops.yaml
-```
-
-To view decrypted contents:
-
-```bash
-sops -d services/<service>/secrets.sops.yaml
-```
-
-Add new secret files to the release's `secrets:` list in `helmfile.yaml` so Helmfile decrypts and merges them during `helmfile sync`.
+| Service                                                | Description                                                    |
+| ------------------------------------------------------ | -------------------------------------------------------------- |
+| [MetalLB](services/metallb/)                           | Manages static LAN IPs for Kubernetes services                 |
+| [Traefik](services/traefik/)                           | Ingress controller for browser-facing services                 |
+| [Longhorn](services/longhorn/)                         | Persistent storage for Kubernetes workloads                    |
+| [Prometheus](services/prometheus/)                     | Collects CPU, memory, and other metrics from Kubernetes        |
+| [Grafana](services/prometheus/)                        | Dashboards for metrics and logs, bundled with Prometheus chart |
+| [Loki](services/loki/)                                 | Aggregates and stores logs from Kubernetes workloads           |
+| [Promtail](services/promtail/)                         | DaemonSet that ships pod logs to Loki                          |
+| [PostgreSQL](services/postgres/)                       | Shared database for homelab-owned applications                 |
+| [Registry](services/registry/)                         | Local registry for Docker images built from `apps/`            |
+| [Home Assistant](services/home-assistant/)             | Home automation platform                                       |
+| [Pi-hole](services/pihole/)                            | DNS and `.home` records                                        |
+| [Headlamp](services/headlamp/)                         | Kubernetes dashboard; optional if `kubectl` is enough          |
+| [Authentik](services/authentik/)                       | SSO / OIDC identity provider (WIP)                             |
+| [API](apps/api/)                                       | REST API app for custom workloads                              |
+| [Django](apps/django/)                                 | Database migration tool and admin interface                    |
+| [Workload Chart Example](apps/workload-chart-example/) | Deployed reference app using the workload chart                |
 
 ## Network Flow
 
@@ -102,50 +118,25 @@ flowchart LR
   docker -->|"push/pull registry.home:5000"| registry
 ```
 
-### Default Access
+## Secrets
 
-| Service        | Access                                          | Credentials                                                     |
-| -------------- | ----------------------------------------------- | --------------------------------------------------------------- |
-| Grafana        | [grafana.home](http://grafana.home)             | admin / admin                                                   |
-| Prometheus     | [prometheus.home](http://prometheus.home)       | —                                                               |
-| Home Assistant | [homeassistant.home](http://homeassistant.home) | Setup on first visit                                            |
-| Headlamp       | [headlamp.home](http://headlamp.home)           | `kubectl create token headlamp -n kube-system --duration=8760h` |
-| Longhorn UI    | [longhorn.home](http://longhorn.home)           | —                                                               |
-| Pi-hole        | [pihole.home/admin/](http://pihole.home/admin/) | admin / `pihole`                                                |
-| Apps           | [apps.home](http://apps.home)                   | —                                                               |
-| PostgreSQL     | `192.168.76.243:5432` / in-cluster service      | SOPS-managed postgres credentials                               |
+Sensitive Helm values live in encrypted `secrets.sops.yaml` files next to each service's `values.yaml`.
 
-## Services
+When Helmfile syncs, it decrypts and merges any `secrets.sops.yaml` files it finds into the release values. This keeps secrets out of plaintext Git history while still allowing them to be managed alongside regular config.
 
-### Deployed by Helmfile
+To create or edit a sops secrets file, run:
 
-| Service                                                | Description                                                    |
-| ------------------------------------------------------ | -------------------------------------------------------------- |
-| [MetalLB](services/metallb/)                           | Manages static LAN IPs for Kubernetes services                 |
-| [Traefik](services/traefik/)                           | Ingress controller for browser-facing services                 |
-| [Longhorn](services/longhorn/)                         | Persistent storage for Kubernetes workloads                    |
-| [Prometheus](services/prometheus/)                     | Collects CPU, memory, and other metrics from Kubernetes        |
-| [Grafana](services/prometheus/)                        | Dashboards for metrics and logs, bundled with Prometheus chart |
-| [Loki](services/loki/)                                 | Aggregates and stores logs from Kubernetes workloads           |
-| [Promtail](services/promtail/)                         | DaemonSet that ships pod logs to Loki                          |
-| [PostgreSQL](services/postgres/)                       | Shared database for homelab-owned applications                 |
-| [Registry](services/registry/)                         | Local registry for Docker images built from `apps/`            |
-| [Home Assistant](services/home-assistant/)             | Home automation platform                                       |
-| [Pi-hole](services/pihole/)                            | DNS and `.home` records                                        |
-| [Headlamp](services/headlamp/)                         | Kubernetes dashboard; optional if `kubectl` is enough          |
-| [Authentik](services/authentik/)                       | SSO / OIDC identity provider (WIP)                             |
-| [API](apps/api/)                                       | REST API app for custom workloads                              |
-| [Django](apps/django/)                                 | Database migration tool and admin interface                    |
-| [Workload Chart Example](apps/workload-chart-example/) | Deployed reference app using the workload chart                |
+```bash
+sops services/<service>/secrets.sops.yaml
+```
 
-### Prepared / Not Deployed
+To view decrypted contents:
 
-| Service                            | Status                                                   |
-| ---------------------------------- | -------------------------------------------------------- |
-| [Frigate](services/frigate/)       | Values and secrets are prepared; no Helmfile release yet |
-| [Mosquitto](services/mosquitto/)   | Values are prepared; no Helmfile release yet             |
-| [Keycloak](services/keycloak/)     | Values and secrets exist; no Helmfile release yet        |
-| [go-cron-test](apps/go-cron-test/) | Standalone CronJob example used for validation only      |
+```bash
+sops -d services/<service>/secrets.sops.yaml
+```
+
+Add new secret files to the release's `secrets:` list in `helmfile.yaml` so Helmfile decrypts and merges them during `helmfile sync`.
 
 ## Project Layout
 
