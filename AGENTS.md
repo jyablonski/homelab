@@ -28,7 +28,7 @@ This repo declares a personal K3s homelab in Git. Helmfile is the main source of
 - `charts/workload/values.yaml`: API for the reusable workload chart.
 - `charts/workload/templates/`: workload chart Kubernetes resources.
 - `charts/workload/tests/workload_test.yaml`: helm-unittest coverage.
-- `services/*/values.yaml`: chart-specific service configuration.
+- `services/*/values.yaml`: chart-specific service configuration, including prepared-but-not-deployed services.
 - `services/*/secrets.sops.yaml`: encrypted secrets merged by Helmfile.
 - `services/metallb/ip-pool.yaml`: standalone MetalLB address pool.
 - `apps/workload-chart-example/`: reference app-owned workload.
@@ -102,7 +102,7 @@ Service configuration lives in `services/`.
 - `headlamp`: Kubernetes dashboard.
 - `home-assistant`: home automation.
 - `frigate`: NVR/object detection; not deployed by default per README.
-- `mosquito`: MQTT broker.
+- `mosquitto`: MQTT broker values are prepared, but no current Helmfile release wires it.
 - `authentik`: SSO/OIDC, WIP.
 - `keycloak`: values/secrets exist, but no current Helmfile release wires it.
 

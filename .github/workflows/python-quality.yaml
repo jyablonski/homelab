@@ -1,4 +1,4 @@
-name: Python Apps Lint
+name: Python Quality
 
 on:
   push:
