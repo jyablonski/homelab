@@ -25,3 +25,7 @@ venv/
 .python-version
 build/
 dist/
+
+# Django collectstatic output (image build runs collectstatic)
+apps/django/src/staticfiles/*
+!apps/django/src/staticfiles/.gitkeep

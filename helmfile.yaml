@@ -146,8 +146,10 @@ releases:
     labels:
       bootstrap: app
     chart: ./charts/workload
+    missingFileHandler: Warn
     values:
       - apps/django/values.yaml
+      - apps/django/values.local.yaml
     secrets:
       - apps/django/secrets.sops.yaml
     needs:

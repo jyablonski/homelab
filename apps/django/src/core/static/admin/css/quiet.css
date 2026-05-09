@@ -1,0 +1,142 @@
+/*
+ * Quiet — slate-blue admin theme (Geist, 6px radius, comfortable rows).
+ * Overrides Django admin CSS variables; see:
+ * https://docs.djangoproject.com/en/stable/ref/contrib/admin/#theming-support
+ */
+
+html[data-theme="light"],
+:root {
+  --primary: #2d4a8a;
+  --secondary: #1f3a73;
+  --accent: #e6ecf6;
+  --primary-fg: #ffffff;
+
+  --body-bg: #fbfbfa;
+  --body-fg: #18181b;
+  --body-quiet-color: #52525b;
+  --body-medium-color: #3f3f46;
+  --body-loud-color: #09090b;
+
+  --header-color: #18181b;
+  --header-branding-color: #2d4a8a;
+  --header-bg: #ffffff;
+  --header-link-color: #18181b;
+
+  --breadcrumbs-fg: #71717a;
+  --breadcrumbs-link-fg: #18181b;
+  --breadcrumbs-bg: #f4f4f5;
+
+  --link-fg: #2d4a8a;
+  --link-hover-color: #1f3a73;
+  --link-selected-fg: #1f3a73;
+
+  --hairline-color: #e4e4e1;
+  --border-color: #e4e4e1;
+
+  --button-fg: #ffffff;
+  --button-bg: #2d4a8a;
+  --button-hover-bg: #1f3a73;
+  --default-button-bg: #1f3a73;
+  --default-button-hover-bg: #2d4a8a;
+  --close-button-bg: #71717a;
+  --close-button-hover-bg: #52525b;
+  --delete-button-bg: #ba2121;
+  --delete-button-hover-bg: #a41515;
+
+  --object-tools-fg: #ffffff;
+  --object-tools-bg: #18181b;
+  --object-tools-hover-bg: #27272a;
+
+  --darkened-bg: #f4f4f5;
+  --selected-bg: #e6ecf6;
+  --selected-row: #dbe4f5;
+
+  --font-family-primary: "Geist", system-ui, sans-serif;
+  --font-family-monospace: "Geist Mono", ui-monospace, monospace;
+
+  --quiet-radius: 6px;
+
+  color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  --primary: #88a3d8;
+  --secondary: #5c7ab8;
+  --accent: #1e293b;
+
+  --primary-fg: #0f172a;
+
+  --body-bg: #131316;
+  --body-fg: #f4f4f5;
+  --body-quiet-color: #a1a1aa;
+  --body-medium-color: #d4d4d8;
+  --body-loud-color: #fafafa;
+
+  --header-bg: #18181c;
+  --header-link-color: #f4f4f5;
+  --header-color: #f4f4f5;
+  --header-branding-color: #88a3d8;
+
+  --breadcrumbs-fg: #a1a1aa;
+  --breadcrumbs-link-fg: #f4f4f5;
+  --breadcrumbs-bg: #18181c;
+
+  --link-fg: #88a3d8;
+  --link-hover-color: #b8c9eb;
+  --link-selected-fg: #b8c9eb;
+
+  --hairline-color: #2a2a30;
+  --border-color: #2a2a30;
+
+  --button-fg: #ffffff;
+  --button-bg: #5c7ab8;
+  --button-hover-bg: #88a3d8;
+  --default-button-bg: #88a3d8;
+  --default-button-hover-bg: #5c7ab8;
+
+  --object-tools-fg: #ffffff;
+  --object-tools-bg: #27272a;
+  --object-tools-hover-bg: #3f3f46;
+
+  --darkened-bg: #0f0f12;
+  --selected-bg: #1e293b;
+  --selected-row: #2d3748;
+
+  color-scheme: dark;
+}
+
+/*
+ * Django’s base.css colors #site-name links with --accent. Here --accent is a
+ * light/dark surface tint for widgets, so those links were nearly invisible on
+ * the header. Use the same token as the site title for readable branding.
+ */
+#site-name a:link,
+#site-name a:visited {
+  color: var(--header-branding-color);
+}
+
+#site-name a:hover,
+#site-name a:focus {
+  color: var(--link-hover-color);
+}
+
+/* Comfortable density (~36px content rows on changelist) */
+#result_list tbody td,
+#result_list tbody th {
+  padding-block: 0.625rem;
+  line-height: 1.35;
+}
+
+/* 6px radius */
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+textarea,
+select,
+.button,
+input[type="submit"],
+.submit-row input,
+.object-tools a,
+#changelist-filter details,
+.module table,
+.module {
+  border-radius: var(--quiet-radius);
+}

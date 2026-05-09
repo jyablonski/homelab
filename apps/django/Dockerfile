@@ -41,6 +41,10 @@ COPY --chown=appuser:appuser entrypoint.sh ./
 
 RUN chmod +x /app/entrypoint.sh
 
+# Admin CSS/JS (DEBUG=False: runserver does not serve static; WhiteNoise serves STATIC_ROOT.)
+RUN DJANGO_SECRET_KEY=collectstatic-only python src/manage.py collectstatic --noinput \
+    && chown -R appuser:appuser /app/src/staticfiles
+
 USER appuser
 
 EXPOSE 8000

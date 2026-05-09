@@ -26,7 +26,9 @@ apps/django/
 │   │   ├── settings.py             # Django settings
 │   │   ├── urls.py                 # URL routing
 │   │   ├── wsgi.py                 # WSGI app
-│   │   └── migrations/             # Django migrations
+│   │   ├── migrations/             # Django migrations
+│   │   └── static/admin/css/       # Quiet theme (`quiet.css`)
+│   ├── templates/admin/            # Admin template overrides (`base_site.html`)
 │   └── manage.py                   # Django CLI
 ├── tests/
 │   ├── conftest.py                 # Pytest fixtures
@@ -34,6 +36,7 @@ apps/django/
 │   └── test_smoke.py               # Basic settings/boot test
 ├── Dockerfile                      # Container build
 ├── entrypoint.sh                   # Startup checks + migrate + run
+├── values.local.yaml               # Helm overrides merged after values.yaml (skip auto-migrate)
 ├── pyproject.toml                  # Dependencies and pytest config
 ├── uv.lock                         # Locked dependencies
 └── values.yaml                     # Helm values for workload chart
@@ -53,43 +56,38 @@ Teardown:
 make down
 ```
 
+## Commands
+
+```bash
+make migrate
+make migrate core 0003_reminders_table
+make migrations
+make showmigrations
+```
+
 ## Runtime Behavior
 
 `entrypoint.sh` handles startup by:
 
 1. waiting for Postgres connectivity
 2. failing fast if model changes are missing migrations
-3. applying migrations
+3. applying migrations (unless **`DJANGO_SKIP_AUTO_MIGRATE`** is set to a truthy value: `true`, `1`, or `yes`)
 4. starting Django
+
+## Static files and admin UI
+
+[WhiteNoise](https://whitenoise.readthedocs.io/) serves admin CSS/JS from `STATIC_ROOT` at `/django/static/` (aligned with the `/django` ingress prefix). The **Docker build** runs `collectstatic`; nothing serves static files at container startup beyond that.
+
+Admin appearance uses the **Quiet** theme: `src/core/static/admin/css/quiet.css` (Django variable overrides) plus `src/templates/admin/base_site.html` (brand bar, font links). Edit those files to adjust colors or the header title.
 
 ## Migration Workflow
 
-If you modify models in `src/core/models.py`, generate migrations before committing:
-
-```bash
-cd apps/django
-uv run python src/manage.py makemigrations
-```
-
-Then run:
-
-```bash
-uv run python src/manage.py migrate
-```
-
-The startup script will reject boot if migrations are missing.
-
-## Command Cheat Sheet
-
-```bash
-uv run python src/manage.py makemigrations
-uv run python src/manage.py migrate
-uv run python src/manage.py showmigrations
-uv run pytest
-```
+If you modify models in `src/core/models.py`, generate migrations before committing (from repo root **`make migrations`**, or **`cd apps/django`** and **`uv run python src/manage.py makemigrations`**). Apply with **`make migrate`**. The startup script will reject boot if migrations are missing. Tests: **`cd apps/django`** and **`uv run pytest`**.
 
 ## Notes
 
+- **`values.local.yaml`** sets **`DJANGO_SKIP_AUTO_MIGRATE`** so pods do not run **`migrate`** on every start; run **`make migrate`** when you want schema applied. Remove that env or set it to **`"false"`** for migrate-on-boot.
+- Upgrading **Django** may change bundled admin assets; rebuild the image so `collectstatic` picks them up. No separate CSS/HTML maintenance unless you add **custom** static files or templates—in that case keep them under app `static/` / `templates/` as usual; the same build-time `collectstatic` includes them.
 - Superuser bootstrap is handled by migration `core/migrations/0001_create_superuser.py` when `DJANGO_SUPERUSER_USERNAME` and `DJANGO_SUPERUSER_PASSWORD` are set.
 - DB credentials and Django superuser credentials are currently sourced from `apps/django/secrets.sops.yaml`.
 - This service deploys through the shared `charts/workload` chart via the `django` release in `helmfile.yaml`.
