@@ -1,4 +1,44 @@
+from django.conf import settings
+from django.core.validators import MaxValueValidator, RegexValidator
 from django.db import models
+
+_FLAG_NAME_VALIDATOR = RegexValidator(
+    regex=r"^[a-z][a-z0-9_]*$",
+    message="Flag name must be snake_case (lowercase letters, digits, underscores).",
+)
+
+
+class FeatureFlag(models.Model):
+    """Schema for `feature_flags`; non-Django services read this table via SQL."""
+
+    flag_name = models.CharField(
+        max_length=100,
+        primary_key=True,
+        validators=[_FLAG_NAME_VALIDATOR],
+    )
+    is_enabled = models.BooleanField(default=False)
+    rollout_percentage = models.PositiveSmallIntegerField(
+        default=100,
+        validators=[MaxValueValidator(100)],
+    )
+    description = models.TextField(blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    last_modified_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="modified_flags",
+    )
+
+    class Meta:
+        db_table = "feature_flags"
+        ordering = ["flag_name"]
+
+    def __str__(self) -> str:
+        return str(self.flag_name)
 
 
 class Reminder(models.Model):

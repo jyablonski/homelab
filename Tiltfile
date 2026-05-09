@@ -21,6 +21,7 @@ def app_release(name, context_dir, live_update_steps=[], links=[]):
 
 
 # Django: live sync source changes, rebuild when dependency/build files change.
+# `apps/django/values.local.yaml` skips automatic migrate on boot (see README).
 app_release(
     "django",
     "apps/django",

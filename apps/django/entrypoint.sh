@@ -17,8 +17,15 @@ if ! python src/manage.py makemigrations --check --dry-run > /dev/null 2>&1; the
 fi
 echo "All migrations are up to date."
 
-echo "Running migrations..."
-python src/manage.py migrate --noinput
+case "${DJANGO_SKIP_AUTO_MIGRATE,,}" in
+  true|1|yes)
+    echo "Skipping migrate (DJANGO_SKIP_AUTO_MIGRATE is set)."
+    ;;
+  *)
+    echo "Running migrations..."
+    python src/manage.py migrate --noinput
+    ;;
+esac
 
 echo "Starting Django server..."
 exec "$@"
