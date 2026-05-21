@@ -17,15 +17,12 @@ if ! python src/manage.py makemigrations --check --dry-run > /dev/null 2>&1; the
 fi
 echo "All migrations are up to date."
 
-case "${DJANGO_SKIP_AUTO_MIGRATE,,}" in
-  true|1|yes)
-    echo "Skipping migrate (DJANGO_SKIP_AUTO_MIGRATE is set)."
-    ;;
-  *)
-    echo "Running migrations..."
+if ! python src/manage.py migrate --check > /dev/null 2>&1; then
+    echo "Database not initialized; running migrations..."
     python src/manage.py migrate --noinput
-    ;;
-esac
+else
+    echo "Database schema up to date; skipping migrate (use make migrate to apply changes)."
+fi
 
 echo "Starting Django server..."
 exec "$@"

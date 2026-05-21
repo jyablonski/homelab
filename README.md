@@ -78,6 +78,7 @@ That points this machine's active NetworkManager connection at the cluster Pi-ho
 | [Authentik](services/authentik/)                       | SSO / OIDC identity provider (WIP)                             |
 | [API](apps/api/)                                       | REST API app for custom workloads                              |
 | [Django](apps/django/)                                 | Database migration tool and admin interface                    |
+| [Runner](apps/runner/)                                 | Internal UI for running approved app-owned jobs                |
 | [Workload Chart Example](apps/workload-chart-example/) | Deployed reference app using the workload chart                |
 
 ## Network Flow
@@ -159,3 +160,20 @@ homelab/
 │   └── ...
 └── notes/                        # Reference notes
 ```
+
+## App workloads
+
+Homelab-owned apps deploy through the shared [`charts/workload`](charts/workload/) chart. Each app keeps a small `apps/<app>/values.yaml` with only what differs per service (env, probes, ingress paths, jobs).
+
+The chart assumes a **single personal cluster**—no staging/prod split—so several values are defaulted and omitted from app files:
+
+| Default                                       | Why                                                                                                                               |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Image `registry.home:5000/homelab/<app>:dev`  | Release name matches `apps/<app>/` and `make image-build-push SERVICE=<app>`; tag stays `dev` unless you override it in the chart |
+| `image.pullPolicy: Always`                    | Local registry + frequent `dev` rebuilds; pods should pick up new images after push                                               |
+| `scale.replicas: 1`                           | Most apps are single-replica unless HPA is enabled                                                                                |
+| `service.port` → container port               | One port knob instead of duplicating `containerPort` and Service port                                                             |
+| `app.kubernetes.io/component: <app>`          | Consistent labeling without repeating `podLabels`                                                                                 |
+| ServiceMonitor path/interval/Prometheus label | Same scrape shape for every metrics-enabled app                                                                                   |
+
+See [`charts/workload/README.md`](charts/workload/README.md) for the full values API and examples.

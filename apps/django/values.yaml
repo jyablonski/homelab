@@ -1,12 +1,3 @@
-image:
-  repository: registry.home:5000/homelab/django
-  tag: "dev"
-  pullPolicy: Always
-
-replicaCount: 1
-
-containerPort: 8000
-
 env:
   DJANGO_DEBUG: "false"
   DJANGO_ALLOWED_HOSTS: "*"
@@ -44,8 +35,6 @@ livenessProbe:
   failureThreshold: 3
 
 service:
-  enabled: true
-  type: ClusterIP
   port: 8000
 
 ingress:
@@ -59,6 +48,3 @@ ingress:
   traefik:
     stripPrefix:
       enabled: false
-
-podLabels:
-  app.kubernetes.io/component: django

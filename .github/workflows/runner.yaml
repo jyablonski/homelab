@@ -1,0 +1,45 @@
+name: Runner CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/runner/**"
+      - ".github/workflows/runner.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/runner/**"
+      - ".github/workflows/runner.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_VERSION: "0.11.7"
+  PYTHON_VERSION: "3.14"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Runner tests
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: apps/runner/uv.lock
+
+      - name: Install dependencies
+        working-directory: apps/runner
+        run: uv sync --locked --dev
+
+      - name: Run test suite
+        working-directory: apps/runner
+        run: uv run pytest

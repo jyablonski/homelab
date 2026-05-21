@@ -126,19 +126,20 @@ apps/<app>/
 └── <source files>
 ```
 
-The app directory name becomes the normal image and release name. Image helpers target `registry.home:5000/homelab/<app>:<tag>`.
+The app directory name becomes the Helm release name and the image name. Image helpers target `registry.home:5000/homelab/<app>:dev`. Chart defaults exist because this is a single personal homelab (no environment matrix): image repo/tag, pull policy, replica count, component label, and ServiceMonitor scrape settings are inferred unless overridden. See `charts/workload/README.md`.
 
-Use `apps/workload-chart-example/` as the reference. It has Go source, a Dockerfile, `values.yaml` using `charts/workload`, probes, Prometheus metrics, and Traefik shared-host ingress.
+Use `apps/workload-chart-example/` as the reference. It has Go source, a Dockerfile, a minimal `values.yaml`, probes, Prometheus metrics, and Traefik shared-host ingress.
 
 When adding an app:
 
 1. Create `apps/<app>/Dockerfile`, `apps/<app>/values.yaml`, and source files.
-2. Add a Helmfile release with `chart: ./charts/workload`.
-3. Set `labels.bootstrap: app`.
-4. Add `needs:` for required infra such as Prometheus or registry.
-5. Add or update the app section in `Tiltfile` so the local dev loop builds, renders, and live-syncs the new app.
-6. Build and push with `make image-build-push SERVICE=<app> TAG=dev`.
-7. Validate Helmfile rendering; add chart tests if chart behavior changed.
+2. Add a Helmfile release with `chart: ./charts/workload` and `name: <app>` matching the directory.
+3. In `values.yaml`, set `service.port`, probes, env, and ingress only; omit `image` and `podLabels` unless overriding chart defaults.
+4. Set `labels.bootstrap: app`.
+5. Add `needs:` for required infra such as Prometheus or registry.
+6. Add or update the app section in `Tiltfile` so the local dev loop builds, renders, and live-syncs the new app.
+7. Build and push with `make image-build-push SERVICE=<app>`.
+8. Validate Helmfile rendering; add chart tests if chart behavior changed.
 
 ## Workload Chart
 

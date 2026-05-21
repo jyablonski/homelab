@@ -1,0 +1,120 @@
+{% extends "layout.html" %}
+
+{% block content %}
+  <div class="app" data-namespace="{{ namespace }}" data-api-jobs-url="{{ api_jobs_url }}">
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-path">homelab / runner</span>
+      </div>
+      <div class="topbar-right">
+        <span class="cluster-pill">
+          <span class="live-dot" aria-hidden="true"></span>
+          cluster: {{ cluster_name }}
+        </span>
+        <span class="sync-time mono" id="sync-time">synced —</span>
+        <button type="button" class="icon-btn" id="refresh-btn" title="Refresh jobs" aria-label="Refresh jobs">
+          ↻
+        </button>
+      </div>
+    </header>
+
+    <section class="content">
+      <div id="jobs-list-view">
+        <div class="page-heading">
+          <h1>Runnables</h1>
+          <p class="summary mono" id="jobs-summary">Loading jobs…</p>
+        </div>
+
+        <div class="toolbar">
+          <label class="search-wrap">
+            <span class="search-icon" aria-hidden="true">⌕</span>
+            <input
+              type="search"
+              id="job-search"
+              placeholder="Filter jobs by name, app, or description…"
+              autocomplete="off"
+            />
+          </label>
+          <div class="filter-chips" id="filter-chips" role="tablist" aria-label="Filter jobs">
+            <button type="button" class="chip active" data-filter="all">All <span class="chip-count" data-count="all">0</span></button>
+            <button type="button" class="chip" data-filter="running">Running <span class="chip-count" data-count="running">0</span></button>
+            <button type="button" class="chip" data-filter="failed">Failed <span class="chip-count" data-count="failed">0</span></button>
+            <button type="button" class="chip" data-filter="scheduled">Scheduled <span class="chip-count" data-count="scheduled">0</span></button>
+            <button type="button" class="chip" data-filter="manual">Manual <span class="chip-count" data-count="manual">0</span></button>
+          </div>
+        </div>
+
+        <div class="table-panel">
+          <table class="jobs-table">
+            <thead>
+              <tr>
+                <th scope="col">App</th>
+                <th scope="col">Job</th>
+                <th scope="col">Schedule</th>
+                <th scope="col">Status</th>
+                <th scope="col">Last run</th>
+                <th scope="col">History</th>
+                <th scope="col">Action</th>
+              </tr>
+            </thead>
+            <tbody id="jobs-body">
+              <tr class="loading-row">
+                <td colspan="7">Loading…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="job-detail-view" class="job-detail hidden" hidden>
+        <div class="detail-header">
+          <button type="button" class="btn-back" id="detail-back" aria-label="Back to jobs list">← Jobs</button>
+          <div class="detail-heading">
+            <h1 id="detail-title">Job</h1>
+            <p class="detail-meta mono" id="detail-meta"></p>
+            <p class="detail-desc" id="detail-desc"></p>
+          </div>
+        </div>
+        <div class="table-panel">
+          <table class="runs-table">
+            <thead>
+              <tr>
+                <th scope="col">Run</th>
+                <th scope="col">Status</th>
+                <th scope="col">Started</th>
+                <th scope="col">Finished</th>
+                <th scope="col">Logs</th>
+              </tr>
+            </thead>
+            <tbody id="detail-runs-body">
+              <tr class="loading-row">
+                <td colspan="5">Loading run history…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer mono">
+      <span id="footer-api">GET /api/jobs · namespace {{ namespace }}</span>
+      <span>FastAPI v{{ fastapi_version }}</span>
+    </footer>
+
+    <div class="modal-backdrop hidden" id="run-modal" role="dialog" aria-modal="true" aria-labelledby="run-modal-title">
+      <div class="modal">
+        <h2 id="run-modal-title">Run triggered</h2>
+        <p class="modal-lead">A new job run was created in the cluster.</p>
+        <dl class="modal-meta mono">
+          <div><dt>Run ID</dt><dd id="modal-run-id">—</dd></div>
+          <div><dt>Namespace</dt><dd id="modal-namespace">—</dd></div>
+        </dl>
+        <div class="modal-actions">
+          <a class="btn btn-secondary" id="modal-grafana" href="#" target="_blank" rel="noopener noreferrer">View in Grafana</a>
+          <button type="button" class="btn btn-primary" id="modal-close">Done</button>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,163 @@
+{{- $root := . -}}
+{{- range $jobName := keys .Values.jobs | sortAlpha }}
+{{- $job := index $root.Values.jobs $jobName }}
+{{- $enabled := true }}
+{{- if hasKey $job "enabled" }}
+{{- $enabled = $job.enabled }}
+{{- end }}
+{{- $suspend := true }}
+{{- if hasKey $job "suspend" }}
+{{- $suspend = $job.suspend }}
+{{- end }}
+{{- if $enabled }}
+{{- if and (not $suspend) (not $job.schedule) }}
+{{- fail (printf "jobs.%s.schedule is required when suspend is false" $jobName) }}
+{{- end }}
+{{- $cronJobName := include "workload.jobName" (dict "root" $root "jobName" $jobName) }}
+{{- $jobLabels := include "workload.jobLabels" (dict "root" $root "jobName" $jobName "job" $job) }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ $cronJobName }}
+  namespace: {{ $root.Release.Namespace }}
+  labels:
+    {{- include "workload.labels" $root | nindent 4 }}
+    {{- $jobLabels | nindent 4 }}
+  {{- if $job.description }}
+  annotations:
+    homelab.jacob/description: {{ $job.description | quote }}
+  {{- end }}
+spec:
+  schedule: {{ default "0 0 * * *" $job.schedule | quote }}
+  suspend: {{ $suspend }}
+  concurrencyPolicy: Forbid
+  {{- with $job.startingDeadlineSeconds }}
+  startingDeadlineSeconds: {{ . }}
+  {{- end }}
+  successfulJobsHistoryLimit: {{ default 3 $job.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ default 1 $job.failedJobsHistoryLimit }}
+  jobTemplate:
+    metadata:
+      labels:
+        {{- include "workload.labels" $root | nindent 8 }}
+        {{- $jobLabels | nindent 8 }}
+    spec:
+      {{- with $job.backoffLimit }}
+      backoffLimit: {{ . }}
+      {{- end }}
+      {{- with $job.activeDeadlineSeconds }}
+      activeDeadlineSeconds: {{ . }}
+      {{- end }}
+      {{- with $job.ttlSecondsAfterFinished }}
+      ttlSecondsAfterFinished: {{ . }}
+      {{- end }}
+      template:
+        metadata:
+          labels:
+            {{- with $root.Values.commonLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with include "workload.podLabels" $root | fromYaml }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- include "workload.selectorLabels" $root | nindent 12 }}
+            {{- $jobLabels | nindent 12 }}
+          {{- with $root.Values.podAnnotations }}
+          annotations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        spec:
+          restartPolicy: {{ default "OnFailure" $job.restartPolicy }}
+          {{- with $root.Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- $serviceAccountName := include "workload.serviceAccountName" $root }}
+          {{- if $serviceAccountName }}
+          serviceAccountName: {{ $serviceAccountName }}
+          {{- end }}
+          {{- if ne $root.Values.serviceAccount.automount nil }}
+          automountServiceAccountToken: {{ $root.Values.serviceAccount.automount }}
+          {{- end }}
+          containers:
+            - name: {{ $jobName | trunc 63 | trimSuffix "-" }}
+              image: {{ include "workload.image" $root | quote }}
+              imagePullPolicy: {{ include "workload.imagePullPolicy" $root }}
+              {{- $command := default $root.Values.command $job.command }}
+              {{- with $command }}
+              command:
+                {{- toYaml . | nindent 16 }}
+              {{- end }}
+              {{- $args := default $root.Values.args $job.args }}
+              {{- with $args }}
+              args:
+                {{- toYaml . | nindent 16 }}
+              {{- end }}
+              {{- $env := mergeOverwrite (deepCopy $root.Values.env) ($job.env | default (dict)) }}
+              {{- if or $env $root.Values.secretEnv $root.Values.configMapEnv $root.Values.extraEnv $job.extraEnv }}
+              env:
+                {{- range $name := keys $env | sortAlpha }}
+                - name: {{ $name }}
+                  value: {{ index $env $name | quote }}
+                {{- end }}
+                {{- range $root.Values.secretEnv }}
+                - name: {{ .name }}
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .secretName }}
+                      key: {{ .secretKey }}
+                      {{- if hasKey . "optional" }}
+                      optional: {{ .optional }}
+                      {{- end }}
+                {{- end }}
+                {{- range $root.Values.configMapEnv }}
+                - name: {{ .name }}
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ .configMapName }}
+                      key: {{ .configMapKey }}
+                      {{- if hasKey . "optional" }}
+                      optional: {{ .optional }}
+                      {{- end }}
+                {{- end }}
+                {{- with $root.Values.extraEnv }}
+                {{- toYaml . | nindent 16 }}
+                {{- end }}
+                {{- with $job.extraEnv }}
+                {{- toYaml . | nindent 16 }}
+                {{- end }}
+              {{- end }}
+              {{- if or $root.Values.envFrom $job.envFrom }}
+              envFrom:
+                {{- with $root.Values.envFrom }}
+                {{- toYaml . | nindent 16 }}
+                {{- end }}
+                {{- with $job.envFrom }}
+                {{- toYaml . | nindent 16 }}
+                {{- end }}
+              {{- end }}
+              resources:
+                {{- toYaml (default $root.Values.resources $job.resources) | nindent 16 }}
+              {{- with $root.Values.extraVolumeMounts }}
+              volumeMounts:
+                {{- toYaml . | nindent 16 }}
+              {{- end }}
+          {{- with $root.Values.extraVolumes }}
+          volumes:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $root.Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $root.Values.affinity }}
+          affinity:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $root.Values.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }}
+{{- end }}

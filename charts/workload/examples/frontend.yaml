@@ -1,11 +1,16 @@
+# Example: public UI with service port 80 forwarding to container port 3000.
 image:
   repository: registry.home:5000/homelab/lotus-frontend
   tag: "dev"
   pullPolicy: IfNotPresent
 
-replicaCount: 2
-
-containerPort: 3000
+scale:
+  replicas: 2
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
 
 env:
   API_BASE_URL: https://lotus-api.home
@@ -46,8 +51,8 @@ livenessProbe:
   failureThreshold: 3
 
 service:
-  enabled: true
   port: 80
+  targetPort: 3000
 
 ingress:
   enabled: true
@@ -58,18 +63,5 @@ ingress:
         - path: /
           pathType: Prefix
 
-autoscaling:
-  enabled: true
-  minReplicas: 2
-  maxReplicas: 5
-  targetCPUUtilizationPercentage: 70
-
 serviceMonitor:
   enabled: true
-  path: /metrics
-  interval: 30s
-  labels:
-    release: prometheus
-
-podLabels:
-  app.kubernetes.io/component: frontend

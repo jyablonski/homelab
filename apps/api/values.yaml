@@ -1,12 +1,3 @@
-image:
-  repository: registry.home:5000/homelab/api
-  tag: "dev"
-  pullPolicy: Always
-
-replicaCount: 1
-
-containerPort: 8000
-
 env:
   API_ENV: "production"
   API_LOG_LEVEL: "INFO"
@@ -41,8 +32,6 @@ livenessProbe:
   failureThreshold: 3
 
 service:
-  enabled: true
-  type: ClusterIP
   port: 8000
 
 ingress:
@@ -61,10 +50,12 @@ ingress:
 
 serviceMonitor:
   enabled: true
-  path: /metrics
-  interval: 30s
-  labels:
-    release: prometheus
 
-podLabels:
-  app.kubernetes.io/component: api
+jobs:
+  print-reminders-rows:
+    enabled: true
+    runnable: true
+    suspend: true
+    description: Print reminder table row count
+    command: ["python"]
+    args: ["/app/jobs/print-reminders-rows/main.py"]

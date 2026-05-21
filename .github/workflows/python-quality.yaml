@@ -43,7 +43,7 @@ jobs:
     outputs:
       services:
         ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' &&
-        '["api","django"]' || steps.filter.outputs.changes }}
+        '["api","django","runner"]' || steps.filter.outputs.changes }}
     steps:
       - uses: actions/checkout@v5
 
@@ -58,6 +58,10 @@ jobs:
               - ".github/workflows/python-quality.yaml"
             django:
               - "apps/django/**"
+              - "ruff.toml"
+              - ".github/workflows/python-quality.yaml"
+            runner:
+              - "apps/runner/**"
               - "ruff.toml"
               - ".github/workflows/python-quality.yaml"
 
@@ -77,7 +81,9 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           version: ${{ env.UV_VERSION }}
-          python-version: ${{ matrix.service == 'api' && '3.14' || '3.13' }}
+          python-version:
+            ${{ (matrix.service == 'api' || matrix.service == 'runner') && '3.14' ||
+            '3.13' }}
           enable-cache: true
           cache-dependency-glob: apps/${{ matrix.service }}/uv.lock
 

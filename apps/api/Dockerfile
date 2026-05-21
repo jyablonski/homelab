@@ -37,6 +37,7 @@ RUN useradd --create-home appuser
 
 COPY --from=deps /app/.venv /app/.venv
 COPY --chown=appuser:appuser src/ ./src/
+COPY --chown=appuser:appuser jobs/ ./jobs/
 COPY --chown=appuser:appuser entrypoint.sh ./
 
 RUN chmod +x /app/entrypoint.sh

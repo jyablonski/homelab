@@ -1,0 +1,42 @@
+image:
+  repository: ghcr.io/acme/api
+  tag: "1.2.3"
+  pullPolicy: Always
+
+env:
+  LOG_LEVEL: info
+
+secretEnv:
+  - name: DATABASE_URL
+    secretName: acme-api
+    secretKey: database_url
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 64Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi
+
+jobs:
+  disabled-cleanup:
+    enabled: false
+    command: ["python"]
+    args: ["/app/jobs/disabled-cleanup/main.py"]
+  print-reminders-rows:
+    enabled: true
+    runnable: true
+    suspend: true
+    description: Print reminder table row count
+    command: ["python"]
+    args: ["/app/jobs/print-reminders-rows/main.py"]
+    env:
+      JOB_MODE: dry-run
+  refresh-reminders:
+    enabled: true
+    runnable: true
+    suspend: false
+    schedule: "0 * * * *"
+    command: ["python"]
+    args: ["/app/jobs/refresh-reminders/main.py"]
