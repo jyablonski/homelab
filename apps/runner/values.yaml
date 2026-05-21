@@ -1,0 +1,55 @@
+env:
+  RUNNER_ENVIRONMENT: "production"
+  RUNNER_NAMESPACE: "apps"
+  RUNNER_URL_PREFIX: "/runner"
+  RUNNER_GRAFANA_BASE_URL: "http://grafana.home"
+  RUNNER_CLUSTER_NAME: "homelab-prod"
+  # Grafana Loki datasource UID (Connections → Data sources → Loki → UID in the URL)
+  RUNNER_LOKI_DATASOURCE_UID: "P8E80F9AEF21F6940"
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 128Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
+
+readinessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  periodSeconds: 10
+  failureThreshold: 3
+
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  periodSeconds: 20
+  failureThreshold: 3
+
+serviceAccount:
+  create: true
+  name: runner
+  automount: true
+
+service:
+  port: 8080
+
+ingress:
+  enabled: true
+  className: traefik
+  hosts:
+    - host: apps.home
+      paths:
+        - path: /runner
+          pathType: Prefix
+  traefik:
+    stripPrefix:
+      enabled: true
+      prefixes:
+        - /runner
+
+serviceMonitor:
+  enabled: true

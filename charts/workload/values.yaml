@@ -3,14 +3,26 @@ fullnameOverride: ""
 
 commonLabels: {}
 
-replicaCount: 1
+scale:
+  replicas: 1
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage:
+    behavior: {}
 
 deploymentStrategy: {}
 
+# Image defaults assume the Helm release name matches apps/<app> and
+# make image-build-push SERVICE=<app> (registry.home:5000/homelab/<app>:<tag>).
 image:
-  repository: ghcr.io/example/app
-  tag: "0.1.0"
-  pullPolicy: IfNotPresent
+  registry: registry.home:5000
+  project: homelab
+  repository: ""
+  tag: dev
+  pullPolicy: Always
 
 imagePullSecrets: []
 
@@ -18,7 +30,6 @@ command: []
 args: []
 
 portName: http
-containerPort:
 
 hostPort:
   enabled: false
@@ -30,6 +41,8 @@ envFrom: []
 secretEnv: []
 configMapEnv: []
 extraEnv: []
+
+jobs: {}
 
 resources:
   requests:
@@ -56,7 +69,7 @@ service:
   enabled: true
   type: ClusterIP
   annotations: {}
-  port: 80
+  port:
   targetPort:
 
 ingress:
@@ -70,18 +83,11 @@ ingress:
       enabled: false
       prefixes: []
 
-autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 3
-  targetCPUUtilizationPercentage: 80
-  targetMemoryUtilizationPercentage:
-  behavior: {}
-
 serviceMonitor:
   enabled: false
   annotations: {}
-  labels: {}
+  labels:
+    release: prometheus
   interval: 30s
   scrapeTimeout: ""
   path: /metrics

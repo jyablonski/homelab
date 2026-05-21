@@ -39,11 +39,34 @@ tests:
                 name: acme-config
                 key: feature_flag
 
+  - it: renders the default homelab image when repository is omitted
+    release:
+      name: runner
+      namespace: apps
+    set:
+      image.tag: dev
+      service.port: 8080
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: registry.home:5000/homelab/runner:dev
+
+  - it: sets the component pod label from the release name by default
+    release:
+      name: runner
+      namespace: apps
+    set:
+      service.port: 8080
+    asserts:
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/component"]
+          value: runner
+
   - it: omits replicas when autoscaling is enabled
     set:
       image.repository: ghcr.io/acme/api
       image.tag: "1.2.3"
-      autoscaling.enabled: true
+      scale.autoscaling.enabled: true
     asserts:
       - isNull:
           path: spec.replicas
@@ -55,7 +78,7 @@ tests:
     set:
       image.repository: ghcr.io/acme/api
       image.tag: "1.2.3"
-      containerPort: 8080
+      service.port: 8080
       hostPort.enabled: true
       hostPort.port: 10032
       hostPort.hostIP: 127.0.0.1
@@ -85,10 +108,9 @@ suite: workload service
 templates:
   - templates/service.yaml
 tests:
-  - it: renders a clusterip service that targets the container port by default
+  - it: renders a clusterip service that targets the workload port
     set:
-      containerPort: 8080
-      service.port: 80
+      service.port: 8080
     asserts:
       - isKind:
           of: Service
@@ -97,10 +119,22 @@ tests:
           value: ClusterIP
       - equal:
           path: spec.ports[0].port
-          value: 80
+          value: 8080
       - equal:
           path: spec.ports[0].targetPort
           value: 8080
+
+  - it: supports a service port that differs from the container target port
+    set:
+      service.port: 80
+      service.targetPort: 3000
+    asserts:
+      - equal:
+          path: spec.ports[0].port
+          value: 80
+      - equal:
+          path: spec.ports[0].targetPort
+          value: 3000
 
   - it: does not render a service when disabled
     set:
@@ -190,10 +224,10 @@ templates:
 tests:
   - it: renders an hpa with cpu utilization targets
     set:
-      autoscaling.enabled: true
-      autoscaling.minReplicas: 2
-      autoscaling.maxReplicas: 4
-      autoscaling.targetCPUUtilizationPercentage: 70
+      scale.autoscaling.enabled: true
+      scale.autoscaling.minReplicas: 2
+      scale.autoscaling.maxReplicas: 4
+      scale.autoscaling.targetCPUUtilizationPercentage: 70
     asserts:
       - isKind:
           of: HorizontalPodAutoscaler
@@ -214,9 +248,8 @@ tests:
   - it: renders a servicemonitor with a named service port
     set:
       service.enabled: true
+      service.port: 8080
       serviceMonitor.enabled: true
-      serviceMonitor.path: /metrics
-      serviceMonitor.labels.release: prometheus
     asserts:
       - isKind:
           of: ServiceMonitor
@@ -229,3 +262,114 @@ tests:
       - equal:
           path: spec.endpoints[0].port
           value: http
+---
+suite: workload jobs
+templates:
+  - templates/cronjob.yaml
+tests:
+  - it: does not render jobs by default
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: renders a suspended runnable cronjob for manual on-demand runs
+    values:
+      - fixtures/jobs-values.yaml
+    release:
+      name: api
+      namespace: apps
+    documentSelector:
+      path: metadata.name
+      value: api-print-reminders-rows
+    asserts:
+      - isKind:
+          of: CronJob
+      - equal:
+          path: spec.schedule
+          value: "0 0 * * *"
+      - equal:
+          path: spec.suspend
+          value: true
+      - equal:
+          path: spec.concurrencyPolicy
+          value: Forbid
+      - equal:
+          path: metadata.labels["homelab.jacob/runnable"]
+          value: "true"
+      - equal:
+          path: metadata.labels["homelab.jacob/app"]
+          value: api
+      - equal:
+          path: metadata.labels["homelab.jacob/job"]
+          value: print-reminders-rows
+      - equal:
+          path: metadata.annotations["homelab.jacob/description"]
+          value: Print reminder table row count
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].image
+          value: ghcr.io/acme/api:1.2.3
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].imagePullPolicy
+          value: Always
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].command[0]
+          value: python
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].args[0]
+          value: /app/jobs/print-reminders-rows/main.py
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: LOG_LEVEL
+            value: info
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: JOB_MODE
+            value: dry-run
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: DATABASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: acme-api
+                key: database_url
+      - equal:
+          path: spec.jobTemplate.spec.template.metadata.labels["homelab.jacob/job"]
+          value: print-reminders-rows
+      - equal:
+          path: spec.jobTemplate.spec.template.metadata.labels["app.kubernetes.io/component"]
+          value: api
+
+  - it: renders an active scheduled cronjob with forbid concurrency
+    values:
+      - fixtures/jobs-values.yaml
+    release:
+      name: api
+      namespace: apps
+    documentSelector:
+      path: metadata.name
+      value: api-refresh-reminders
+    asserts:
+      - isKind:
+          of: CronJob
+      - equal:
+          path: spec.schedule
+          value: "0 * * * *"
+      - equal:
+          path: spec.suspend
+          value: false
+      - equal:
+          path: spec.concurrencyPolicy
+          value: Forbid
+
+  - it: does not render disabled jobs
+    values:
+      - fixtures/jobs-values.yaml
+    release:
+      name: api
+      namespace: apps
+    asserts:
+      - hasDocuments:
+          count: 2

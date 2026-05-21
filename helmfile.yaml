@@ -141,6 +141,25 @@ releases:
       - monitoring/prometheus-operator
       - postgres/postgres
       - registry/registry
+  - name: runner
+    namespace: apps
+    createNamespace: true
+    labels:
+      bootstrap: app
+    chart: ./charts/workload
+    values:
+      - apps/runner/values.yaml
+    hooks:
+      - events: ["presync"]
+        showlogs: true
+        command: bash
+        args:
+          - -c
+          - |
+            kubectl create namespace apps --dry-run=client -o yaml | kubectl apply -f -
+            kubectl apply -f apps/runner/rbac.yaml
+    needs:
+      - registry/registry
   - name: django
     namespace: apps
     labels:
@@ -149,7 +168,6 @@ releases:
     missingFileHandler: Warn
     values:
       - apps/django/values.yaml
-      - apps/django/values.local.yaml
     secrets:
       - apps/django/secrets.sops.yaml
     needs:

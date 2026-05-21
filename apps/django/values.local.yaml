@@ -1,9 +1,0 @@
-# Merged after `values.yaml` by the django release in root `helmfile.yaml`.
-# Skips automatic `migrate` on pod start; apply when you want, e.g.:
-#   kubectl exec -n apps deploy/django -- python src/manage.py migrate
-#
-# Remove this file or set `DJANGO_SKIP_AUTO_MIGRATE` to `"false"` to restore
-# migrate-on-boot (typical for unattended cluster syncs).
-
-env:
-  DJANGO_SKIP_AUTO_MIGRATE: "true"

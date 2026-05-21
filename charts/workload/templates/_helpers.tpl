@@ -43,3 +43,52 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- define "workload.traefikStripPrefixMiddlewareRef" -}}
 {{- printf "%s-%s@kubernetescrd" .Release.Namespace (include "workload.traefikStripPrefixMiddlewareName" .) -}}
 {{- end -}}
+
+{{- define "workload.jobName" -}}
+{{- printf "%s-%s" (include "workload.fullname" .root) .jobName | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- define "workload.jobLabels" -}}
+homelab.jacob/runnable: {{ default false .job.runnable | quote }}
+homelab.jacob/app: {{ include "workload.fullname" .root | quote }}
+homelab.jacob/job: {{ .jobName | quote }}
+{{- end -}}
+
+{{- define "workload.imageRepository" -}}
+{{- if .Values.image.repository -}}
+{{- .Values.image.repository -}}
+{{- else -}}
+{{- printf "%s/%s/%s" (default "registry.home:5000" .Values.image.registry) (default "homelab" .Values.image.project) .Release.Name -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "workload.image" -}}
+{{- printf "%s:%s" (include "workload.imageRepository" .) .Values.image.tag -}}
+{{- end -}}
+
+{{- define "workload.imagePullPolicy" -}}
+{{- .Values.image.pullPolicy -}}
+{{- end -}}
+
+{{- define "workload.replicas" -}}
+{{- if .Values.scale -}}
+{{- .Values.scale.replicas | default 1 -}}
+{{- else -}}
+{{- .Values.replicaCount | default 1 -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "workload.containerPort" -}}
+{{- if .Values.service.targetPort -}}
+{{- .Values.service.targetPort -}}
+{{- else if .Values.service.port -}}
+{{- .Values.service.port -}}
+{{- else -}}
+{{- .Values.containerPort -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "workload.podLabels" -}}
+{{- $labels := dict "app.kubernetes.io/component" (include "workload.name" .) -}}
+{{- merge $labels .Values.podLabels | toYaml -}}
+{{- end -}}

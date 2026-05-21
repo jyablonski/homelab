@@ -79,7 +79,7 @@ Keep Loki labels low-cardinality. Query request-specific fields such as `request
 Build and push through the repository helper:
 
 ```bash
-make image-build-push SERVICE=api TAG=dev
+make image-build-push SERVICE=api
 ```
 
 Runtime database credentials are sourced from `apps/api/secrets.sops.yaml`. Edit them with:

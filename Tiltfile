@@ -21,7 +21,7 @@ def app_release(name, context_dir, live_update_steps=[], links=[]):
 
 
 # Django: live sync source changes, rebuild when dependency/build files change.
-# `apps/django/values.local.yaml` skips automatic migrate on boot (see README).
+# Django runs migrate on boot only when the DB is uninitialized (see django README).
 app_release(
     "django",
     "apps/django",
@@ -50,6 +50,7 @@ app_release(
         fall_back_on("apps/api/Dockerfile"),
         fall_back_on("apps/api/entrypoint.sh"),
         fall_back_on("apps/api/secrets.sops.yaml"),
+        sync("apps/api/jobs", "/app/jobs"),
         sync("apps/api/src", "/app/src"),
         sync("apps/api/tests", "/app/tests"),
     ],
@@ -57,6 +58,25 @@ app_release(
         link("http://apps.home/api/docs", "API docs"),
         link("http://apps.home/api/healthz", "Health"),
         link("http://apps.home/api/metrics", "Metrics"),
+    ],
+)
+
+
+# Runner: live sync source/template/static changes, rebuild on dependency/build changes.
+app_release(
+    "runner",
+    "apps/runner",
+    live_update_steps=[
+        fall_back_on("apps/runner/pyproject.toml"),
+        fall_back_on("apps/runner/uv.lock"),
+        fall_back_on("apps/runner/Dockerfile"),
+        fall_back_on("apps/runner/rbac.yaml"),
+        sync("apps/runner/src", "/app/src"),
+        sync("apps/runner/tests", "/app/tests"),
+    ],
+    links=[
+        link("http://apps.home/runner", "Runner"),
+        link("http://apps.home/runner/healthz", "Health"),
     ],
 )
 

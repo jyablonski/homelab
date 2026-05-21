@@ -25,12 +25,15 @@ This is a bare-bones example to test:
 ## Build and push
 
 ```bash
-make image-build-push SERVICE=workload-chart-example TAG=dev
+make image-build-push SERVICE=workload-chart-example
 ```
 
 ## Deploy
 
+`values.yaml` only sets what differs for this app (port, probes, ingress, HPA). The workload chart supplies homelab-wide defaults: image `registry.home:5000/homelab/workload-chart-example:dev`, `pullPolicy: Always`, and the `component` pod label. See `charts/workload/README.md`.
+
 ```bash
+make image-build-push SERVICE=workload-chart-example
 helmfile sync
 ```
 

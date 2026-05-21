@@ -1,3 +1,5 @@
+{{- $autoscaling := .Values.scale.autoscaling | default .Values.autoscaling -}}
+{{- $containerPort := include "workload.containerPort" . -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -5,12 +7,12 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "workload.labels" . | nindent 4 }}
-{{- if and .Values.hostPort.enabled (not .Values.containerPort) }}
-{{- fail "hostPort.enabled requires containerPort" }}
+{{- if and .Values.hostPort.enabled (not $containerPort) }}
+{{- fail "hostPort.enabled requires service.port" }}
 {{- end }}
 spec:
-  {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.replicaCount }}
+  {{- if not $autoscaling.enabled }}
+  replicas: {{ include "workload.replicas" . }}
   {{- end }}
   {{- if .Values.deploymentStrategy }}
   strategy:
@@ -30,7 +32,7 @@ spec:
         {{- with .Values.commonLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
-        {{- with .Values.podLabels }}
+        {{- with include "workload.podLabels" . | fromYaml }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
         {{- include "workload.selectorLabels" . | nindent 8 }}
@@ -52,8 +54,8 @@ spec:
       {{- end }}
       containers:
         - name: {{ include "workload.name" . }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          image: {{ include "workload.image" . | quote }}
+          imagePullPolicy: {{ include "workload.imagePullPolicy" . }}
           {{- with .Values.command }}
           command:
             {{- toYaml . | nindent 12 }}
@@ -62,12 +64,12 @@ spec:
           args:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- if .Values.containerPort }}
+          {{- if $containerPort }}
           ports:
             - name: {{ .Values.portName }}
-              containerPort: {{ .Values.containerPort }}
+              containerPort: {{ $containerPort }}
               {{- if .Values.hostPort.enabled }}
-              hostPort: {{ .Values.hostPort.port }}
+              hostPort: {{ .Values.hostPort.port | default $containerPort }}
               {{- with .Values.hostPort.hostIP }}
               hostIP: {{ . | quote }}
               {{- end }}
@@ -137,7 +139,7 @@ spec:
       {{- if .Values.affinity }}
       affinity:
         {{- toYaml .Values.affinity | nindent 8 }}
-      {{- else if or .Values.autoscaling.enabled (gt (int .Values.replicaCount) 1) }}
+      {{- else if or $autoscaling.enabled (gt (int (include "workload.replicas" .)) 1) }}
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:

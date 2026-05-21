@@ -36,7 +36,6 @@ apps/django/
 │   └── test_smoke.py               # Basic settings/boot test
 ├── Dockerfile                      # Container build
 ├── entrypoint.sh                   # Startup checks + migrate + run
-├── values.local.yaml               # Helm overrides merged after values.yaml (skip auto-migrate)
 ├── pyproject.toml                  # Dependencies and pytest config
 ├── uv.lock                         # Locked dependencies
 └── values.yaml                     # Helm values for workload chart
@@ -71,7 +70,7 @@ make showmigrations
 
 1. waiting for Postgres connectivity
 2. failing fast if model changes are missing migrations
-3. applying migrations (unless **`DJANGO_SKIP_AUTO_MIGRATE`** is set to a truthy value: `true`, `1`, or `yes`)
+3. running **`migrate`** only when the database has not been initialized yet; otherwise skipping (use **`make migrate`** to apply schema changes)
 4. starting Django
 
 ## Static files and admin UI
@@ -86,8 +85,7 @@ If you modify models in `src/core/models.py`, generate migrations before committ
 
 ## Notes
 
-- **`values.local.yaml`** sets **`DJANGO_SKIP_AUTO_MIGRATE`** so pods do not run **`migrate`** on every start; run **`make migrate`** when you want schema applied. Remove that env or set it to **`"false"`** for migrate-on-boot.
+- On first boot against an empty database, the entrypoint applies all migrations once. After that, schema changes are applied manually with **`make migrate`** (cluster or local).
 - Upgrading **Django** may change bundled admin assets; rebuild the image so `collectstatic` picks them up. No separate CSS/HTML maintenance unless you add **custom** static files or templates—in that case keep them under app `static/` / `templates/` as usual; the same build-time `collectstatic` includes them.
 - Superuser bootstrap is handled by migration `core/migrations/0001_create_superuser.py` when `DJANGO_SUPERUSER_USERNAME` and `DJANGO_SUPERUSER_PASSWORD` are set.
 - DB credentials and Django superuser credentials are currently sourced from `apps/django/secrets.sops.yaml`.
-- This service deploys through the shared `charts/workload` chart via the `django` release in `helmfile.yaml`.

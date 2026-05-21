@@ -1,5 +1,5 @@
 {{- if .Values.service.enabled }}
-{{- $targetPort := .Values.service.targetPort | default .Values.containerPort | default .Values.service.port }}
+{{- $containerPort := include "workload.containerPort" . }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -17,7 +17,7 @@ spec:
     {{- include "workload.selectorLabels" . | nindent 4 }}
   ports:
     - name: {{ .Values.portName }}
-      port: {{ .Values.service.port }}
-      targetPort: {{ $targetPort }}
+      port: {{ .Values.service.port | default $containerPort }}
+      targetPort: {{ $containerPort }}
       protocol: TCP
 {{- end }}
