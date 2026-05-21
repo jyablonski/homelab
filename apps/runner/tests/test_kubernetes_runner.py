@@ -1,5 +1,6 @@
 import json
 from datetime import UTC, datetime
+from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 import pytest
@@ -16,6 +17,11 @@ from kubernetes_runner import (
     _job_status,
     _load_k8s_apis,
 )
+
+
+def _explore_left_param(logs_url: str) -> list[Any]:
+    params = parse_qs(urlparse(logs_url).query)
+    return json.loads(params["left"][0])
 
 
 def test_list_runnables_includes_status_from_matching_jobs():
@@ -108,7 +114,7 @@ def test_list_runs_maps_completed_jobs():
     assert runs[0].completed_at == completed_at.isoformat()
     assert runs[0].logs_url is not None
     parsed = urlparse(runs[0].logs_url)
-    params = parse_qs(parsed.query)
+    params = parse_qs(parsed.query or "")
     left = json.loads(params["left"][0])
     assert parsed.path == "/explore"
     assert "panes" not in params
@@ -144,7 +150,8 @@ def test_logs_url_uses_pods_for_job_name_label():
 
     runs = runner.list_runs(namespace="apps", cronjob_name="api-print-reminders-rows")
 
-    left = json.loads(parse_qs(urlparse(runs[0].logs_url).query)["left"][0])
+    assert runs[0].logs_url is not None
+    left = _explore_left_param(runs[0].logs_url)
     assert (
         left[3]["expr"]
         == '{namespace="apps", container="print-reminders-rows", pod="api-print-reminders-rows-manual-done-abc12"}'
@@ -195,7 +202,9 @@ def test_run_job_and_list_job_runs_use_app_job_lookup():
 
     batch_api.jobs = []
     created = runner.run_job(app="api", name="print-reminders-rows")
-    assert created["runId"].startswith("api-print-reminders-rows-manual-")
+    run_id = created["runId"]
+    assert isinstance(run_id, str)
+    assert run_id.startswith("api-print-reminders-rows-manual-")
     assert batch_api.created_jobs
 
 
@@ -288,16 +297,12 @@ def test_logs_url_uses_regex_when_multiple_pods_exist():
         core_api=core_api,
     )
 
-    left = json.loads(
-        parse_qs(
-            urlparse(
-                runner.list_runs(
-                    namespace="apps",
-                    cronjob_name="api-print-reminders-rows",
-                )[0].logs_url
-            ).query
-        )["left"][0]
-    )
+    logs_url = runner.list_runs(
+        namespace="apps",
+        cronjob_name="api-print-reminders-rows",
+    )[0].logs_url
+    assert logs_url is not None
+    left = _explore_left_param(logs_url)
     assert "pod=~" in left[3]["expr"]
     assert "abc12" in left[3]["expr"]
 

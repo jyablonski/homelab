@@ -27,10 +27,8 @@ class KubernetesRunnerClient:
         core_api: Any | None = None,
     ) -> None:
         self.settings = settings
-        if batch_api is None or core_api is None:
-            loaded_batch_api, loaded_core_api = _load_k8s_apis()
-            batch_api = batch_api or loaded_batch_api
-            core_api = core_api if core_api is not None else loaded_core_api
+        if batch_api is None:
+            batch_api, core_api = _load_k8s_apis()
         self.batch_api = batch_api
         self.core_api = core_api
 

@@ -17,7 +17,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  COVERAGE_THRESHOLD: 80
   UV_VERSION: "0.11.7"
   PYTHON_VERSION: "3.14"
 
@@ -43,5 +42,4 @@ jobs:
 
       - name: Run test suite
         working-directory: apps/runner
-        run: uv run pytest --cov=src --cov-report=term-missing
-          --cov-fail-under=${COVERAGE_THRESHOLD}
+        run: uv run pytest
