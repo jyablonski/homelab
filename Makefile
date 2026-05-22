@@ -11,7 +11,7 @@ up:
 	@sudo -v
 	@./scripts/run-step.sh "Running DNS bootstrap" -- bash ./scripts/setup-local-pihole-dns.sh disable
 	@./scripts/run-step.sh "Configuring registry access" -- bash ./scripts/setup-registry-home.sh
-	@./scripts/run-step.sh "Configuring ingress access" -- bash ./scripts/setup-ingress-home.sh
+	@./scripts/run-step.sh "Configuring ingress access" -- bash -c 'INGRESS_HOSTS="apps.home authentik.home" bash ./scripts/setup-ingress-home.sh'
 	@./scripts/run-step.sh "Writing K3s config" -- bash -c 'sudo mkdir -p /etc/rancher/k3s && printf "%s\n" "disable:" "  - traefik" "  - servicelb" | sudo tee /etc/rancher/k3s/config.yaml >/dev/null'
 	@./scripts/run-step.sh "Installing K3s" -- bash -c 'curl -sfL https://get.k3s.io | sh -'
 	@./scripts/run-step.sh "Waiting for K3s startup" -- sleep 10
@@ -29,6 +29,10 @@ sync:
 	@echo "Syncing Helmfile..."
 	@helmfile sync
 
+.PHONY: authentik-apply
+authentik-apply:
+	@./scripts/apply-authentik-terraform.sh
+
 # Django manage.py via kubectl. Escape hatch: make django-manage ARGS="shell"
 
 _FIRST_GOAL := $(firstword $(MAKECMDGOALS))
@@ -39,7 +43,7 @@ SHOWMIGRATIONS_EXTRAS := $(if $(filter showmigrations,$(_FIRST_GOAL)),$(wordlist
 
 STUBS_RAW := $(strip $(MIGRATE_EXTRAS) $(MIGRATIONS_EXTRAS) $(SHOWMIGRATIONS_EXTRAS))
 # Trailing words must be stub targets; exclude real Makefile goals so we never override them.
-_RESERVED_FOR_STUB := up sync down validate validate-fast update-charts django-manage image-build image-push image-build-push image-ref pihole-dns-enable pihole-dns-disable pihole-dns-status sops-age-generate migrate migrations showmigrations
+_RESERVED_FOR_STUB := up sync authentik-apply down validate validate-fast update-charts django-manage image-build image-push image-build-push image-ref pihole-dns-enable pihole-dns-disable pihole-dns-status sops-age-generate migrate migrations showmigrations
 STUBS := $(filter-out $(_RESERVED_FOR_STUB),$(STUBS_RAW))
 
 ifneq ($(STUBS),)
@@ -116,6 +120,7 @@ down:
 	@echo "Restoring default workstation DNS before cluster teardown..."
 	@bash ./scripts/setup-local-pihole-dns.sh disable
 	@sudo /usr/local/bin/k3s-uninstall.sh
+	@rm -rf terraform/.terraform terraform/terraform.tfstate terraform/terraform.tfstate.*
 
 # check for helm chart updates; prompts y/n before writing helmfile.yaml
 .PHONY: update-charts

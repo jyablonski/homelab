@@ -4,6 +4,12 @@
 .decrypted/
 notes/plans
 
+# Terraform local state and input secrets
+terraform/.terraform/
+terraform/terraform.tfstate
+terraform/terraform.tfstate.*
+terraform/*.tfvars
+
 # Python bytecode and caches
 __pycache__/
 *.py[cod]

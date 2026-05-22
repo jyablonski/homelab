@@ -14,11 +14,15 @@ server:
   replicas: 1
 
   service:
-    type: NodePort
-    nodePort: 30080
+    type: ClusterIP
 
   ingress:
-    enabled: false
+    enabled: true
+    ingressClassName: traefik
+    hosts:
+      - authentik.home
+    path: /
+    pathType: Prefix
 
 worker:
   replicas: 1
