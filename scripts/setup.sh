@@ -75,6 +75,8 @@ create_namespace metallb-system
 echo "Running Helmfile infra bootstrap..."
 "$repo_root/scripts/run-with-service-status.sh" bootstrap=infra -- helmfile sync --selector bootstrap=infra
 
+"$repo_root/scripts/apply-authentik-terraform.sh"
+
 wait_for_registry
 build_and_push_local_apps
 

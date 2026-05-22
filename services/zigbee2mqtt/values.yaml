@@ -1,0 +1,135 @@
+controllers:
+  main:
+    replicas: 1
+    strategy: Recreate
+    pod:
+      nodeSelector:
+        smart-home: "true"
+    containers:
+      main:
+        image:
+          repository: koenkk/zigbee2mqtt
+          tag: 2.10.1
+          pullPolicy: IfNotPresent
+        env:
+          ZIGBEE2MQTT_DATA: /app/data
+          TZ: America/Los_Angeles
+        ports:
+          - name: http
+            containerPort: 8080
+            protocol: TCP
+        securityContext:
+          privileged: true
+          capabilities:
+            add:
+              - SYS_ADMIN
+        probes:
+          liveness:
+            enabled: true
+            type: HTTP
+          readiness:
+            enabled: true
+            type: HTTP
+          startup:
+            enabled: true
+            type: HTTP
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+    initContainers:
+      init-config:
+        image:
+          repository: mikefarah/yq
+          tag: 4.45.1
+          pullPolicy: IfNotPresent
+        command:
+          - /bin/sh
+          - -c
+        args:
+          - |
+            if [ ! -f /app/data/configuration.yaml ]; then
+              cp /configmap/configuration.yaml /app/data/configuration.yaml
+            fi
+        securityContext:
+          runAsUser: 0
+
+configMaps:
+  config:
+    data:
+      configuration.yaml: |
+        homeassistant:
+          enabled: true
+        permit_join: false
+        mqtt:
+          server: mqtt://mosquitto.home-automation.svc.cluster.local:1883
+        serial:
+          port: /dev/ttyZigbee
+        frontend:
+          enabled: true
+          port: 8080
+          url: http://zigbee2mqtt.home
+        advanced:
+          channel: 15
+          log_output:
+            - console
+          log_level: info
+          last_seen: ISO_8601_local
+          network_key: GENERATE
+
+service:
+  main:
+    controller: main
+    type: ClusterIP
+    ports:
+      http:
+        port: 8080
+        protocol: HTTP
+
+ingress:
+  main:
+    className: traefik
+    hosts:
+      - host: zigbee2mqtt.home
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: main
+              port: http
+          - path: /api
+            pathType: Prefix
+            service:
+              identifier: main
+              port: http
+
+persistence:
+  config:
+    type: configMap
+    identifier: config
+    globalMounts:
+      - path: /configmap/configuration.yaml
+        subPath: configuration.yaml
+  data:
+    type: persistentVolumeClaim
+    storageClass: longhorn
+    accessMode: ReadWriteOnce
+    size: 2Gi
+    globalMounts:
+      - path: /app/data
+  zigbee-adapter:
+    type: hostPath
+    hostPath: /dev/serial/by-id/REPLACE_WITH_ZIGBEE_ADAPTER
+    hostPathType: CharDevice
+    globalMounts:
+      - path: /dev/ttyZigbee
+  run-udev:
+    type: hostPath
+    hostPath: /run/udev
+    hostPathType: Directory
+    globalMounts:
+      - path: /run/udev
+        readOnly: true

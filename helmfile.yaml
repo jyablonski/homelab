@@ -19,6 +19,8 @@ repositories:
     url: https://charts.goauthentik.io
   - name: twuni
     url: https://twuni.github.io/docker-registry.helm
+  - name: bjw-s
+    url: https://bjw-s-labs.github.io/helm-charts
 releases:
   - name: prometheus-operator
     namespace: monitoring
@@ -40,6 +42,7 @@ releases:
           - apply
           - -f
           - services/grafana/dashboards/
+
   - name: loki
     namespace: monitoring
     labels:
@@ -48,6 +51,7 @@ releases:
     version: 6.53.0
     values:
       - services/loki/values.yaml
+
   - name: promtail
     namespace: monitoring
     labels:
@@ -56,6 +60,7 @@ releases:
     version: 6.17.1
     values:
       - services/promtail/values.yaml
+
   - name: postgres
     namespace: postgres
     createNamespace: true
@@ -67,6 +72,7 @@ releases:
     needs:
       - longhorn-system/longhorn
     wait: true
+
   - name: home-assistant
     namespace: home-automation
     createNamespace: true
@@ -77,7 +83,51 @@ releases:
     values:
       - services/home-assistant/values.yaml
     needs:
+      - home-automation/mosquitto
       - monitoring/prometheus-operator
+
+  - name: mosquitto
+    namespace: home-automation
+    createNamespace: true
+    labels:
+      bootstrap: infra
+    chart: bjw-s/app-template
+    version: 4.6.2
+    values:
+      - services/mosquitto/values.yaml
+    needs:
+      - longhorn-system/longhorn
+    wait: true
+
+  - name: zigbee2mqtt
+    installed: false
+    namespace: home-automation
+    createNamespace: true
+    labels:
+      bootstrap: infra
+    chart: bjw-s/app-template
+    version: 4.6.2
+    values:
+      - services/zigbee2mqtt/values.yaml
+    needs:
+      - home-automation/mosquitto
+      - kube-system/traefik
+      - longhorn-system/longhorn
+    wait: true
+
+  - name: openthread-border-router
+    installed: false
+    namespace: home-automation
+    createNamespace: true
+    labels:
+      bootstrap: infra
+    chart: bjw-s/app-template
+    version: 4.6.2
+    values:
+      - services/openthread-border-router/values.yaml
+    needs:
+      - kube-system/traefik
+
   - name: longhorn
     namespace: longhorn-system
     createNamespace: true
@@ -87,6 +137,7 @@ releases:
     version: 1.11.0
     values:
       - services/longhorn/values.yaml
+
   - name: registry
     namespace: registry
     createNamespace: true
@@ -101,6 +152,7 @@ releases:
       - metallb-system/metallb
       - monitoring/prometheus-operator
     wait: true
+
   - name: pihole
     namespace: pihole
     createNamespace: true
@@ -117,6 +169,7 @@ releases:
       - metallb-system/metallb
       - kube-system/traefik
     wait: true
+
   - name: workload-chart-example
     namespace: apps
     createNamespace: true
@@ -128,6 +181,7 @@ releases:
     needs:
       - monitoring/prometheus-operator
       - registry/registry
+
   - name: api
     namespace: apps
     labels:
@@ -141,6 +195,7 @@ releases:
       - monitoring/prometheus-operator
       - postgres/postgres
       - registry/registry
+
   - name: runner
     namespace: apps
     createNamespace: true
@@ -160,6 +215,7 @@ releases:
             kubectl apply -f apps/runner/rbac.yaml
     needs:
       - registry/registry
+
   - name: django
     namespace: apps
     labels:
@@ -173,6 +229,7 @@ releases:
     needs:
       - postgres/postgres
       - registry/registry
+
   - name: traefik
     namespace: kube-system
     labels:
@@ -181,6 +238,7 @@ releases:
     version: 39.0.5
     values:
       - services/traefik/values.yaml
+
   - name: metallb
     namespace: metallb-system
     createNamespace: true
@@ -200,6 +258,7 @@ releases:
             echo "Waiting for MetalLB webhook to be ready..."
             kubectl wait --for=condition=ready pod -l app.kubernetes.io/component=controller -n metallb-system --timeout=60s
             kubectl apply -f services/metallb/ip-pool.yaml
+
   - name: headlamp
     namespace: kube-system
     labels:
@@ -208,6 +267,21 @@ releases:
     version: 0.40.0
     values:
       - services/headlamp/values.yaml
+    hooks:
+      - events:
+          - postsync
+        showlogs: true
+        command: kubectl
+        args:
+          - -n
+          - kube-system
+          - patch
+          - deployment
+          - headlamp
+          - --type=strategic
+          - -p
+          - '{"spec":{"template":{"spec":{"hostAliases":[{"ip":"192.168.76.245","hostnames":["authentik.home"]}]}}}}'
+
   - name: authentik
     namespace: authentik
     createNamespace: true

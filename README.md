@@ -9,40 +9,29 @@ Personal Kubernetes homelab running on [K3s](https://k3s.io/), fully declared in
 **Prerequisites:** Linux system with `kubectl`, `helm`, and `helmfile` installed.
 
 ```bash
-# Bring up the cluster (installs K3s, deploys infra, builds local app images, deploys local apps)
+# Bring up the cluster
 make up
 
 # Re-sync after config changes
 make sync
 
-# Run the fast local checks used by the pre-commit hook
+# Run local validation
 make validate-fast
-
-# Run the full local validation pass that mirrors CI
 make validate
 
-# Tear down everything (services, PVs, and K3s)
+# Tear down the cluster
 make down
 ```
 
-`make up` bootstraps persistent local host mappings for the pinned homelab endpoints:
+`make up` installs K3s, deploys the Helmfile releases, builds local app images, and points this workstation at the in-cluster Pi-hole DNS once it is ready. Browser-facing services use `.home` hostnames, which Pi-hole resolves to Traefik so requests can be routed to the right in-cluster service.
 
-- `registry.home` -> `192.168.76.250`
-- `apps.home` -> `192.168.76.245`
-
-Those `/etc/hosts` entries stay in place across repeated `make down` / `make up` cycles. The IPs stay stable because both the registry and Traefik are pinned inside the MetalLB pool.
-
-`make up` also flips this workstation to the in-cluster Pi-hole automatically after Pi-hole is healthy, and `make down` flips it back to normal DHCP-provided DNS before teardown.
-
-If you need to toggle that behavior manually on this machine, use:
+To toggle homelab DNS manually on this machine:
 
 ```bash
 make pihole-dns-enable
 make pihole-dns-disable
 make pihole-dns-status
 ```
-
-That points this machine's active NetworkManager connection at the cluster Pi-hole DNS service without changing the rest of the LAN. This enables all services to be accessible by their `.home` hostnames without additional configuration on this machine.
 
 ### Default Access
 
@@ -52,6 +41,7 @@ That points this machine's active NetworkManager connection at the cluster Pi-ho
 | Prometheus     | [prometheus.home](http://prometheus.home)       | —                                                               |
 | Home Assistant | [homeassistant.home](http://homeassistant.home) | Setup on first visit                                            |
 | Headlamp       | [headlamp.home](http://headlamp.home)           | `kubectl create token headlamp -n kube-system --duration=8760h` |
+| Authentik      | [authentik.home](http://authentik.home)         | Setup on first visit                                            |
 | Longhorn UI    | [longhorn.home](http://longhorn.home)           | —                                                               |
 | Pi-hole        | [pihole.home/admin/](http://pihole.home/admin/) | admin / `pihole`                                                |
 | Apps           | [apps.home](http://apps.home)                   | —                                                               |
@@ -73,6 +63,7 @@ That points this machine's active NetworkManager connection at the cluster Pi-ho
 | [PostgreSQL](services/postgres/)                       | Shared database for homelab-owned applications                 |
 | [Registry](services/registry/)                         | Local registry for Docker images built from `apps/`            |
 | [Home Assistant](services/home-assistant/)             | Home automation platform                                       |
+| [Mosquitto](services/mosquitto/)                       | MQTT broker for smart-home integrations                        |
 | [Pi-hole](services/pihole/)                            | DNS and `.home` records                                        |
 | [Headlamp](services/headlamp/)                         | Kubernetes dashboard; optional if `kubectl` is enough          |
 | [Authentik](services/authentik/)                       | SSO / OIDC identity provider (WIP)                             |
@@ -80,6 +71,13 @@ That points this machine's active NetworkManager connection at the cluster Pi-ho
 | [Django](apps/django/)                                 | Database migration tool and admin interface                    |
 | [Runner](apps/runner/)                                 | Internal UI for running approved app-owned jobs                |
 | [Workload Chart Example](apps/workload-chart-example/) | Deployed reference app using the workload chart                |
+
+### Prepared but Disabled
+
+| Service                                                        | Description                                                           |
+| -------------------------------------------------------------- | --------------------------------------------------------------------- |
+| [Zigbee2MQTT](services/zigbee2mqtt/)                           | Zigbee coordinator bridge; enable after a Zigbee USB stick is present |
+| [OpenThread Border Router](services/openthread-border-router/) | Thread border router; enable after a Thread RCP stick is present      |
 
 ## Network Flow
 
@@ -139,6 +137,19 @@ sops -d services/<service>/secrets.sops.yaml
 
 Add new secret files to the release's `secrets:` list in `helmfile.yaml` so Helmfile decrypts and merges them during `helmfile sync`.
 
+## Authentik SSO
+
+Authentik is exposed at [authentik.home](http://authentik.home) and uses the shared Postgres release for durable state. On first boot, finish the Authentik initial setup in the UI and create an API token.
+
+If `TF_VAR_authentik_token` is set, `make up` applies the Terraform configuration after the infra Helmfile sync. That creates the Grafana OAuth client in Authentik, stores the generated client credentials in the `grafana-oauth-secret` Kubernetes Secret, and restarts Grafana so it can offer Authentik login.
+
+For an existing cluster, run:
+
+```bash
+export TF_VAR_authentik_token='<token>'
+make authentik-apply
+```
+
 ## Project Layout
 
 ```
@@ -160,20 +171,3 @@ homelab/
 │   └── ...
 └── notes/                        # Reference notes
 ```
-
-## App workloads
-
-Homelab-owned apps deploy through the shared [`charts/workload`](charts/workload/) chart. Each app keeps a small `apps/<app>/values.yaml` with only what differs per service (env, probes, ingress paths, jobs).
-
-The chart assumes a **single personal cluster**—no staging/prod split—so several values are defaulted and omitted from app files:
-
-| Default                                       | Why                                                                                                                               |
-| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| Image `registry.home:5000/homelab/<app>:dev`  | Release name matches `apps/<app>/` and `make image-build-push SERVICE=<app>`; tag stays `dev` unless you override it in the chart |
-| `image.pullPolicy: Always`                    | Local registry + frequent `dev` rebuilds; pods should pick up new images after push                                               |
-| `scale.replicas: 1`                           | Most apps are single-replica unless HPA is enabled                                                                                |
-| `service.port` → container port               | One port knob instead of duplicating `containerPort` and Service port                                                             |
-| `app.kubernetes.io/component: <app>`          | Consistent labeling without repeating `podLabels`                                                                                 |
-| ServiceMonitor path/interval/Prometheus label | Same scrape shape for every metrics-enabled app                                                                                   |
-
-See [`charts/workload/README.md`](charts/workload/README.md) for the full values API and examples.

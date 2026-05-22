@@ -38,7 +38,7 @@ Authentik helps with:
 - avoiding long-lived dashboard tokens where possible
 - putting SSO in front of tools that do not have great built-in auth
 - centralizing access when the lab grows beyond one person or one workstation
-- making Grafana, Headlamp, and other admin UIs feel like one secured environment
+- making admin UIs feel like one secured environment
 
 It does not solve everything by itself. You still need stable DNS, ingress, secrets, and persistence. It also adds another moving part, so it should not become a hard dependency before the cluster is stable enough to justify it.
 
@@ -55,14 +55,52 @@ The current setup uses:
 
 - external Postgres at `postgres.postgres.svc.cluster.local`
 - bundled Redis
-- a NodePort server on `30080`
-- no ingress yet
+- Traefik ingress at `authentik.home`
 
-This is good enough for an experiment, but it is not yet the desired final shape.
+This is enough for a first real integration while still keeping Authentik optional during first boot.
+
+## First Setup
+
+Authentik cannot fully bootstrap itself from Terraform on a brand-new cluster because Terraform needs an Authentik API token first. The first run is intentionally a two-step process.
+
+1. Start the cluster:
+
+   ```bash
+   make up
+   ```
+
+   If `TF_VAR_authentik_token` is not set, `make up` deploys Authentik and skips Terraform with a message explaining the next step.
+
+2. Open Authentik:
+
+   ```text
+   http://authentik.home/if/flow/initial-setup/
+   ```
+
+3. Create the initial admin user and log in.
+
+4. Create an API token in Authentik.
+
+   The token is used by Terraform to create Authentik providers, applications, and Kubernetes Secrets. If the copy button does not work over `http://authentik.home`, use a local port-forward because browser clipboard APIs are restricted on plain HTTP hostnames:
+
+   ```bash
+   kubectl -n authentik port-forward svc/authentik-server 9000:80
+   ```
+
+   Then open `http://localhost:9000` and create/copy the token there.
+
+5. Export the token and apply the Terraform-managed Authentik config:
+
+   ```bash
+   export TF_VAR_authentik_token='<token>'
+   make authentik-apply
+   ```
+
+   This runs Terraform, creates the OAuth/OIDC resources, writes client credentials into Kubernetes Secrets, and restarts the workloads that consume those Secrets.
+
+`make down` removes local Terraform state because the cluster, Authentik database, and Kubernetes Secrets are also destroyed. The provider lock file is intentionally kept.
 
 ## Terraform Involvement
-
-Terraform is intended to configure Authentik after the service exists.
 
 The files under `terraform/` define Authentik resources such as:
 
@@ -71,55 +109,46 @@ The files under `terraform/` define Authentik resources such as:
 - generated client secrets
 - Kubernetes Secrets containing OAuth client credentials
 
-In plain terms:
+Terraform currently writes:
 
-1. Helmfile installs the Authentik service.
-2. You create or provide an Authentik API token.
-3. Terraform connects to Authentik using that token.
-4. Terraform creates SSO integrations for services like Grafana and Headlamp.
-5. Terraform writes the generated client credentials back into Kubernetes Secrets.
-6. Helm values can later reference those Secrets to enable OIDC login.
+- `grafana-oauth-secret` in the `monitoring` namespace
+- `headlamp-oauth-secret` in the `kube-system` namespace
 
-This keeps SSO configuration reproducible instead of relying on hand-clicked console setup.
+The Authentik API token is only for Terraform to administer Authentik. The generated OAuth client IDs and secrets are what integrated apps use to authenticate themselves to Authentik during login.
 
-## Current Short-Lived Cluster Reality
+## Current Integrations
 
-Right now the cluster is designed to be turned on briefly and torn down with no meaningful persistence across sessions.
+Grafana works as the first native OIDC integration.
 
-That matters because Authentik stores its state in Postgres. If the database does not persist, then Authentik users, applications, providers, groups, tokens, and flows also disappear.
+Terraform creates the Grafana OAuth provider/application in Authentik and writes `grafana-oauth-secret`. The Grafana chart then reads that Secret through environment variables:
 
-For the current phase, Authentik should be treated as a learning spike:
+```text
+GF_AUTH_GENERIC_OAUTH_CLIENT_ID
+GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET
+```
 
-- deploy it
-- poke around the UI
-- wire one low-stakes service
-- learn the OIDC flow
-- make the setup repeatable
+The browser-facing authorization URL uses `http://authentik.home`, while Grafana's server-side token and userinfo URLs use the in-cluster Authentik service DNS name. This is necessary because the browser can resolve `.home` names through Pi-hole, but pods should use Kubernetes DNS for service-to-service calls.
 
-Do not make normal cluster access depend on Authentik yet.
+Headlamp was explored but is not considered working as a simple Authentik SSO integration.
 
-## When To Implement For Real
+Unlike Grafana, Headlamp's OIDC mode is tied to Kubernetes API authentication. Authentik can complete the login flow, but the Kubernetes API server must also trust Authentik as an OIDC issuer and RBAC must be configured for Authentik users or groups. Without that deeper Kubernetes OIDC setup, Headlamp returns to its login screen. For now, keep Headlamp's existing token/in-cluster access model or protect it later with an ingress-level auth gate instead of native OIDC.
 
-Wait until the hardware setup is in place before making Authentik the front door.
+## Other SSO Candidates
 
-Good signs that it is time:
+Good native OIDC candidates:
 
-- the cluster has stable nodes
-- Longhorn or another storage layer persists across restarts
-- Postgres data survives cluster cycles
-- `.home` DNS records are stable
-- Traefik ingress is the normal access path
-- SOPS age keys are backed up
-- restore procedures are at least lightly tested
+- Runner, because it has a browser-facing UI for running approved jobs. Authentik could provide login, and Runner could authorize actions based on groups such as `runner-users` or `homelab-admins`.
+- Django, because it has a browser-facing admin interface and Django has mature OIDC/social-auth libraries. Authentik groups could map to Django staff, superuser, or app-specific permissions.
+- Grafana role mapping, using Authentik groups to assign Grafana Admin, Editor, or Viewer. Grafana already supports Authentik login; role mapping would make authorization less manual.
+- Home Assistant only after checking its auth model carefully; it has its own user/session system and may not be worth forcing early.
 
-At that point Authentik becomes worth the complexity because it can survive long enough to be useful.
+The `api` service is not a good first SSO target because it does not currently expose a frontend login surface. It may still need auth later for API clients or service-to-service calls, but Runner and Django are better next steps for user-facing SSO.
 
-## Recommended Implementation Path
+Good ingress-gated candidates:
 
-1. Keep the current Helmfile release as WIP.
-2. Move Authentik from NodePort to Traefik ingress when DNS is stable.
-3. Decide which service should be the first OIDC client, probably Grafana.
-4. Make Terraform create the Authentik provider and application for that service.
-5. Store generated client credentials in Kubernetes Secrets.
-6. Update the service Helm values to read those credentials.
-7. Repeat for Headlamp only if Headlamp stays in the default install.
+- Prometheus, because it has little useful built-in auth in this setup.
+- Longhorn UI, because it is an admin surface that should not be casually exposed.
+- Pi-hole admin, if you want Authentik to gate access before Pi-hole's own login.
+- Headlamp, if you want SSO as an access gate without making Authentik a Kubernetes API identity provider.
+
+The ingress-gated pattern protects access before traffic reaches the app. It does not necessarily make the app aware of the Authentik user. Native OIDC is better when the app needs user identity, roles, or per-user audit behavior.

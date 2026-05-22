@@ -19,6 +19,10 @@ data "authentik_flow" "default_invalidation_flow" {
   slug = "default-provider-invalidation-flow"
 }
 
+data "authentik_certificate_key_pair" "default" {
+  name = "authentik Self-signed Certificate"
+}
+
 # Create OAuth2 Provider for Grafana
 resource "authentik_provider_oauth2" "grafana" {
   name               = "Grafana"
@@ -26,9 +30,10 @@ resource "authentik_provider_oauth2" "grafana" {
   client_secret      = random_password.grafana_secret.result
   authorization_flow = data.authentik_flow.default_authorization_flow.id
   invalidation_flow  = data.authentik_flow.default_invalidation_flow.id
+  signing_key        = data.authentik_certificate_key_pair.default.id
 
   allowed_redirect_uris = [
-    { matching_mode = "strict", url = "http://localhost:3000/login/generic_oauth" }
+    { matching_mode = "strict", url = "http://grafana.home/login/generic_oauth" }
   ]
 
   property_mappings = [
@@ -52,9 +57,10 @@ resource "authentik_provider_oauth2" "headlamp" {
   client_secret      = random_password.headlamp_secret.result
   authorization_flow = data.authentik_flow.default_authorization_flow.id
   invalidation_flow  = data.authentik_flow.default_invalidation_flow.id
+  signing_key        = data.authentik_certificate_key_pair.default.id
 
   allowed_redirect_uris = [
-    { matching_mode = "strict", url = "http://localhost:4466/oidc-callback" }
+    { matching_mode = "strict", url = "http://headlamp.home/oidc-callback" }
   ]
 
   property_mappings = [
@@ -85,7 +91,7 @@ data "authentik_property_mapping_provider_scope" "profile" {
 }
 
 # Store credentials in Kubernetes secrets
-resource "kubernetes_secret" "grafana_oauth" {
+resource "kubernetes_secret_v1" "grafana_oauth" {
   metadata {
     name      = "grafana-oauth-secret"
     namespace = "monitoring"
@@ -99,15 +105,18 @@ resource "kubernetes_secret" "grafana_oauth" {
   type = "Opaque"
 }
 
-resource "kubernetes_secret" "headlamp_oauth" {
+resource "kubernetes_secret_v1" "headlamp_oauth" {
   metadata {
     name      = "headlamp-oauth-secret"
     namespace = "kube-system"
   }
 
   data = {
-    client_id     = authentik_provider_oauth2.headlamp.client_id
-    client_secret = authentik_provider_oauth2.headlamp.client_secret
+    OIDC_CLIENT_ID     = authentik_provider_oauth2.headlamp.client_id
+    OIDC_CLIENT_SECRET = authentik_provider_oauth2.headlamp.client_secret
+    OIDC_ISSUER_URL    = "http://authentik.home/application/o/headlamp/"
+    OIDC_SCOPES        = "openid email profile"
+    OIDC_CALLBACK_URL  = "http://headlamp.home/oidc-callback"
   }
 
   type = "Opaque"
