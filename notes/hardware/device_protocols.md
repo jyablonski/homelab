@@ -4,13 +4,45 @@
 
 Smart home devices need a shared communication protocol to be controllable by a hub like Home Assistant. The main options:
 
-- Zigbee: mature, broad device support, mesh-based, local-only
-- Z-Wave: similar to Zigbee but proprietary, smaller ecosystem, longer range
-- Matter: newer standard backed by Apple/Google/Amazon, runs over Thread, WiFi, or Ethernet
-- Thread: network-layer mesh protocol (not a smart home standard itself, but Matter runs on it)
-- WiFi: high overhead, often cloud-dependent, avoid when possible
+- Zigbee: mature, broad device support, mesh-based, local-only. Operates on 2.4 GHz using the IEEE 802.15.4 radio standard.
+- Z-Wave: similar to Zigbee but proprietary, smaller ecosystem, longer range. Operates around 908 MHz in the US, avoiding the crowded 2.4 GHz band shared with WiFi and Bluetooth.
+- Thread: a mesh networking protocol that uses the same 802.15.4 radio as Zigbee but with an IPv6-based upper stack. Not a smart home standard itself, just the transport.
+- Matter: the application-layer standard backed by Apple, Google, and Amazon. Runs over Thread, WiFi, or Ethernet. The long-term direction for cross-vendor compatibility.
+- WiFi: high overhead, often cloud-dependent, avoid when possible.
 
-Devices need a protocol because they speak over radio, not IP. Something has to translate radio messages into something HA can understand. The protocol defines pairing, messaging, security, and how devices form a network.
+### How these protocols actually work
+
+At the bottom of any of these protocols is a radio chip transmitting and receiving packets over the air at a specific frequency. Zigbee, Thread, and Z-Wave are all low-power, low-bandwidth protocols designed for sensors and switches that send tiny messages occasionally — a temperature reading, a button press, a motion event. None of them are anything like WiFi in terms of throughput or power draw.
+
+Above the radio layer, each protocol defines how devices pair with each other, how they form a network, how messages are routed, and how they're secured. Devices need a protocol because they speak over radio, not IP. They aren't on your WiFi network, they don't have IP addresses (Thread devices do, but indirectly), and your computer has no way to hear them natively. Something has to bridge between the radio world and the IP world.
+
+### Why we need coordinator sticks
+
+Your computer doesn't have an 802.15.4 or Z-Wave radio built in. It has WiFi and Bluetooth, but those are completely different protocols on different hardware. To participate in a Zigbee, Thread, or Z-Wave network, you need to add the right radio to your machine — and the easiest way to do that is a USB stick called a "coordinator."
+
+A coordinator stick is a small computer with a dedicated radio chip (typically a Silicon Labs EFR32 or Texas Instruments CC2652 for 802.15.4 protocols). It handles the low-level radio timing, transmits and receives packets, manages the mesh network, and exposes a serial interface to the host computer over USB. From the host's perspective, the stick shows up as a serial device like `/dev/ttyUSB0` — basically a modem for the wireless protocol.
+
+The coordinator has a specific role in the network: it's the central node that maintains the network keys, handles pairing of new devices, and routes traffic. In Zigbee terms there's exactly one coordinator per network. End devices and routers talk to and through it.
+
+A practical gotcha: USB 3.0 ports emit broadband RF noise in the 2.4 GHz range, which is exactly where Zigbee and Thread operate. Plugging a coordinator directly into a USB 3.0 port or next to one degrades range and reliability significantly. The fix is a cheap USB 2.0 extension cable (not USB 3.0) that moves the stick a meter or so away from the host chassis.
+
+### Reading packets from the coordinator
+
+The coordinator handles the radio, but it doesn't know anything about your devices, what they mean, or how to expose them to Home Assistant. That's a separate software layer running on the host. For Zigbee, the standard choice is Zigbee2MQTT (Z2M):
+
+1. Z2M opens the serial connection to the coordinator stick
+2. Decodes incoming Zigbee packets and figures out which device they're from and what they mean (e.g., "this is a temperature reading of 21.5°C from the living room sensor")
+3. Publishes the decoded message to an MQTT topic like `zigbee2mqtt/living_room_sensor`
+
+MQTT is a generic pub/sub messaging protocol — Z2M doesn't know or care who's listening. A separate MQTT broker (Mosquitto) holds the messages and delivers them to anything subscribed. Home Assistant's MQTT integration subscribes to the relevant topics and updates its entities when new messages arrive.
+
+The full data flow:
+
+```
+sensor → radio packet → coordinator stick → serial/USB → Z2M container → MQTT broker → HA
+```
+
+Thread is structurally different. Thread devices are IPv6 endpoints — they have addresses and route packets through a Thread border router (OTBR), which bridges Thread and the regular IP network. HA's Matter integration talks to Thread devices over standard IP, no MQTT or serial passthrough required at the HA layer.
 
 ## The Two Chosen: Zigbee + Matter-over-Thread
 
@@ -73,7 +105,10 @@ Devices have no concept of nodes, containers, or clusters. They see only:
 - Other devices in the mesh
 
 The connection terminates at the radio. The radio lives in the USB stick. The USB stick is owned by a container running the protocol stack.
+
+```
 [Device] -> [Radio in USB stick] -> [Container running protocol software] -> [HA via IP]
+```
 
 ## The Containers
 
