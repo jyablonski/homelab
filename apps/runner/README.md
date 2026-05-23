@@ -12,7 +12,7 @@ It can create one-off `Job` runs from those CronJob templates. The job definitio
 
 ## UI
 
-The runner UI is a dark, table-first dashboard at `/runner` (via Traefik). It loads jobs from `GET /api/jobs`, supports search and status filters, shows a per-job history sparkline, and opens a confirmation modal with a Grafana link after `POST /api/jobs/{app}/{name}/run`.
+The runner UI is a dashboard at `/runner` (via Traefik). It loads jobs from `GET /api/jobs`, supports search and status filters, shows a per-job history sparkline, and opens a confirmation modal with a Grafana link after `POST /api/jobs/{app}/{name}/run`.
 
 Click a job row to open its full run history. The list view still shows a short sparkline summary per job.
 
@@ -21,18 +21,6 @@ Click a job row to open its full run history. The list view still shows a short 
 - `GET /api/jobs` — app, name, schedule, status, last run, history
 - `GET /api/jobs/{app}/{name}/runs` — full run history for a job
 - `POST /api/jobs/{app}/{name}/run` — `{ runId, namespace, grafanaUrl }`
-- Legacy: `GET /api/runnables`, `POST /api/runnables/{namespace}/{cronjob_name}/runs`
-
-## Local Development
-
-```bash
-cd apps/runner
-uv sync
-uv run pytest   # enforces >=90% Python coverage on src/
-uv run uvicorn main:app --reload
-```
-
-Tests also sanity-check `src/static/*` and templates (design tokens, key UI behaviors, asset wiring).
 
 ## Grafana log links
 
@@ -42,7 +30,4 @@ Each run links to Loki with:
 - `pod` matched to every pod with `job-name=<Kubernetes Job name>` for that run
 - a time range from the Job start/finish times (with a small buffer)
 
-`RUNNER_LOKI_DATASOURCE_UID` must match the Loki datasource UID in Grafana
-(**Connections → Data sources → Loki**). Links use Explore `left=` (v0 array
-form: time range, datasource UID, LogQL with `namespace`, `container`, and `pod`
-labels). After changing link logic, rebuild and restart the **runner** deployment.
+`RUNNER_LOKI_DATASOURCE_UID` must match the Loki datasource UID in Grafana (**Connections → Data sources → Loki**). Links use Explore `left=` (v0 array form: time range, datasource UID, LogQL with `namespace`, `container`, and `pod` labels). After changing link logic, rebuild and restart the **runner** deployment.
