@@ -99,11 +99,10 @@ Service configuration lives in `services/`.
 - `postgres`: local chart for Postgres 17 and bootstrap SQL.
 - `registry`: local OCI registry.
 - `pihole`: DNS and `.home` records.
-- `headlamp`: Kubernetes dashboard.
 - `home-assistant`: home automation.
 - `frigate`: NVR/object detection; not deployed by default per README.
 - `mosquitto`: MQTT broker values are prepared, but no current Helmfile release wires it.
-- `authentik`: SSO/OIDC, WIP.
+- `authentik`: SSO/OIDC; Terraform-managed OAuth apps on `make up`.
 - `keycloak`: values/secrets exist, but no current Helmfile release wires it.
 
 When adding a service:
@@ -208,6 +207,7 @@ bash scripts/validate-manifests.sh
 
 Pre-commit behavior:
 
+- `ty` runs at local pre-commit for each touched app under `apps/api`, `apps/django`, or `apps/runner`; CI uses the Python Quality workflow (`SKIP: ty` in the validate pre-commit job).
 - `make validate-fast` runs at pre-commit.
 - `make validate` runs at pre-push.
 - YAML and Markdown use Prettier, excluding Helm template paths.

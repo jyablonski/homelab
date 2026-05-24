@@ -1,0 +1,4 @@
+# Installed before the first K3s start (Makefile `up`).
+disable:
+  - traefik
+  - servicelb

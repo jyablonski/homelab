@@ -16,6 +16,12 @@ The runner UI is a dashboard at `/runner` (via Traefik). It loads jobs from `GET
 
 Click a job row to open its full run history. The list view still shows a short sparkline summary per job.
 
+## Authentik SSO
+
+Homelab settings live in `values.yaml` (`env`) and `runner-oauth-secret` (`secretEnv`, from Terraform). `config.py` only reads `RUNNER_*` env vars with empty defaults.
+
+With `RUNNER_SSO_ENABLED=true`, the UI and API require Authentik; only `RUNNER_SSO_ALLOWED_GROUP` members get a session. Set `RUNNER_SSO_ENABLED=false` to disable SSO without removing the Authentik app.
+
 ## API
 
 - `GET /api/jobs` — app, name, schedule, status, last run, history

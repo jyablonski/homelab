@@ -11,8 +11,8 @@ up:
 	@sudo -v
 	@./scripts/run-step.sh "Running DNS bootstrap" -- bash ./scripts/setup-local-pihole-dns.sh disable
 	@./scripts/run-step.sh "Configuring registry access" -- bash ./scripts/setup-registry-home.sh
-	@./scripts/run-step.sh "Configuring ingress access" -- bash -c 'INGRESS_HOSTS="apps.home authentik.home" bash ./scripts/setup-ingress-home.sh'
-	@./scripts/run-step.sh "Writing K3s config" -- bash -c 'sudo mkdir -p /etc/rancher/k3s && printf "%s\n" "disable:" "  - traefik" "  - servicelb" | sudo tee /etc/rancher/k3s/config.yaml >/dev/null'
+	@./scripts/run-step.sh "Configuring ingress access" -- bash -c 'INGRESS_HOSTS="apps.home authentik.home grafana.home" bash ./scripts/setup-ingress-home.sh'
+	@./scripts/run-step.sh "Writing K3s config" -- bash -c 'sudo mkdir -p /etc/rancher/k3s && sudo cp services/k3s/config.yaml /etc/rancher/k3s/config.yaml'
 	@./scripts/run-step.sh "Installing K3s" -- bash -c 'curl -sfL https://get.k3s.io | sh -'
 	@./scripts/run-step.sh "Waiting for K3s startup" -- sleep 10
 	@./scripts/run-step.sh "Configuring kubeconfig" -- bash -c 'mkdir -p ~/.kube && sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config && sudo chown "$$(id -un):$$(id -gn)" ~/.kube/config'

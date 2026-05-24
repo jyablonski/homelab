@@ -1,17 +1,26 @@
 output "grafana_client_id" {
-  value = authentik_provider_oauth2.grafana.client_id
+  value = module.grafana_oidc.client_id
 }
 
 output "grafana_client_secret" {
-  value     = authentik_provider_oauth2.grafana.client_secret
+  value     = module.grafana_oidc.client_secret
   sensitive = true
 }
 
-output "headlamp_client_id" {
-  value = authentik_provider_oauth2.headlamp.client_id
+output "django_client_id" {
+  value = module.django_oidc.client_id
 }
 
-output "headlamp_client_secret" {
-  value     = authentik_provider_oauth2.headlamp.client_secret
+output "django_client_secret" {
+  value     = module.django_oidc.client_secret
+  sensitive = true
+}
+
+output "runner_client_id" {
+  value = module.runner_oidc.client_id
+}
+
+output "runner_client_secret" {
+  value     = module.runner_oidc.client_secret
   sensitive = true
 }

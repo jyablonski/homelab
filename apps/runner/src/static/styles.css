@@ -96,6 +96,16 @@ body {
   font-size: 0.82rem;
 }
 
+.logout-link {
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-decoration: none;
+}
+
+.logout-link:hover {
+  color: var(--accent);
+}
+
 .icon-btn {
   border: 1px solid var(--border);
   border-radius: 4px;

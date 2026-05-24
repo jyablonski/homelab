@@ -1,10 +1,52 @@
 env:
   DJANGO_DEBUG: "false"
   DJANGO_ALLOWED_HOSTS: "*"
+  DJANGO_CSRF_TRUSTED_ORIGINS: "http://apps.home"
+  DJANGO_SSO_ENABLED: "true"
+  DJANGO_SSO_STAFF_GROUP: "homelab-admins"
+  DJANGO_SSO_SUPERUSER_GROUP: "homelab-admins"
   DB_HOST: "postgres.postgres.svc.cluster.local"
   DB_PORT: "5432"
   DB_NAME: "postgres"
   DB_SEARCH_PATH: "source,public"
+
+secretEnv:
+  - name: DJANGO_OIDC_CLIENT_ID
+    secretName: django-oauth-secret
+    secretKey: OIDC_CLIENT_ID
+    optional: true
+  - name: DJANGO_OIDC_CLIENT_SECRET
+    secretName: django-oauth-secret
+    secretKey: OIDC_CLIENT_SECRET
+    optional: true
+  - name: DJANGO_OIDC_ISSUER_URL
+    secretName: django-oauth-secret
+    secretKey: OIDC_ISSUER_URL
+    optional: true
+  - name: DJANGO_OIDC_AUTHORIZE_URL
+    secretName: django-oauth-secret
+    secretKey: OIDC_AUTHORIZE_URL
+    optional: true
+  - name: DJANGO_OIDC_TOKEN_URL
+    secretName: django-oauth-secret
+    secretKey: OIDC_TOKEN_URL
+    optional: true
+  - name: DJANGO_OIDC_USERINFO_URL
+    secretName: django-oauth-secret
+    secretKey: OIDC_USERINFO_URL
+    optional: true
+  - name: DJANGO_OIDC_JWKS_URL
+    secretName: django-oauth-secret
+    secretKey: OIDC_JWKS_URL
+    optional: true
+  - name: DJANGO_OIDC_SCOPES
+    secretName: django-oauth-secret
+    secretKey: OIDC_SCOPES
+    optional: true
+  - name: DJANGO_OIDC_CALLBACK_URL
+    secretName: django-oauth-secret
+    secretKey: OIDC_CALLBACK_URL
+    optional: true
 
 resources:
   requests:

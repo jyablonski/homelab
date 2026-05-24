@@ -52,6 +52,10 @@ spec:
       {{- if ne .Values.serviceAccount.automount nil }}
       automountServiceAccountToken: {{ .Values.serviceAccount.automount }}
       {{- end }}
+      {{- with .Values.hostAliases }}
+      hostAliases:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: {{ include "workload.name" . }}
           image: {{ include "workload.image" . | quote }}

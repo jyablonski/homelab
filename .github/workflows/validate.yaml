@@ -151,7 +151,10 @@ jobs:
       - name: Install pre-commit
         run: python -m pip install pre-commit
 
+      # ty runs in python-quality.yaml (per changed app); skip here to avoid installing uv twice.
       - name: Run pre-commit
+        env:
+          SKIP: ty
         run: pre-commit run --all-files
 
   terraform:

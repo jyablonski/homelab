@@ -9,9 +9,11 @@ After deployment in this homelab setup, access via your configured ingress path:
 
 - `http://apps.home/django/admin`
 
-For local-only runs, Django admin is typically at:
+## Authentik SSO
 
-- `http://localhost:8000/django/admin/`
+With `DJANGO_SSO_ENABLED=true` (default in `values.yaml`), admin login redirects through Authentik. Only users in the `homelab-admins` group (`DJANGO_SSO_STAFF_GROUP`) can complete SSO; that group also grants Django staff and superuser.
+
+`make up` runs Terraform after the infra sync and writes `django-oauth-secret` before the app sync. Callback: `http://apps.home/django/sso/callback/`. Add homelab admins in the Authentik UI (group `homelab-admins`).
 
 ## Directory Structure
 

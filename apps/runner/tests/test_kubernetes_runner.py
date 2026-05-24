@@ -103,7 +103,7 @@ def test_list_runs_maps_completed_jobs():
         ],
     )
     runner = KubernetesRunnerClient(
-        settings=Settings(namespace="apps"),
+        settings=Settings(namespace="apps", loki_datasource_uid="Loki"),
         batch_api=batch_api,
         core_api=None,
     )

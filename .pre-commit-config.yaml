@@ -23,6 +23,13 @@ repos:
         types_or: [python, pyi]
   - repo: local
     hooks:
+      - id: ty
+        name: ty (changed apps)
+        entry: bash scripts/pre-commit-ty.sh
+        language: system
+        files: ^apps/(api|django|runner)/
+        pass_filenames: true
+        require_serial: true
       - id: validate-fast
         name: make validate-fast
         entry: make validate-fast

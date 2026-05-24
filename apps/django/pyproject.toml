@@ -4,8 +4,10 @@ version = "0.1.0"
 description = "Django admin and migrations service for homelab Postgres"
 requires-python = ">=3.13"
 dependencies = [
+  "authlib>=1.6.0",
   "Django>=6.0.4",
   "psycopg2-binary>=2.9.10",
+  "requests>=2.32.0",
   "whitenoise>=6.8.2",
 ]
 

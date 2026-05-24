@@ -141,12 +141,6 @@ The Flow:
 
 [K3s Homelab Repo Example 1](https://github.com/humansoftware/self-host-saas-k3s)
 
-## Headlamp
-
-```sh
-kubectl create token headlamp -n kube-system --duration=87600h
-```
-
 ## Authentik
 
 Authentik is an identity provider that enables Single Sign-On (SSO) across the homelab services. Instead of managing separate usernames and passwords for each service, you log in once through Authentik.
@@ -161,7 +155,7 @@ Option 1: Manual Setup
 
 1. Access Authentik at `http://localhost:30080/if/flow/initial-setup/`
 2. Set admin password and create an API token
-3. Create OAuth applications for each service (Grafana, Headlamp, Prometheus)
+3. Create OAuth applications for each service (Grafana, Prometheus)
 4. Copy Client ID and Secret for each application
 5. Update `values.yaml` files for each service with the credentials
 6. Run `helmfile sync` to apply OAuth configuration
@@ -173,7 +167,7 @@ Option 2: Automated Setup with Terraform
 2. Export the token: `export TF_VAR_authentik_token='your-token'`
 3. Run `make terraform-init && make terraform-apply`
 4. Terraform will automatically:
-   - Create OAuth applications for Grafana and Headlamp
+   - Create OAuth applications for Grafana
    - Generate and store credentials in Kubernetes secrets
    - Configure services to use Authentik SSO
 5. Run `helmfile sync` to pick up the new configuration
@@ -188,20 +182,7 @@ Note - for option 2, you'd also have to update the makefile command to do the fo
 Services with SSO Support:
 
 - Grafana (native OAuth2 support)
-- Headlamp (native OIDC support)
 - Prometheus (requires Traefik Forward Auth - more complex setup)
-
-## Scratch
-
-```sh
-helm show values headlamp/headlamp | grep -A 20 configp -A 20 config
-```
-
-## Headlamp Token
-
-- `kubectl create token headlamp -n kube-system --duration=8760h`
-
-- you have to generate a token that lasts a long time because headlamp doesn't support insecure auth yet for some fucking dumbass reason
 
 ## Cron Jobs
 
