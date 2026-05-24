@@ -99,6 +99,7 @@ serviceMonitor:
 nodeSelector: {}
 tolerations: []
 affinity: {}
+hostAliases: []
 
 extraVolumes: []
 extraVolumeMounts: []

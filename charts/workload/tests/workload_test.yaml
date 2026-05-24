@@ -93,6 +93,21 @@ tests:
           path: spec.template.spec.containers[0].ports[0].hostIP
           value: 127.0.0.1
 
+  - it: renders optional hostAliases for pod DNS overrides
+    set:
+      service.port: 8080
+      hostAliases:
+        - ip: 10.0.0.1
+          hostnames:
+            - example.internal
+    asserts:
+      - equal:
+          path: spec.template.spec.hostAliases[0].ip
+          value: 10.0.0.1
+      - contains:
+          path: spec.template.spec.hostAliases[0].hostnames
+          content: example.internal
+
   - it: renders a deployment strategy when configured
     set:
       deploymentStrategy.type: Recreate

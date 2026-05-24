@@ -8,8 +8,14 @@ DEBUG = os.getenv("DJANGO_DEBUG", "false").lower() == "true"
 ALLOWED_HOSTS = [
     h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",") if h.strip()
 ]
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
+    if origin.strip()
+]
 
 USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -83,3 +89,36 @@ STATIC_URL = "/django/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+DJANGO_SSO_ENABLED = os.getenv("DJANGO_SSO_ENABLED", "false").lower() == "true"
+DJANGO_OIDC_CLIENT_ID = os.getenv("DJANGO_OIDC_CLIENT_ID", "")
+DJANGO_OIDC_CLIENT_SECRET = os.getenv("DJANGO_OIDC_CLIENT_SECRET", "")
+DJANGO_OIDC_ISSUER_URL = os.getenv(
+    "DJANGO_OIDC_ISSUER_URL",
+    "http://authentik-server.authentik.svc.cluster.local/application/o/django/",
+)
+DJANGO_OIDC_AUTHORIZE_URL = os.getenv(
+    "DJANGO_OIDC_AUTHORIZE_URL",
+    "http://authentik.home/application/o/authorize/",
+)
+DJANGO_OIDC_TOKEN_URL = os.getenv(
+    "DJANGO_OIDC_TOKEN_URL",
+    "http://authentik-server.authentik.svc.cluster.local/application/o/token/",
+)
+DJANGO_OIDC_USERINFO_URL = os.getenv(
+    "DJANGO_OIDC_USERINFO_URL",
+    "http://authentik-server.authentik.svc.cluster.local/application/o/userinfo/",
+)
+DJANGO_OIDC_JWKS_URL = os.getenv(
+    "DJANGO_OIDC_JWKS_URL",
+    "http://authentik-server.authentik.svc.cluster.local/application/o/django/jwks/",
+)
+DJANGO_OIDC_SCOPES = os.getenv("DJANGO_OIDC_SCOPES", "openid email profile")
+DJANGO_OIDC_CALLBACK_URL = os.getenv(
+    "DJANGO_OIDC_CALLBACK_URL",
+    "http://apps.home/django/sso/callback/",
+)
+DJANGO_SSO_STAFF_GROUP = os.getenv("DJANGO_SSO_STAFF_GROUP", "")
+DJANGO_SSO_SUPERUSER_GROUP = os.getenv("DJANGO_SSO_SUPERUSER_GROUP", "")
+LOGIN_URL = "/django/sso/login/"
+LOGIN_REDIRECT_URL = "/django/admin/"

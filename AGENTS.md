@@ -99,7 +99,6 @@ Service configuration lives in `services/`.
 - `postgres`: local chart for Postgres 17 and bootstrap SQL.
 - `registry`: local OCI registry.
 - `pihole`: DNS and `.home` records.
-- `headlamp`: Kubernetes dashboard.
 - `home-assistant`: home automation.
 - `frigate`: NVR/object detection; not deployed by default per README.
 - `mosquitto`: MQTT broker values are prepared, but no current Helmfile release wires it.

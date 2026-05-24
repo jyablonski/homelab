@@ -35,17 +35,16 @@ make pihole-dns-status
 
 ### Default Access
 
-| Service        | Access                                          | Credentials                                                     |
-| -------------- | ----------------------------------------------- | --------------------------------------------------------------- |
-| Grafana        | [grafana.home](http://grafana.home)             | admin / admin                                                   |
-| Prometheus     | [prometheus.home](http://prometheus.home)       | —                                                               |
-| Home Assistant | [homeassistant.home](http://homeassistant.home) | Setup on first visit                                            |
-| Headlamp       | [headlamp.home](http://headlamp.home)           | `kubectl create token headlamp -n kube-system --duration=8760h` |
-| Authentik      | [authentik.home](http://authentik.home)         | Setup on first visit                                            |
-| Longhorn UI    | [longhorn.home](http://longhorn.home)           | —                                                               |
-| Pi-hole        | [pihole.home/admin/](http://pihole.home/admin/) | admin / `pihole`                                                |
-| Apps           | [apps.home](http://apps.home)                   | —                                                               |
-| PostgreSQL     | `192.168.76.243:5432` / in-cluster service      | SOPS-managed postgres credentials                               |
+| Service        | Access                                          | Credentials                                       |
+| -------------- | ----------------------------------------------- | ------------------------------------------------- |
+| Grafana        | [grafana.home](http://grafana.home)             | Authentik SSO (`auto_login`, login form disabled) |
+| Prometheus     | [prometheus.home](http://prometheus.home)       | —                                                 |
+| Home Assistant | [homeassistant.home](http://homeassistant.home) | Setup on first visit                              |
+| Authentik      | [authentik.home](http://authentik.home)         | Setup on first visit                              |
+| Longhorn UI    | [longhorn.home](http://longhorn.home)           | —                                                 |
+| Pi-hole        | [pihole.home/admin/](http://pihole.home/admin/) | admin / `pihole`                                  |
+| Apps           | [apps.home](http://apps.home)                   | —                                                 |
+| PostgreSQL     | `192.168.76.243:5432` / in-cluster service      | SOPS-managed postgres credentials                 |
 
 ## Services
 
@@ -65,7 +64,6 @@ make pihole-dns-status
 | [Home Assistant](services/home-assistant/)             | Home automation platform                                       |
 | [Mosquitto](services/mosquitto/)                       | MQTT broker for smart-home integrations                        |
 | [Pi-hole](services/pihole/)                            | DNS and `.home` records                                        |
-| [Headlamp](services/headlamp/)                         | Kubernetes dashboard; optional if `kubectl` is enough          |
 | [Authentik](services/authentik/)                       | SSO / OIDC identity provider (WIP)                             |
 | [API](apps/api/)                                       | REST API app for custom workloads                              |
 | [Django](apps/django/)                                 | Database migration tool and admin interface                    |
@@ -139,15 +137,20 @@ Add new secret files to the release's `secrets:` list in `helmfile.yaml` so Helm
 
 ## Authentik SSO
 
-Authentik is exposed at [authentik.home](http://authentik.home) and uses the shared Postgres release for durable state. On first boot, finish the Authentik initial setup in the UI and create an API token.
+Authentik is exposed at [authentik.home](http://authentik.home) and uses the shared Postgres release for durable state. Bootstrap credentials and the Terraform-managed homelab admin password live in `services/authentik/secrets.sops.yaml` (`bootstrap_*` for first install, `homelab_admin_password` for the `jyablonski` admin user).
 
-If `TF_VAR_authentik_token` is set, `make up` applies the Terraform configuration after the infra Helmfile sync. That creates the Grafana OAuth client in Authentik, stores the generated client credentials in the `grafana-oauth-secret` Kubernetes Secret, and restarts Grafana so it can offer Authentik login.
+During `make up`, Terraform reads the Helm-managed bootstrap token from the `authentik` Kubernetes Secret after the infra Helmfile sync. That creates the Grafana, Django, and Runner OAuth clients in Authentik, stores generated client credentials in Kubernetes Secrets, and restarts deployments that can consume those credentials.
 
 For an existing cluster, run:
 
 ```bash
-export TF_VAR_authentik_token='<token>'
 make authentik-apply
+```
+
+To read the bootstrap password locally:
+
+```bash
+sops -d --extract '["authentik"]["bootstrap_password"]' services/authentik/secrets.sops.yaml
 ```
 
 ## Project Layout

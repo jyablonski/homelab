@@ -13,7 +13,6 @@ That gives this repo a clean path to the following urls without changing the rou
 
 - `apps.home`
 - `grafana.home`
-- `headlamp.home`
 - `homeassistant.home`
 - `longhorn.home`
 - `prometheus.home`

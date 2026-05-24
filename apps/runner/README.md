@@ -16,6 +16,16 @@ The runner UI is a dashboard at `/runner` (via Traefik). It loads jobs from `GET
 
 Click a job row to open its full run history. The list view still shows a short sparkline summary per job.
 
+## Authentik SSO
+
+Set `RUNNER_SSO_ENABLED=true` to require an Authentik session for the Runner UI and API routes. `/healthz`, `/metrics`, `/static/*`, and `/auth/*` remain unauthenticated.
+
+Terraform creates the Authentik client and `runner-oauth-secret` Kubernetes Secret when `make authentik-apply` runs. The expected callback URL is:
+
+- `http://apps.home/runner/auth/callback`
+
+Set `RUNNER_SSO_ENABLED=false` to return to the current unauthenticated internal UI behavior without deleting the Authentik client.
+
 ## API
 
 - `GET /api/jobs` — app, name, schedule, status, last run, history

@@ -20,7 +20,6 @@ Think of it as the local version of "Log in with Google," except owned by the ho
 The current cluster exposes several useful admin surfaces:
 
 - Grafana
-- Headlamp
 - Longhorn
 - Pi-hole
 - Prometheus
@@ -89,14 +88,24 @@ Authentik cannot fully bootstrap itself from Terraform on a brand-new cluster be
 
    Then open `http://localhost:9000` and create/copy the token there.
 
-5. Export the token and apply the Terraform-managed Authentik config:
+5. Add a password for the Terraform-managed homelab admin user in SOPS:
+
+   ```bash
+   sops services/authentik/secrets.sops.yaml
+   ```
+
+   Under `authentik`, set `homelab_admin_password` (plaintext in the editor; SOPS encrypts on save). Defaults for the user itself are in `terraform/variables.tf` (`jyablonski`, `jacob`, `jyablonski9@gmail.com`).
+
+6. Export the token and apply the Terraform-managed Authentik config:
 
    ```bash
    export TF_VAR_authentik_token='<token>'
    make authentik-apply
    ```
 
-   This runs Terraform, creates the OAuth/OIDC resources, writes client credentials into Kubernetes Secrets, and restarts the workloads that consume those Secrets.
+   `make authentik-apply` reads the bootstrap API token from the cluster, loads `homelab_admin_password` from SOPS, and applies Terraform. That creates the `jyablonski` internal admin (member of `homelab-admins`), OAuth/OIDC apps, Kubernetes Secrets, and restarts consuming workloads.
+
+   Keep `akadmin` for bootstrap/API automation; use `jyablonski` for day-to-day Authentik admin login. Password changes in the UI are not reconciled by Terraform (`lifecycle.ignore_changes` on `password`).
 
 `make down` removes local Terraform state because the cluster, Authentik database, and Kubernetes Secrets are also destroyed. The provider lock file is intentionally kept.
 
@@ -112,7 +121,7 @@ The files under `terraform/` define Authentik resources such as:
 Terraform currently writes:
 
 - `grafana-oauth-secret` in the `monitoring` namespace
-- `headlamp-oauth-secret` in the `kube-system` namespace
+- `django-oauth-secret` and `runner-oauth-secret` in the `apps` namespace
 
 The Authentik API token is only for Terraform to administer Authentik. The generated OAuth client IDs and secrets are what integrated apps use to authenticate themselves to Authentik during login.
 
@@ -127,11 +136,9 @@ GF_AUTH_GENERIC_OAUTH_CLIENT_ID
 GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET
 ```
 
-The browser-facing authorization URL uses `http://authentik.home`, while Grafana's server-side token and userinfo URLs use the in-cluster Authentik service DNS name. This is necessary because the browser can resolve `.home` names through Pi-hole, but pods should use Kubernetes DNS for service-to-service calls.
+Browser-facing OAuth URLs use `http://authentik.home` (Pi-hole / workstation DNS). Pods use the in-cluster Authentik service for token and userinfo calls (`authentik-server.authentik.svc.cluster.local`), matching Grafana and the Terraform-managed `OIDC_*_URL` keys in app OAuth secrets. Do not use per-pod `hostAliases` to pin Traefik IPs for SSO.
 
-Headlamp was explored but is not considered working as a simple Authentik SSO integration.
-
-Unlike Grafana, Headlamp's OIDC mode is tied to Kubernetes API authentication. Authentik can complete the login flow, but the Kubernetes API server must also trust Authentik as an OIDC issuer and RBAC must be configured for Authentik users or groups. Without that deeper Kubernetes OIDC setup, Headlamp returns to its login screen. For now, keep Headlamp's existing token/in-cluster access model or protect it later with an ingress-level auth gate instead of native OIDC.
+Django and Runner use native OIDC with the `groups` scope; `homelab-admins` maps to Django staff/superuser and Authentik admin via Terraform.
 
 ## Other SSO Candidates
 
@@ -149,6 +156,5 @@ Good ingress-gated candidates:
 - Prometheus, because it has little useful built-in auth in this setup.
 - Longhorn UI, because it is an admin surface that should not be casually exposed.
 - Pi-hole admin, if you want Authentik to gate access before Pi-hole's own login.
-- Headlamp, if you want SSO as an access gate without making Authentik a Kubernetes API identity provider.
 
 The ingress-gated pattern protects access before traffic reaches the app. It does not necessarily make the app aware of the Authentik user. Native OIDC is better when the app needs user identity, roles, or per-user audit behavior.

@@ -12,6 +12,9 @@
           <span class="live-dot" aria-hidden="true"></span>
           cluster: {{ cluster_name }}
         </span>
+        {% if current_user %}
+          <a class="logout-link" href="{{ url_prefix }}/auth/logout">{{ current_user.username }}</a>
+        {% endif %}
         <span class="sync-time mono" id="sync-time">synced —</span>
         <button type="button" class="icon-btn" id="refresh-btn" title="Refresh jobs" aria-label="Refresh jobs">
           ↻

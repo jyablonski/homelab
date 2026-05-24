@@ -1,14 +1,3 @@
-# Generate random secrets for OAuth clients
-resource "random_password" "grafana_secret" {
-  length  = 32
-  special = false
-}
-
-resource "random_password" "headlamp_secret" {
-  length  = 32
-  special = false
-}
-
 # Get default authorization flow
 data "authentik_flow" "default_authorization_flow" {
   slug = "default-provider-authorization-implicit-consent"
@@ -23,58 +12,31 @@ data "authentik_certificate_key_pair" "default" {
   name = "authentik Self-signed Certificate"
 }
 
-# Create OAuth2 Provider for Grafana
-resource "authentik_provider_oauth2" "grafana" {
-  name               = "Grafana"
-  client_id          = "grafana"
-  client_secret      = random_password.grafana_secret.result
-  authorization_flow = data.authentik_flow.default_authorization_flow.id
-  invalidation_flow  = data.authentik_flow.default_invalidation_flow.id
-  signing_key        = data.authentik_certificate_key_pair.default.id
+resource "authentik_group" "homelab_admins" {
+  name         = "homelab-admins"
+  is_superuser = true
+}
 
-  allowed_redirect_uris = [
-    { matching_mode = "strict", url = "http://grafana.home/login/generic_oauth" }
-  ]
+resource "authentik_property_mapping_provider_scope" "groups" {
+  name       = "homelab-oidc-groups"
+  scope_name = "groups"
+  expression = <<-EOT
+return {
+    "groups": list(request.user.ak_groups.values_list("name", flat=True)),
+}
+EOT
+}
 
-  property_mappings = [
+locals {
+  oidc_property_mapping_ids = [
     data.authentik_property_mapping_provider_scope.openid.id,
     data.authentik_property_mapping_provider_scope.email.id,
     data.authentik_property_mapping_provider_scope.profile.id,
   ]
-}
 
-# Create Grafana Application
-resource "authentik_application" "grafana" {
-  name              = "Grafana"
-  slug              = "grafana"
-  protocol_provider = authentik_provider_oauth2.grafana.id
-}
-
-# Create OAuth2 Provider for Headlamp
-resource "authentik_provider_oauth2" "headlamp" {
-  name               = "Headlamp"
-  client_id          = "headlamp"
-  client_secret      = random_password.headlamp_secret.result
-  authorization_flow = data.authentik_flow.default_authorization_flow.id
-  invalidation_flow  = data.authentik_flow.default_invalidation_flow.id
-  signing_key        = data.authentik_certificate_key_pair.default.id
-
-  allowed_redirect_uris = [
-    { matching_mode = "strict", url = "http://headlamp.home/oidc-callback" }
-  ]
-
-  property_mappings = [
-    data.authentik_property_mapping_provider_scope.openid.id,
-    data.authentik_property_mapping_provider_scope.email.id,
-    data.authentik_property_mapping_provider_scope.profile.id,
-  ]
-}
-
-# Create Headlamp Application
-resource "authentik_application" "headlamp" {
-  name              = "Headlamp"
-  slug              = "headlamp"
-  protocol_provider = authentik_provider_oauth2.headlamp.id
+  django_oidc_property_mapping_ids = concat(local.oidc_property_mapping_ids, [
+    authentik_property_mapping_provider_scope.groups.id,
+  ])
 }
 
 # Get default scope mappings
@@ -90,34 +52,66 @@ data "authentik_property_mapping_provider_scope" "profile" {
   scope_name = "profile"
 }
 
-# Store credentials in Kubernetes secrets
-resource "kubernetes_secret_v1" "grafana_oauth" {
-  metadata {
-    name      = "grafana-oauth-secret"
-    namespace = "monitoring"
-  }
+module "grafana_oidc" {
+  source = "./modules/authentik_oidc_app"
 
-  data = {
-    client_id     = authentik_provider_oauth2.grafana.client_id
-    client_secret = authentik_provider_oauth2.grafana.client_secret
-  }
+  app_id                      = "grafana"
+  authorization_flow_id       = data.authentik_flow.default_authorization_flow.id
+  invalidation_flow_id        = data.authentik_flow.default_invalidation_flow.id
+  signing_key_id              = data.authentik_certificate_key_pair.default.id
+  property_mapping_ids        = local.oidc_property_mapping_ids
+  kubernetes_secret_namespace = "monitoring"
+  client_id_secret_key        = "client_id"
+  client_secret_secret_key    = "client_secret"
+  include_split_oidc_urls     = false
 
-  type = "Opaque"
+  allowed_redirect_uris = [
+    { matching_mode = "strict", url = "http://grafana.home/login/generic_oauth" }
+  ]
 }
 
-resource "kubernetes_secret_v1" "headlamp_oauth" {
-  metadata {
-    name      = "headlamp-oauth-secret"
-    namespace = "kube-system"
+module "django_oidc" {
+  source = "./modules/authentik_oidc_app"
+
+  app_id                      = "django"
+  meta_launch_url             = "http://apps.home/django/admin/"
+  authorization_flow_id       = data.authentik_flow.default_authorization_flow.id
+  invalidation_flow_id        = data.authentik_flow.default_invalidation_flow.id
+  signing_key_id              = data.authentik_certificate_key_pair.default.id
+  property_mapping_ids        = local.django_oidc_property_mapping_ids
+  kubernetes_secret_namespace = "apps"
+
+  allowed_redirect_uris = [
+    { matching_mode = "strict", url = "http://apps.home/django/sso/callback/" }
+  ]
+
+  secret_data = {
+    OIDC_SCOPES       = "openid email profile groups"
+    OIDC_CALLBACK_URL = "http://apps.home/django/sso/callback/"
+  }
+}
+
+module "runner_oidc" {
+  source = "./modules/authentik_oidc_app"
+
+  app_id                      = "runner"
+  meta_launch_url             = "http://apps.home/runner/"
+  authorization_flow_id       = data.authentik_flow.default_authorization_flow.id
+  invalidation_flow_id        = data.authentik_flow.default_invalidation_flow.id
+  signing_key_id              = data.authentik_certificate_key_pair.default.id
+  property_mapping_ids        = local.oidc_property_mapping_ids
+  kubernetes_secret_namespace = "apps"
+
+  allowed_redirect_uris = [
+    { matching_mode = "strict", url = "http://apps.home/runner/auth/callback" }
+  ]
+
+  secret_data = {
+    OIDC_SCOPES       = "openid email profile"
+    OIDC_CALLBACK_URL = "http://apps.home/runner/auth/callback"
   }
 
-  data = {
-    OIDC_CLIENT_ID     = authentik_provider_oauth2.headlamp.client_id
-    OIDC_CLIENT_SECRET = authentik_provider_oauth2.headlamp.client_secret
-    OIDC_ISSUER_URL    = "http://authentik.home/application/o/headlamp/"
-    OIDC_SCOPES        = "openid email profile"
-    OIDC_CALLBACK_URL  = "http://headlamp.home/oidc-callback"
+  generated_secret_keys = {
+    SESSION_SECRET_KEY = 64
   }
-
-  type = "Opaque"
 }
