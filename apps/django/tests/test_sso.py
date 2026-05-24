@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+from typing import cast
 
 import pytest
 from django.core.exceptions import ImproperlyConfigured
@@ -174,15 +175,18 @@ def test_sso_user_from_claims_creates_unusable_password_user(monkeypatch):
 
     monkeypatch.setattr(sso, "get_user_model", lambda: FakeUserModel)
 
-    user = sso._user_from_claims(
-        {
-            "sub": "authentik-user-1",
-            "preferred_username": "jacob!",
-            "email": "jacob@example.test",
-            "given_name": "Jacob",
-            "family_name": "Homelab",
-            "groups": ["homelab-admins"],
-        }
+    user = cast(
+        FakeUser,
+        sso._user_from_claims(
+            {
+                "sub": "authentik-user-1",
+                "preferred_username": "jacob!",
+                "email": "jacob@example.test",
+                "given_name": "Jacob",
+                "family_name": "Homelab",
+                "groups": ["homelab-admins"],
+            }
+        ),
     )
 
     assert user.username == "jacob"
@@ -225,12 +229,15 @@ def test_sso_user_from_claims_maps_admin_group_to_privileges(monkeypatch):
 
     monkeypatch.setattr(sso, "get_user_model", lambda: FakeUserModel)
 
-    user = sso._user_from_claims(
-        {
-            "sub": "authentik-user-1",
-            "preferred_username": "akadmin",
-            "groups": ["homelab-admins"],
-        }
+    user = cast(
+        FakeUser,
+        sso._user_from_claims(
+            {
+                "sub": "authentik-user-1",
+                "preferred_username": "akadmin",
+                "groups": ["homelab-admins"],
+            }
+        ),
     )
 
     assert user.is_staff is True
@@ -266,12 +273,15 @@ def test_sso_user_from_claims_removes_privileges_when_group_missing(monkeypatch)
 
     monkeypatch.setattr(sso, "get_user_model", lambda: FakeUserModel)
 
-    user = sso._user_from_claims(
-        {
-            "sub": "authentik-user-1",
-            "preferred_username": "akadmin",
-            "groups": [],
-        }
+    user = cast(
+        FakeUser,
+        sso._user_from_claims(
+            {
+                "sub": "authentik-user-1",
+                "preferred_username": "akadmin",
+                "groups": [],
+            }
+        ),
     )
 
     assert user.is_staff is False

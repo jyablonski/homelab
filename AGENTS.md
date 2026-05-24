@@ -207,6 +207,7 @@ bash scripts/validate-manifests.sh
 
 Pre-commit behavior:
 
+- `ty` runs at pre-commit for each touched app under `apps/api`, `apps/django`, or `apps/runner` (same command as the Python Quality workflow).
 - `make validate-fast` runs at pre-commit.
 - `make validate` runs at pre-push.
 - YAML and Markdown use Prettier, excluding Helm template paths.

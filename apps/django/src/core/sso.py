@@ -7,6 +7,8 @@ from authlib.integrations.django_client import OAuth
 from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth import get_user_model, login as django_login
+from django.contrib.auth.models import AbstractBaseUser
+from django.contrib.sessions.backends.base import SessionBase
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect
@@ -14,6 +16,12 @@ from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 
 SESSION_NEXT_URL = "django_sso_next_url"
+
+
+class HttpRequestWithSession(HttpRequest):
+    """HttpRequest after SessionMiddleware attaches ``session``."""
+
+    session: SessionBase
 
 
 def sso_enabled() -> bool:
@@ -62,14 +70,14 @@ def _safe_next_url(request: HttpRequest) -> str:
 
 
 def admin_login(
-    request: HttpRequest, extra_context: dict | None = None
+    request: HttpRequestWithSession, extra_context: dict | None = None
 ) -> HttpResponse:
     if not sso_enabled() or request.GET.get("local") == "1":
         return admin.site.login(request, extra_context=extra_context)
     return sso_login(request)
 
 
-def sso_login(request: HttpRequest) -> HttpResponse:
+def sso_login(request: HttpRequestWithSession) -> HttpResponse:
     if not sso_enabled():
         return redirect("/django/admin/login/")
 
@@ -80,7 +88,7 @@ def sso_login(request: HttpRequest) -> HttpResponse:
     return _oauth().authentik.authorize_redirect(request, callback_url)
 
 
-def sso_callback(request: HttpRequest) -> HttpResponse:
+def sso_callback(request: HttpRequestWithSession) -> HttpResponse:
     if not sso_enabled():
         return redirect("/django/admin/login/")
 
@@ -100,7 +108,7 @@ def sso_callback(request: HttpRequest) -> HttpResponse:
     return redirect(next_url)
 
 
-def _user_from_claims(userinfo: dict) -> object:
+def _user_from_claims(userinfo: dict) -> AbstractBaseUser:
     subject = str(userinfo.get("sub") or "").strip()
     if not subject:
         raise ImproperlyConfigured("OIDC userinfo response did not include a subject")
