@@ -102,7 +102,7 @@ Service configuration lives in `services/`.
 - `home-assistant`: home automation.
 - `frigate`: NVR/object detection; not deployed by default per README.
 - `mosquitto`: MQTT broker values are prepared, but no current Helmfile release wires it.
-- `authentik`: SSO/OIDC, WIP.
+- `authentik`: SSO/OIDC; Terraform-managed OAuth apps on `make up`.
 - `keycloak`: values/secrets exist, but no current Helmfile release wires it.
 
 When adding a service:

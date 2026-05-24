@@ -3,6 +3,7 @@ env:
   RUNNER_NAMESPACE: "apps"
   RUNNER_URL_PREFIX: "/runner"
   RUNNER_SSO_ENABLED: "true"
+  RUNNER_SSO_ALLOWED_GROUP: "homelab-admins"
   RUNNER_GRAFANA_BASE_URL: "http://grafana.home"
   RUNNER_CLUSTER_NAME: "homelab-prod"
   # Grafana Loki datasource UID (Connections → Data sources → Loki → UID in the URL)

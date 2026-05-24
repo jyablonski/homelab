@@ -64,7 +64,7 @@ make pihole-dns-status
 | [Home Assistant](services/home-assistant/)             | Home automation platform                                       |
 | [Mosquitto](services/mosquitto/)                       | MQTT broker for smart-home integrations                        |
 | [Pi-hole](services/pihole/)                            | DNS and `.home` records                                        |
-| [Authentik](services/authentik/)                       | SSO / OIDC identity provider (WIP)                             |
+| [Authentik](services/authentik/)                       | SSO / OIDC; Terraform-managed on `make up`                     |
 | [API](apps/api/)                                       | REST API app for custom workloads                              |
 | [Django](apps/django/)                                 | Database migration tool and admin interface                    |
 | [Runner](apps/runner/)                                 | Internal UI for running approved app-owned jobs                |
@@ -137,21 +137,15 @@ Add new secret files to the release's `secrets:` list in `helmfile.yaml` so Helm
 
 ## Authentik SSO
 
-Authentik is exposed at [authentik.home](http://authentik.home) and uses the shared Postgres release for durable state. Bootstrap credentials and the Terraform-managed homelab admin password live in `services/authentik/secrets.sops.yaml` (`bootstrap_*` for first install, `homelab_admin_password` for the `jyablonski` admin user).
+Authentik at [authentik.home](http://authentik.home) is the homelab identity provider. Before the first `make up`, set `homelab_admin_password` in `services/authentik/secrets.sops.yaml` (SOPS). During bootstrap, `setup.sh` applies Terraform using the Helm bootstrap API token from the cluster: OAuth apps for Grafana, Django, and Runner, the `homelab-admins` group, and the `jyablonski` admin user.
 
-During `make up`, Terraform reads the Helm-managed bootstrap token from the `authentik` Kubernetes Secret after the infra Helmfile sync. That creates the Grafana, Django, and Runner OAuth clients in Authentik, stores generated client credentials in Kubernetes Secrets, and restarts deployments that can consume those credentials.
+| Service      | Access                               |
+| ------------ | ------------------------------------ |
+| Grafana      | Authentik SSO (`auto_login`)         |
+| Django admin | Authentik SSO; `homelab-admins` only |
+| Runner       | Authentik SSO; `homelab-admins` only |
 
-For an existing cluster, run:
-
-```bash
-make authentik-apply
-```
-
-To read the bootstrap password locally:
-
-```bash
-sops -d --extract '["authentik"]["bootstrap_password"]' services/authentik/secrets.sops.yaml
-```
+Re-apply after Authentik changes: `make authentik-apply`.
 
 ## Project Layout
 
@@ -164,7 +158,7 @@ homelab/
 ├── scripts/
 │   ├── setup.sh                  # Namespace creation and post-install bootstrap
 │   └── ...
-├── terraform/                    # Authentik OAuth2 provider config (WIP)
+├── terraform/                    # Authentik OAuth2 apps and homelab admin user
 ├── services/                     # Deployed and prepared third-party service config
 │   ├── prometheus/               # Each service gets values.yaml and optional sops secrets
 │   └── ...

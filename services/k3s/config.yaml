@@ -1,4 +1,4 @@
-# Installed before the first K3s start (Makefile `up`). OIDC is applied later in setup.sh.
+# Installed before the first K3s start (Makefile `up`).
 disable:
   - traefik
   - servicelb

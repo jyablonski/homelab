@@ -11,20 +11,9 @@ After deployment in this homelab setup, access via your configured ingress path:
 
 ## Authentik SSO
 
-Set `DJANGO_SSO_ENABLED=true` to redirect Django admin login through Authentik. The normal local Django login remains available at:
+With `DJANGO_SSO_ENABLED=true` (default in `values.yaml`), admin login redirects through Authentik. Only users in the `homelab-admins` group (`DJANGO_SSO_STAFF_GROUP`) can complete SSO; that group also grants Django staff and superuser.
 
-- `http://apps.home/django/admin/login/?local=1`
-
-Terraform creates the Authentik client and `django-oauth-secret` Kubernetes Secret when `make authentik-apply` runs. The expected callback URL is:
-
-- `http://apps.home/django/sso/callback/`
-
-Admin permissions are mapped from Authentik groups via:
-
-- `DJANGO_SSO_STAFF_GROUP`
-- `DJANGO_SSO_SUPERUSER_GROUP`
-
-Terraform creates the `homelab-admins` Authentik group, puts the managed homelab admin (`jyablonski` by default) in that group, and adds a `groups` OIDC scope mapping on the Django provider. Django grants staff/superuser when the `groups` claim contains `homelab-admins` (`DJANGO_SSO_STAFF_GROUP` / `DJANGO_SSO_SUPERUSER_GROUP`). The same group grants Authentik admin; add other users in the Authentik UI.
+`make up` runs Terraform after the infra sync and writes `django-oauth-secret` before the app sync. Callback: `http://apps.home/django/sso/callback/`. Add homelab admins in the Authentik UI (group `homelab-admins`).
 
 ## Directory Structure
 

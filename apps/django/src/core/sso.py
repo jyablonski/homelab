@@ -91,6 +91,9 @@ def sso_callback(request: HttpRequest) -> HttpResponse:
     except OAuthError:
         return redirect("/django/admin/login/")
 
+    if not _sso_allowed(userinfo):
+        return redirect("/django/admin/login/")
+
     user = _user_from_claims(userinfo)
     django_login(request, user, backend="django.contrib.auth.backends.ModelBackend")
     next_url = request.session.pop(SESSION_NEXT_URL, settings.LOGIN_REDIRECT_URL)
@@ -144,6 +147,14 @@ def _groups_from_claims(userinfo: dict) -> set[str]:
     if isinstance(groups, str):
         groups = [groups]
     return {str(group) for group in groups}
+
+
+def _sso_allowed(userinfo: dict) -> bool:
+    """Require membership in DJANGO_SSO_STAFF_GROUP when SSO is enabled."""
+    required = getattr(settings, "DJANGO_SSO_STAFF_GROUP", "")
+    if not required:
+        return True
+    return required in _groups_from_claims(userinfo)
 
 
 def _username_from_claims(userinfo: dict, subject: str) -> str:

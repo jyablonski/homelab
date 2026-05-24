@@ -16,6 +16,7 @@ from auth import (
     oauth_client,
     prefixed_path,
     safe_next_url,
+    user_allowed,
     userinfo_from_token,
     validate_sso_settings,
 )
@@ -50,12 +51,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.middleware("http")
     async def require_sso_session(request: Request, call_next):
-        if (
-            not active_settings.sso_enabled
-            or is_public_path(request.url.path)
-            or request.session.get(SESSION_USER)
-        ):
+        if not active_settings.sso_enabled or is_public_path(request.url.path):
             return await call_next(request)
+
+        session_user = request.session.get(SESSION_USER)
+        if session_user:
+            if user_allowed(active_settings, session_user):
+                return await call_next(request)
+            request.session.clear()
+
         return auth_required_response(request, active_settings)
 
     if active_settings.sso_enabled:
@@ -102,7 +106,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
 
         user = userinfo_from_token(token)
-        if not user["sub"]:
+        if not user["sub"] or not user_allowed(active_settings, user):
             return RedirectResponse(
                 prefixed_path(active_settings, "/auth/login"),
                 status_code=303,

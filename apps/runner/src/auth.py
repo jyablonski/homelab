@@ -7,7 +7,7 @@ from authlib.integrations.starlette_client import OAuth
 from fastapi import Request
 from fastapi.responses import JSONResponse, RedirectResponse, Response
 
-from config import Settings
+from config import SSO_REQUIRED_FIELDS, Settings
 
 SESSION_NEXT_URL = "runner_sso_next_url"
 SESSION_USER = "runner_user"
@@ -24,11 +24,7 @@ def validate_sso_settings(settings: Settings) -> None:
     if not settings.sso_enabled:
         return
 
-    missing = [
-        name
-        for name in ("oidc_client_id", "oidc_client_secret", "session_secret_key")
-        if not getattr(settings, name)
-    ]
+    missing = [name for name in SSO_REQUIRED_FIELDS if not getattr(settings, name, "")]
     if missing:
         joined = ", ".join(f"RUNNER_{name.upper()}" for name in missing)
         raise RuntimeError(
@@ -100,6 +96,19 @@ def safe_next_url(settings: Settings, value: str | None) -> str:
     return prefixed_path(settings, "/")
 
 
+def groups_from_claims(userinfo: dict) -> list[str]:
+    groups = userinfo.get("groups") or []
+    if isinstance(groups, str):
+        groups = [groups]
+    return [str(group) for group in groups]
+
+
+def user_allowed(settings: Settings, user: dict) -> bool:
+    if not settings.sso_allowed_group:
+        return True
+    return settings.sso_allowed_group in user.get("groups", [])
+
+
 def auth_required_response(request: Request, settings: Settings) -> Response:
     if request.url.path.startswith("/api/"):
         return JSONResponse({"detail": "Authentication required"}, status_code=401)
@@ -111,7 +120,7 @@ def auth_required_response(request: Request, settings: Settings) -> Response:
     return RedirectResponse(login_url, status_code=303)
 
 
-def userinfo_from_token(token: dict) -> dict[str, str]:
+def userinfo_from_token(token: dict) -> dict[str, object]:
     userinfo = token.get("userinfo") or {}
     return {
         "sub": str(userinfo.get("sub") or ""),
@@ -124,4 +133,5 @@ def userinfo_from_token(token: dict) -> dict[str, str]:
         ),
         "email": str(userinfo.get("email") or ""),
         "name": str(userinfo.get("name") or userinfo.get("preferred_username") or ""),
+        "groups": groups_from_claims(userinfo),
     }

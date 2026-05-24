@@ -34,7 +34,7 @@ locals {
     data.authentik_property_mapping_provider_scope.profile.id,
   ]
 
-  django_oidc_property_mapping_ids = concat(local.oidc_property_mapping_ids, [
+  admin_oidc_property_mapping_ids = concat(local.oidc_property_mapping_ids, [
     authentik_property_mapping_provider_scope.groups.id,
   ])
 }
@@ -78,7 +78,7 @@ module "django_oidc" {
   authorization_flow_id       = data.authentik_flow.default_authorization_flow.id
   invalidation_flow_id        = data.authentik_flow.default_invalidation_flow.id
   signing_key_id              = data.authentik_certificate_key_pair.default.id
-  property_mapping_ids        = local.django_oidc_property_mapping_ids
+  property_mapping_ids        = local.admin_oidc_property_mapping_ids
   kubernetes_secret_namespace = "apps"
 
   allowed_redirect_uris = [
@@ -99,7 +99,7 @@ module "runner_oidc" {
   authorization_flow_id       = data.authentik_flow.default_authorization_flow.id
   invalidation_flow_id        = data.authentik_flow.default_invalidation_flow.id
   signing_key_id              = data.authentik_certificate_key_pair.default.id
-  property_mapping_ids        = local.oidc_property_mapping_ids
+  property_mapping_ids        = local.admin_oidc_property_mapping_ids
   kubernetes_secret_namespace = "apps"
 
   allowed_redirect_uris = [
@@ -107,7 +107,7 @@ module "runner_oidc" {
   ]
 
   secret_data = {
-    OIDC_SCOPES       = "openid email profile"
+    OIDC_SCOPES       = "openid email profile groups"
     OIDC_CALLBACK_URL = "http://apps.home/runner/auth/callback"
   }
 
