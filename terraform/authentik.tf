@@ -59,7 +59,7 @@ module "grafana_oidc" {
   authorization_flow_id       = data.authentik_flow.default_authorization_flow.id
   invalidation_flow_id        = data.authentik_flow.default_invalidation_flow.id
   signing_key_id              = data.authentik_certificate_key_pair.default.id
-  property_mapping_ids        = local.oidc_property_mapping_ids
+  property_mapping_ids        = local.admin_oidc_property_mapping_ids
   kubernetes_secret_namespace = "monitoring"
   client_id_secret_key        = "client_id"
   client_secret_secret_key    = "client_secret"

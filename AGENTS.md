@@ -53,6 +53,8 @@ Prefer `make` targets over long hand-written commands. Useful tools include:
 ```bash
 make up                 # install K3s, bootstrap infra, build/push apps, sync apps
 make sync               # helmfile sync against an existing cluster
+make dev                # tilt up: live code reload + helm re-render for apps/*
+make dev-down           # tilt down: remove Tilt-managed app resources
 make down               # restore DNS and uninstall local K3s
 make validate-fast      # shellcheck and terraform fmt when tools exist
 make validate           # full local validation path mirroring CI

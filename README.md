@@ -15,6 +15,9 @@ make up
 # Re-sync after config changes
 make sync
 
+# Tilt dev loop for apps/* (live code reload, auto helm re-render)
+make dev
+
 # Run local validation
 make validate-fast
 make validate

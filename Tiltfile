@@ -1,59 +1,92 @@
-# Tilt dev loop for app-owned workloads.
-# This file intentionally targets `apps/*` releases only.
+# Tilt dev loop for app-owned workloads. Targets `apps/*` releases only.
+#
+# The dev loop, by file type:
+#   - App source (apps/<app>/src, api jobs/): live-synced into the running pod;
+#     uvicorn --reload (api/runner via values-dev.yaml), Django runserver
+#     autoreload, and a Go process restart pick the changes up in-place.
+#   - Dependency/build inputs (pyproject.toml, uv.lock, go.mod, go.sum,
+#     Dockerfile, entrypoint.sh): full image rebuild + redeploy. These are the
+#     build-context files not covered by a sync() step, so Tilt rebuilds
+#     automatically; ignore= keeps tests/values/secrets/.venv out of that set.
+#   - Helm inputs (helmfile.yaml, charts/workload/**, values*.yaml,
+#     secrets.sops.yaml): watched below, re-render via helmfile and redeploy.
+#   - Django migrations stay manual: the entrypoint only migrates an
+#     uninitialized DB; run `make migrate` to apply new migrations.
+
+load("ext://restart_process", "docker_build_with_restart")
 
 allow_k8s_contexts("default")
+
+APP_NAMES = ["django", "api", "runner", "workload-chart-example"]
 
 def app_image_ref(name):
     return "registry.home:5000/homelab/%s" % name
 
-def render_app_release(name):
-    return local("helmfile -l name=%s template" % name, quiet=True)
+# --- Helm rendering ---------------------------------------------------------
+# `local()` does not track which files helmfile reads, so watch them
+# explicitly; any change re-runs the Tiltfile, which re-renders the releases.
+watch_file("helmfile.yaml")
+for f in listdir("charts/workload", recursive=True):
+    watch_file(f)
+for name in APP_NAMES:
+    for dep in ["values.yaml", "values-dev.yaml.gotmpl", "secrets.sops.yaml"]:
+        path = "apps/%s/%s" % (name, dep)
+        if os.path.exists(path):
+            watch_file(path)
+watch_file("apps/runner/rbac.yaml")
 
-def app_release(name, context_dir, live_update_steps=[], links=[]):
+# One render for all app releases. `-e dev` activates the per-app
+# values-dev.yaml.gotmpl overlays (uvicorn --reload, single replica Go app).
+k8s_yaml(local("helmfile -e dev -l bootstrap=app template", quiet=True))
+
+# make up/sync apply this via a helmfile presync hook, but hooks don't run
+# under `helmfile template`, so apply it directly here.
+k8s_yaml("apps/runner/rbac.yaml")
+
+
+# --- Python apps -------------------------------------------------------------
+# Files in apps/<app>/ that are not image build inputs (Dockerfiles COPY
+# explicitly, so there is no .dockerignore); keep them out of Tilt's context
+# watch so editing them never triggers an image rebuild.
+PYTHON_NON_IMAGE_FILES = [
+    "tests",
+    ".venv",
+    "htmlcov",
+    ".pytest_cache",
+    ".coverage",
+    "**/__pycache__",
+    "*.pyc",
+    "values.yaml",
+    "values-dev.yaml.gotmpl",
+    "secrets.sops.yaml",
+    "README.md",
+]
+
+def python_app(name, sync_dirs, links=[], objects=[], extra_ignores=[]):
+    app_dir = "apps/%s" % name
     docker_build(
         app_image_ref(name),
-        context_dir,
-        dockerfile="%s/Dockerfile" % context_dir,
-        live_update=live_update_steps,
+        app_dir,
+        dockerfile="%s/Dockerfile" % app_dir,
+        live_update=[sync("%s/%s" % (app_dir, d), "/app/%s" % d) for d in sync_dirs],
+        ignore=PYTHON_NON_IMAGE_FILES + extra_ignores,
     )
-    k8s_yaml(render_app_release(name))
-    k8s_resource(name, links=links)
+    k8s_resource(name, links=links, objects=objects)
 
 
-# Django: live sync source changes, rebuild when dependency/build files change.
-# Django runs migrate on boot only when the DB is uninitialized (see django README).
-app_release(
+python_app(
     "django",
-    "apps/django",
-    live_update_steps=[
-        fall_back_on("apps/django/pyproject.toml"),
-        fall_back_on("apps/django/uv.lock"),
-        fall_back_on("apps/django/Dockerfile"),
-        fall_back_on("apps/django/entrypoint.sh"),
-        sync("apps/django/src", "/app/src"),
-        sync("apps/django/tests", "/app/tests"),
-    ],
+    sync_dirs=["src"],
+    extra_ignores=["src/staticfiles"],
     links=[
         link("http://apps.home/django/admin", "Django admin"),
         link("http://apps.home/django/healthz", "Health"),
     ],
 )
 
-
-# API: live sync source/test changes, rebuild when dependency/build/secret files change.
-app_release(
+python_app(
     "api",
-    "apps/api",
-    live_update_steps=[
-        fall_back_on("apps/api/pyproject.toml"),
-        fall_back_on("apps/api/uv.lock"),
-        fall_back_on("apps/api/Dockerfile"),
-        fall_back_on("apps/api/entrypoint.sh"),
-        fall_back_on("apps/api/secrets.sops.yaml"),
-        sync("apps/api/jobs", "/app/jobs"),
-        sync("apps/api/src", "/app/src"),
-        sync("apps/api/tests", "/app/tests"),
-    ],
+    sync_dirs=["src", "jobs"],
     links=[
         link("http://apps.home/api/docs", "API docs"),
         link("http://apps.home/api/healthz", "Health"),
@@ -61,36 +94,50 @@ app_release(
     ],
 )
 
-
-# Runner: live sync source/template/static changes, rebuild on dependency/build changes.
-app_release(
+python_app(
     "runner",
-    "apps/runner",
-    live_update_steps=[
-        fall_back_on("apps/runner/pyproject.toml"),
-        fall_back_on("apps/runner/uv.lock"),
-        fall_back_on("apps/runner/Dockerfile"),
-        fall_back_on("apps/runner/rbac.yaml"),
-        sync("apps/runner/src", "/app/src"),
-        sync("apps/runner/tests", "/app/tests"),
-    ],
+    sync_dirs=["src"],
     links=[
         link("http://apps.home/runner", "Runner"),
         link("http://apps.home/runner/healthz", "Health"),
     ],
+    objects=["runner:role", "runner:rolebinding"],
+    extra_ignores=["rbac.yaml"],
 )
 
 
-# workload-chart-example (Go): live sync source changes, rebuild on module/build changes.
-app_release(
-    "workload-chart-example",
-    "apps/workload-chart-example",
-    live_update_steps=[
-        fall_back_on("apps/workload-chart-example/go.mod"),
-        fall_back_on("apps/workload-chart-example/go.sum"),
-        fall_back_on("apps/workload-chart-example/Dockerfile"),
-        sync("apps/workload-chart-example/src", "/app/src"),
+# --- Go app ------------------------------------------------------------------
+# The runtime image only contains a compiled binary, so syncing source files
+# would do nothing. Instead: cross-compile locally on source/module changes,
+# sync the binary, and restart the process in-place (restart_process wrapper).
+local_resource(
+    "workload-chart-example-compile",
+    "cd apps/workload-chart-example && CGO_ENABLED=0 GOOS=linux GOARCH=amd64" +
+    " go build -o build/workload-chart-example ./src/main.go",
+    deps=[
+        "apps/workload-chart-example/src",
+        "apps/workload-chart-example/go.mod",
+        "apps/workload-chart-example/go.sum",
     ],
+)
+
+docker_build_with_restart(
+    app_image_ref("workload-chart-example"),
+    "apps/workload-chart-example",
+    dockerfile="apps/workload-chart-example/Dockerfile.tilt",
+    entrypoint=["/app/workload-chart-example"],
+    only=["build"],
+    live_update=[
+        sync(
+            "apps/workload-chart-example/build/workload-chart-example",
+            "/app/workload-chart-example",
+        ),
+    ],
+)
+
+k8s_resource(
+    "workload-chart-example",
+    resource_deps=["workload-chart-example-compile"],
     links=[
         link("http://apps.home/workload-chart/api/health/ready", "Health"),
         link("http://apps.home/workload-chart/api/metrics", "Metrics"),

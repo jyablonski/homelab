@@ -29,6 +29,16 @@ sync:
 	@echo "Syncing Helmfile..."
 	@helmfile sync
 
+# Tilt dev loop for apps/* (live code reload, helm re-render, image rebuilds)
+.PHONY: dev
+dev:
+	@tilt up
+
+# stop the dev loop and remove Tilt-managed app resources (make sync restores them)
+.PHONY: dev-down
+dev-down:
+	@tilt down
+
 .PHONY: authentik-apply
 authentik-apply:
 	@./scripts/apply-authentik-terraform.sh
@@ -43,7 +53,7 @@ SHOWMIGRATIONS_EXTRAS := $(if $(filter showmigrations,$(_FIRST_GOAL)),$(wordlist
 
 STUBS_RAW := $(strip $(MIGRATE_EXTRAS) $(MIGRATIONS_EXTRAS) $(SHOWMIGRATIONS_EXTRAS))
 # Trailing words must be stub targets; exclude real Makefile goals so we never override them.
-_RESERVED_FOR_STUB := up sync authentik-apply down validate validate-fast update-charts django-manage image-build image-push image-build-push image-ref pihole-dns-enable pihole-dns-disable pihole-dns-status sops-age-generate migrate migrations showmigrations
+_RESERVED_FOR_STUB := up sync dev dev-down authentik-apply down validate validate-fast update-charts django-manage image-build image-push image-build-push image-ref pihole-dns-enable pihole-dns-disable pihole-dns-status sops-age-generate migrate migrations showmigrations
 STUBS := $(filter-out $(_RESERVED_FOR_STUB),$(STUBS_RAW))
 
 ifneq ($(STUBS),)

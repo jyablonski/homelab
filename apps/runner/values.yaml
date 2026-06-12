@@ -6,8 +6,9 @@ env:
   RUNNER_SSO_ALLOWED_GROUP: "homelab-admins"
   RUNNER_GRAFANA_BASE_URL: "http://grafana.home"
   RUNNER_CLUSTER_NAME: "homelab-prod"
-  # Grafana Loki datasource UID (Connections → Data sources → Loki → UID in the URL)
-  RUNNER_LOKI_DATASOURCE_UID: "P8E80F9AEF21F6940"
+  # Stable UID provisioned in services/prometheus/values.yaml additionalDataSources;
+  # survives cluster rebuilds (auto-generated UIDs do not).
+  RUNNER_LOKI_DATASOURCE_UID: "Loki"
 
 secretEnv:
   - name: RUNNER_OIDC_CLIENT_ID

@@ -1,0 +1,10 @@
+# Dev-only image used by the Tiltfile. The binary is cross-compiled on the
+# workstation by a Tilt local_resource and live-synced into the running
+# container, so this image only needs the runtime base.
+FROM debian:bookworm-slim
+WORKDIR /app
+COPY build/workload-chart-example /app/workload-chart-example
+
+EXPOSE 8080
+
+ENTRYPOINT ["/app/workload-chart-example"]
