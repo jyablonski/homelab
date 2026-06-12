@@ -19,6 +19,15 @@ server:
   ingress:
     enabled: true
     ingressClassName: traefik
+    annotations:
+      gethomepage.dev/enabled: "true"
+      gethomepage.dev/name: "Authentik"
+      gethomepage.dev/group: "Infrastructure"
+      gethomepage.dev/icon: "authentik.png"
+      gethomepage.dev/description: "SSO identity provider"
+      # Status badge: pod lookup defaults to app.kubernetes.io/name=<ingress name>
+      # (authentik-server), which doesn't match the pod labels (authentik).
+      gethomepage.dev/app: "authentik"
     hosts:
       - authentik.home
     path: /

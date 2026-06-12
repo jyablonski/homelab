@@ -20,7 +20,7 @@ This is a bare-bones example to test:
 - building and pushing an image to the local registry
 - scraping application metrics with Prometheus
 - collecting container stdout logs with Promtail/Loki
-- exposing an app-owned workload through Traefik on a shared `apps.home` host
+- exposing an app-owned workload through Traefik on its own `workload-chart.home` host
 
 ## Build and push
 
@@ -39,7 +39,7 @@ helmfile sync
 
 ## Ingress curl test
 
-This example is exposed at `http://apps.home/workload-chart/api`.
+This example is exposed at `http://workload-chart.home`.
 Traefik strips the `/workload-chart/api` prefix before forwarding to the pod, so the Go app can keep serving its internal root-level routes:
 
 - `GET /random`
@@ -47,19 +47,19 @@ Traefik strips the `/workload-chart/api` prefix before forwarding to the pod, so
 - `GET /health/live`
 - `GET /health/ready`
 
-`make up` runs `scripts/setup-ingress-home.sh`, which adds a persistent `/etc/hosts` entry for `apps.home` pointing at the pinned Traefik MetalLB IP. If you are syncing manually on a machine that has not run `make up`, run that script once or add the host entry yourself.
+`make up` runs `scripts/setup-ingress-home.sh`, which adds a persistent `/etc/hosts` entry for `workload-chart.home` pointing at the pinned Traefik MetalLB IP. If you are syncing manually on a machine that has not run `make up`, run that script once or add the host entry yourself.
 
 Then you can hit it directly:
 
 ```bash
-curl http://apps.home/workload-chart/api/random
+curl http://workload-chart.home/random
 ```
 
 You can also inspect health and metrics through the ingress path:
 
 ```bash
-curl http://apps.home/workload-chart/api/health/ready
-curl http://apps.home/workload-chart/api/metrics
+curl http://workload-chart.home/health/ready
+curl http://workload-chart.home/metrics
 ```
 
 ## Metrics and logs

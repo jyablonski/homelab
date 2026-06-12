@@ -11,7 +11,7 @@ up:
 	@sudo -v
 	@./scripts/run-step.sh "Running DNS bootstrap" -- bash ./scripts/setup-local-pihole-dns.sh disable
 	@./scripts/run-step.sh "Configuring registry access" -- bash ./scripts/setup-registry-home.sh
-	@./scripts/run-step.sh "Configuring ingress access" -- bash -c 'INGRESS_HOSTS="apps.home authentik.home grafana.home" bash ./scripts/setup-ingress-home.sh'
+	@./scripts/run-step.sh "Configuring ingress access" -- bash -c 'INGRESS_HOSTS="apps.home authentik.home grafana.home api.home django.home runner.home workload-chart.home" bash ./scripts/setup-ingress-home.sh'
 	@./scripts/run-step.sh "Writing K3s config" -- bash -c 'sudo mkdir -p /etc/rancher/k3s && sudo cp services/k3s/config.yaml /etc/rancher/k3s/config.yaml'
 	@./scripts/run-step.sh "Installing K3s" -- bash -c 'curl -sfL https://get.k3s.io | sh -'
 	@./scripts/run-step.sh "Waiting for K3s startup" -- sleep 10
@@ -29,6 +29,16 @@ sync:
 	@echo "Syncing Helmfile..."
 	@helmfile sync
 
+# Tilt dev loop for apps/* (live code reload, helm re-render, image rebuilds)
+.PHONY: dev
+dev:
+	@tilt up
+
+# stop the dev loop and remove Tilt-managed app resources (make sync restores them)
+.PHONY: dev-down
+dev-down:
+	@tilt down
+
 .PHONY: authentik-apply
 authentik-apply:
 	@./scripts/apply-authentik-terraform.sh
@@ -43,7 +53,7 @@ SHOWMIGRATIONS_EXTRAS := $(if $(filter showmigrations,$(_FIRST_GOAL)),$(wordlist
 
 STUBS_RAW := $(strip $(MIGRATE_EXTRAS) $(MIGRATIONS_EXTRAS) $(SHOWMIGRATIONS_EXTRAS))
 # Trailing words must be stub targets; exclude real Makefile goals so we never override them.
-_RESERVED_FOR_STUB := up sync authentik-apply down validate validate-fast update-charts django-manage image-build image-push image-build-push image-ref pihole-dns-enable pihole-dns-disable pihole-dns-status sops-age-generate migrate migrations showmigrations
+_RESERVED_FOR_STUB := up sync dev dev-down authentik-apply down validate validate-fast update-charts django-manage image-build image-push image-build-push image-ref pihole-dns-enable pihole-dns-disable pihole-dns-status sops-age-generate migrate migrations showmigrations
 STUBS := $(filter-out $(_RESERVED_FOR_STUB),$(STUBS_RAW))
 
 ifneq ($(STUBS),)

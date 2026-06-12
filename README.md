@@ -15,6 +15,9 @@ make up
 # Re-sync after config changes
 make sync
 
+# Tilt dev loop for apps/* (live code reload, auto helm re-render)
+make dev
+
 # Run local validation
 make validate-fast
 make validate
@@ -35,16 +38,17 @@ make pihole-dns-status
 
 ### Default Access
 
-| Service        | Access                                          | Credentials                                       |
-| -------------- | ----------------------------------------------- | ------------------------------------------------- |
-| Grafana        | [grafana.home](http://grafana.home)             | Authentik SSO (`auto_login`, login form disabled) |
-| Prometheus     | [prometheus.home](http://prometheus.home)       | —                                                 |
-| Home Assistant | [homeassistant.home](http://homeassistant.home) | Setup on first visit                              |
-| Authentik      | [authentik.home](http://authentik.home)         | Setup on first visit                              |
-| Longhorn UI    | [longhorn.home](http://longhorn.home)           | —                                                 |
-| Pi-hole        | [pihole.home/admin/](http://pihole.home/admin/) | admin / `pihole`                                  |
-| Apps           | [apps.home](http://apps.home)                   | —                                                 |
-| PostgreSQL     | `192.168.76.243:5432` / in-cluster service      | SOPS-managed postgres credentials                 |
+| Service        | Access                                                  | Credentials                                       |
+| -------------- | ------------------------------------------------------- | ------------------------------------------------- |
+| Homepage       | [apps.home](http://apps.home)                           | —                                                 |
+| Grafana        | [grafana.home](http://grafana.home)                     | Authentik SSO (`auto_login`, login form disabled) |
+| Prometheus     | [prometheus.home](http://prometheus.home)               | —                                                 |
+| Home Assistant | [homeassistant.home](http://homeassistant.home)         | Setup on first visit                              |
+| Authentik      | [authentik.home](http://authentik.home)                 | Setup on first visit                              |
+| Longhorn UI    | [longhorn.home](http://longhorn.home)                   | —                                                 |
+| Pi-hole        | [pihole.home/admin/](http://pihole.home/admin/)         | admin / `pihole`                                  |
+| Apps           | api.home, django.home, runner.home, workload-chart.home | —                                                 |
+| PostgreSQL     | `192.168.76.243:5432` / in-cluster service              | SOPS-managed postgres credentials                 |
 
 ## Services
 

@@ -24,7 +24,7 @@ yq_raw() { yq "$1" "$2" | sed 's/^"//; s/"$//'; }
 
 while read -r name && read -r url; do
   helm repo add "$name" "$url" --force-update &>/dev/null || true
-done < <(yq_raw '.repositories[] | (.name, .url)' "$HELMFILE")
+done < <(yq_raw '.repositories[]? | (.name, .url)' "$HELMFILE")
 helm repo update &>/dev/null
 echo
 
@@ -50,7 +50,7 @@ while read -r release_name && read -r chart && read -r version; do
   else
     current+=("$release_name" "$chart" "$version" "$latest")
   fi
-done < <(yq_raw '.releases[] | select(has("version")) | (.name, .chart, .version)' "$HELMFILE")
+done < <(yq_raw '.releases[]? | select(has("version")) | (.name, .chart, .version)' "$HELMFILE")
 
 # ── Output ────────────────────────────────────────────────────────────────────
 

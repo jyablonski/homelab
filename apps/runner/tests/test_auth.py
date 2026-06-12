@@ -37,7 +37,7 @@ def sso_settings() -> Settings:
         oidc_userinfo_url="http://authentik.test/application/o/userinfo/",
         oidc_jwks_url="http://authentik.test/application/o/runner/jwks/",
         oidc_scopes="openid email profile groups",
-        oidc_callback_url="http://apps.home/runner/auth/callback",
+        oidc_callback_url="http://runner.home/auth/callback",
         session_secret_key="test-session-secret",
     )
 
@@ -80,7 +80,7 @@ def test_sso_login_and_callback_create_session(
     assert login_response.headers["location"] == (
         "http://authentik.home/application/o/authorize/"
     )
-    assert fake_oauth_client.redirect_uri == "http://apps.home/runner/auth/callback"
+    assert fake_oauth_client.redirect_uri == "http://runner.home/auth/callback"
     assert callback_response.status_code == 303
     assert callback_response.headers["location"] == "/runner/"
     assert home_response.status_code == 200

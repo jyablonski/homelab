@@ -22,6 +22,14 @@ service:
 ingress:
   enabled: true
   ingressClassName: traefik
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Longhorn"
+    gethomepage.dev/group: "Infrastructure"
+    gethomepage.dev/icon: "longhorn.png"
+    gethomepage.dev/description: "Cluster storage"
+    # Status badge: longhorn pods use legacy labels, not app.kubernetes.io/name.
+    gethomepage.dev/pod-selector: "app=longhorn-ui"
   host: longhorn.home
   path: /
   pathType: Prefix

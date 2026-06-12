@@ -1,7 +1,6 @@
 env:
   API_ENV: "production"
   API_LOG_LEVEL: "INFO"
-  API_ROOT_PATH: "/api"
   API_WAIT_FOR_DB: "true"
   DB_CONNECT_TIMEOUT: "5"
   DB_HOST: "postgres.postgres.svc.cluster.local"
@@ -37,16 +36,21 @@ service:
 ingress:
   enabled: true
   className: traefik
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "API"
+    gethomepage.dev/group: "Apps"
+    gethomepage.dev/icon: "fastapi.png"
+    gethomepage.dev/href: "http://api.home/docs"
+    gethomepage.dev/description: "FastAPI service"
   hosts:
-    - host: apps.home
+    - host: api.home
       paths:
-        - path: /api
+        - path: /
           pathType: Prefix
   traefik:
     stripPrefix:
-      enabled: true
-      prefixes:
-        - /api
+      enabled: false
 
 serviceMonitor:
   enabled: true

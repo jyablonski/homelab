@@ -53,6 +53,8 @@ Prefer `make` targets over long hand-written commands. Useful tools include:
 ```bash
 make up                 # install K3s, bootstrap infra, build/push apps, sync apps
 make sync               # helmfile sync against an existing cluster
+make dev                # tilt up: live code reload + helm re-render for apps/*
+make dev-down           # tilt down: remove Tilt-managed app resources
 make down               # restore DNS and uninstall local K3s
 make validate-fast      # shellcheck and terraform fmt when tools exist
 make validate           # full local validation path mirroring CI
@@ -83,7 +85,7 @@ Pinned local endpoints:
 - `apps.home` -> `192.168.76.245`
 - Pi-hole DNS service -> `192.168.76.246`
 
-Most browser-facing services resolve through Pi-hole and route through Traefik. The local registry uses a direct MetalLB LoadBalancer IP and bypasses Traefik. For app-owned workloads, prefer `ClusterIP` plus Traefik ingress. Use host-based routes for standalone UIs; use the workload chart's strip-prefix middleware for shared `apps.home` path routes.
+Most browser-facing services resolve through Pi-hole and route through Traefik. The local registry uses a direct MetalLB LoadBalancer IP and bypasses Traefik. For app-owned workloads, prefer `ClusterIP` plus Traefik ingress. Every app and service gets its own `<name>.home` host (Pi-hole wildcards `*.home` to Traefik); `apps.home` is the gethomepage dashboard. The workload chart's strip-prefix middleware remains available for path-based routing if ever needed.
 
 ## Services
 

@@ -21,6 +21,15 @@ prometheus:
   ingress:
     enabled: true
     ingressClassName: traefik
+    annotations:
+      gethomepage.dev/enabled: "true"
+      gethomepage.dev/name: "Prometheus"
+      gethomepage.dev/group: "Monitoring"
+      gethomepage.dev/icon: "prometheus.png"
+      gethomepage.dev/description: "Metrics and alerting"
+      # Status badge: pod lookup defaults to app.kubernetes.io/name=<ingress name>,
+      # which doesn't match this chart's pod labels.
+      gethomepage.dev/app: "prometheus"
     hosts:
       - prometheus.home
     paths:
@@ -52,11 +61,26 @@ grafana:
   ingress:
     enabled: true
     ingressClassName: traefik
+    annotations:
+      gethomepage.dev/enabled: "true"
+      gethomepage.dev/name: "Grafana"
+      gethomepage.dev/group: "Monitoring"
+      gethomepage.dev/icon: "grafana.png"
+      gethomepage.dev/description: "Dashboards and logs"
+      # Status badge: pod lookup defaults to app.kubernetes.io/name=<ingress name>,
+      # which doesn't match this chart's pod labels.
+      gethomepage.dev/app: "grafana"
     hosts:
       - grafana.home
   grafana.ini:
     server:
       root_url: http://grafana.home
+    # auto_login skips the login page, whose JS owns redirect handling when this
+    # toggle is on (default since 11.5) — deep links would land on the home page
+    # after SSO. Fall back to the backend cookie flow instead.
+    # https://github.com/grafana/grafana/issues/103567
+    feature_toggles:
+      useSessionStorageForRedirection: false
     users:
       allow_sign_up: false
       allow_password_change: false
@@ -75,7 +99,10 @@ grafana:
       name: Authentik
       allow_sign_up: true
       auto_login: true
-      scopes: openid email profile
+      scopes: openid email profile groups
+      # homelab-admins (the SSO admin group, same as django/runner) get org
+      # Admin; everyone else is Viewer, which Grafana 12 denies Explore.
+      role_attribute_path: contains(groups[*], 'homelab-admins') && 'Admin' || 'Viewer'
       auth_url: http://authentik.home/application/o/authorize/
       token_url: http://authentik-server.authentik.svc.cluster.local/application/o/token/
       api_url: http://authentik-server.authentik.svc.cluster.local/application/o/userinfo/

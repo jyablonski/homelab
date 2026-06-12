@@ -1,0 +1,10 @@
+# Dev-only overrides, active for `helmfile -e dev` (used by Tilt); renders to
+# {} otherwise. Single replica without HPA so live updates land predictably.
+{{- if eq .Environment.Name "dev" }}
+scale:
+  replicas: 1
+  autoscaling:
+    enabled: false
+{{- else }}
+{}
+{{- end }}

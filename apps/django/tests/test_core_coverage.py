@@ -6,7 +6,7 @@ from django.test import override_settings
 
 
 def test_healthz_endpoint(client):
-    response = client.get("/django/healthz")
+    response = client.get("/healthz")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
 
@@ -119,6 +119,6 @@ def test_default_database_search_path_prefers_source():
 
 @override_settings(SESSION_ENGINE="django.contrib.sessions.backends.signed_cookies")
 def test_admin_append_slash_under_django_prefix(client):
-    response = client.get("/django/admin", HTTP_HOST="apps.home")
+    response = client.get("/admin", HTTP_HOST="django.home")
     assert response.status_code == 301
-    assert response["Location"] == "/django/admin/"
+    assert response["Location"] == "/admin/"
