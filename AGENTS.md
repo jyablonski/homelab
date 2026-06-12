@@ -85,7 +85,7 @@ Pinned local endpoints:
 - `apps.home` -> `192.168.76.245`
 - Pi-hole DNS service -> `192.168.76.246`
 
-Most browser-facing services resolve through Pi-hole and route through Traefik. The local registry uses a direct MetalLB LoadBalancer IP and bypasses Traefik. For app-owned workloads, prefer `ClusterIP` plus Traefik ingress. Use host-based routes for standalone UIs; use the workload chart's strip-prefix middleware for shared `apps.home` path routes.
+Most browser-facing services resolve through Pi-hole and route through Traefik. The local registry uses a direct MetalLB LoadBalancer IP and bypasses Traefik. For app-owned workloads, prefer `ClusterIP` plus Traefik ingress. Every app and service gets its own `<name>.home` host (Pi-hole wildcards `*.home` to Traefik); `apps.home` is the gethomepage dashboard. The workload chart's strip-prefix middleware remains available for path-based routing if ever needed.
 
 ## Services
 

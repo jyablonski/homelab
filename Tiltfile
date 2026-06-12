@@ -79,8 +79,8 @@ python_app(
     sync_dirs=["src"],
     extra_ignores=["src/staticfiles"],
     links=[
-        link("http://apps.home/django/admin", "Django admin"),
-        link("http://apps.home/django/healthz", "Health"),
+        link("http://django.home/admin", "Django admin"),
+        link("http://django.home/healthz", "Health"),
     ],
 )
 
@@ -88,9 +88,9 @@ python_app(
     "api",
     sync_dirs=["src", "jobs"],
     links=[
-        link("http://apps.home/api/docs", "API docs"),
-        link("http://apps.home/api/healthz", "Health"),
-        link("http://apps.home/api/metrics", "Metrics"),
+        link("http://api.home/docs", "API docs"),
+        link("http://api.home/healthz", "Health"),
+        link("http://api.home/metrics", "Metrics"),
     ],
 )
 
@@ -98,8 +98,8 @@ python_app(
     "runner",
     sync_dirs=["src"],
     links=[
-        link("http://apps.home/runner", "Runner"),
-        link("http://apps.home/runner/healthz", "Health"),
+        link("http://runner.home", "Runner"),
+        link("http://runner.home/healthz", "Health"),
     ],
     objects=["runner:role", "runner:rolebinding"],
     extra_ignores=["rbac.yaml"],
@@ -139,7 +139,7 @@ k8s_resource(
     "workload-chart-example",
     resource_deps=["workload-chart-example-compile"],
     links=[
-        link("http://apps.home/workload-chart/api/health/ready", "Health"),
-        link("http://apps.home/workload-chart/api/metrics", "Metrics"),
+        link("http://workload-chart.home/health/ready", "Health"),
+        link("http://workload-chart.home/metrics", "Metrics"),
     ],
 )

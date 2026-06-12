@@ -27,6 +27,13 @@ virtualHost: pihole.home
 ingress:
   enabled: true
   ingressClassName: traefik
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Pi-hole"
+    gethomepage.dev/group: "Infrastructure"
+    gethomepage.dev/icon: "pi-hole.png"
+    gethomepage.dev/href: "http://pihole.home/admin"
+    gethomepage.dev/description: "DNS and ad blocking"
   path: /
   pathType: Prefix
   hosts:

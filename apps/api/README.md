@@ -4,12 +4,12 @@ FastAPI application scaffold for homelab-owned HTTP APIs.
 
 After deployment, access the app through Traefik at:
 
-- `http://apps.home/api`
-- `http://apps.home/api/docs`
-- `http://apps.home/api/healthz`
-- `http://apps.home/api/readyz`
-- `http://apps.home/api/metrics`
-- `http://apps.home/api/reminders`
+- `http://api.home`
+- `http://api.home/docs`
+- `http://api.home/healthz`
+- `http://api.home/readyz`
+- `http://api.home/metrics`
+- `http://api.home/reminders`
 
 ## Directory Structure
 

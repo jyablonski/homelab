@@ -84,8 +84,7 @@ TIME_ZONE = os.getenv("TZ", "UTC")
 USE_I18N = True
 USE_TZ = True
 
-# Served under the same URL prefix as the app (`/django` ingress path).
-STATIC_URL = "/django/static/"
+STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -116,9 +115,9 @@ DJANGO_OIDC_JWKS_URL = os.getenv(
 DJANGO_OIDC_SCOPES = os.getenv("DJANGO_OIDC_SCOPES", "openid email profile")
 DJANGO_OIDC_CALLBACK_URL = os.getenv(
     "DJANGO_OIDC_CALLBACK_URL",
-    "http://apps.home/django/sso/callback/",
+    "http://django.home/sso/callback/",
 )
 DJANGO_SSO_STAFF_GROUP = os.getenv("DJANGO_SSO_STAFF_GROUP", "")
 DJANGO_SSO_SUPERUSER_GROUP = os.getenv("DJANGO_SSO_SUPERUSER_GROUP", "")
-LOGIN_URL = "/django/sso/login/"
-LOGIN_REDIRECT_URL = "/django/admin/"
+LOGIN_URL = "/sso/login/"
+LOGIN_REDIRECT_URL = "/admin/"

@@ -21,6 +21,15 @@ prometheus:
   ingress:
     enabled: true
     ingressClassName: traefik
+    annotations:
+      gethomepage.dev/enabled: "true"
+      gethomepage.dev/name: "Prometheus"
+      gethomepage.dev/group: "Monitoring"
+      gethomepage.dev/icon: "prometheus.png"
+      gethomepage.dev/description: "Metrics and alerting"
+      # Status badge: pod lookup defaults to app.kubernetes.io/name=<ingress name>,
+      # which doesn't match this chart's pod labels.
+      gethomepage.dev/app: "prometheus"
     hosts:
       - prometheus.home
     paths:
@@ -52,6 +61,15 @@ grafana:
   ingress:
     enabled: true
     ingressClassName: traefik
+    annotations:
+      gethomepage.dev/enabled: "true"
+      gethomepage.dev/name: "Grafana"
+      gethomepage.dev/group: "Monitoring"
+      gethomepage.dev/icon: "grafana.png"
+      gethomepage.dev/description: "Dashboards and logs"
+      # Status badge: pod lookup defaults to app.kubernetes.io/name=<ingress name>,
+      # which doesn't match this chart's pod labels.
+      gethomepage.dev/app: "grafana"
     hosts:
       - grafana.home
   grafana.ini:

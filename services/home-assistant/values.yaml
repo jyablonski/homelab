@@ -19,6 +19,12 @@ ingress:
   enabled: true
   external: false
   className: traefik
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Home Assistant"
+    gethomepage.dev/group: "Home Automation"
+    gethomepage.dev/icon: "home-assistant.png"
+    gethomepage.dev/description: "Smart home hub"
   hosts:
     - host: homeassistant.home
       paths:

@@ -11,7 +11,7 @@ up:
 	@sudo -v
 	@./scripts/run-step.sh "Running DNS bootstrap" -- bash ./scripts/setup-local-pihole-dns.sh disable
 	@./scripts/run-step.sh "Configuring registry access" -- bash ./scripts/setup-registry-home.sh
-	@./scripts/run-step.sh "Configuring ingress access" -- bash -c 'INGRESS_HOSTS="apps.home authentik.home grafana.home" bash ./scripts/setup-ingress-home.sh'
+	@./scripts/run-step.sh "Configuring ingress access" -- bash -c 'INGRESS_HOSTS="apps.home authentik.home grafana.home api.home django.home runner.home workload-chart.home" bash ./scripts/setup-ingress-home.sh'
 	@./scripts/run-step.sh "Writing K3s config" -- bash -c 'sudo mkdir -p /etc/rancher/k3s && sudo cp services/k3s/config.yaml /etc/rancher/k3s/config.yaml'
 	@./scripts/run-step.sh "Installing K3s" -- bash -c 'curl -sfL https://get.k3s.io | sh -'
 	@./scripts/run-step.sh "Waiting for K3s startup" -- sleep 10

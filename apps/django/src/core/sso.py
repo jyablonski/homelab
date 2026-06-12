@@ -79,7 +79,7 @@ def admin_login(
 
 def sso_login(request: HttpRequestWithSession) -> HttpResponse:
     if not sso_enabled():
-        return redirect("/django/admin/login/")
+        return redirect("/admin/login/")
 
     request.session[SESSION_NEXT_URL] = _safe_next_url(request)
     callback_url = settings.DJANGO_OIDC_CALLBACK_URL or request.build_absolute_uri(
@@ -90,17 +90,17 @@ def sso_login(request: HttpRequestWithSession) -> HttpResponse:
 
 def sso_callback(request: HttpRequestWithSession) -> HttpResponse:
     if not sso_enabled():
-        return redirect("/django/admin/login/")
+        return redirect("/admin/login/")
 
     client = _oauth().authentik
     try:
         token = client.authorize_access_token(request)
         userinfo = token.get("userinfo") or client.parse_id_token(request, token)
     except OAuthError:
-        return redirect("/django/admin/login/")
+        return redirect("/admin/login/")
 
     if not _sso_allowed(userinfo):
-        return redirect("/django/admin/login/")
+        return redirect("/admin/login/")
 
     user = _user_from_claims(userinfo)
     django_login(request, user, backend="django.contrib.auth.backends.ModelBackend")

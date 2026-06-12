@@ -1,7 +1,7 @@
 env:
   DJANGO_DEBUG: "false"
   DJANGO_ALLOWED_HOSTS: "*"
-  DJANGO_CSRF_TRUSTED_ORIGINS: "http://apps.home"
+  DJANGO_CSRF_TRUSTED_ORIGINS: "http://django.home"
   DJANGO_SSO_ENABLED: "true"
   DJANGO_SSO_STAFF_GROUP: "homelab-admins"
   DJANGO_SSO_SUPERUSER_GROUP: "homelab-admins"
@@ -58,21 +58,21 @@ resources:
 
 readinessProbe:
   httpGet:
-    path: /django/healthz
+    path: /healthz
     port: http
     httpHeaders:
       - name: Host
-        value: apps.home
+        value: django.home
   periodSeconds: 10
   failureThreshold: 3
 
 livenessProbe:
   httpGet:
-    path: /django/healthz
+    path: /healthz
     port: http
     httpHeaders:
       - name: Host
-        value: apps.home
+        value: django.home
   periodSeconds: 20
   failureThreshold: 3
 
@@ -82,10 +82,17 @@ service:
 ingress:
   enabled: true
   className: traefik
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Django Admin"
+    gethomepage.dev/group: "Apps"
+    gethomepage.dev/icon: "django.png"
+    gethomepage.dev/href: "http://django.home/admin"
+    gethomepage.dev/description: "Data admin and schema migrations"
   hosts:
-    - host: apps.home
+    - host: django.home
       paths:
-        - path: /django
+        - path: /
           pathType: Prefix
   traefik:
     stripPrefix:

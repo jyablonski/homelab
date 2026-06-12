@@ -30,28 +30,28 @@ class FakeAuthentikClient:
 
 
 def test_sso_disabled_redirects_to_local_admin_login(client):
-    response = client.get("/django/sso/login/")
+    response = client.get("/sso/login/")
 
     assert response.status_code == 302
-    assert response["Location"] == "/django/admin/login/"
+    assert response["Location"] == "/admin/login/"
 
 
 @override_settings(
     DJANGO_SSO_ENABLED=True,
     DJANGO_OIDC_CLIENT_ID="django",
     DJANGO_OIDC_CLIENT_SECRET="secret",
-    DJANGO_OIDC_CALLBACK_URL="http://apps.home/django/sso/callback/",
+    DJANGO_OIDC_CALLBACK_URL="http://django.home/sso/callback/",
     SESSION_ENGINE="django.contrib.sessions.backends.signed_cookies",
 )
 def test_admin_login_redirects_to_authentik_when_sso_enabled(client, monkeypatch):
     fake_client = FakeAuthentikClient()
     monkeypatch.setattr(sso, "_oauth", lambda: SimpleNamespace(authentik=fake_client))
 
-    response = client.get("/django/admin/login/?next=/django/admin/")
+    response = client.get("/admin/login/?next=/admin/")
 
     assert response.status_code == 302
     assert response["Location"] == "http://authentik.home/application/o/authorize/"
-    assert fake_client.callback_url == "http://apps.home/django/sso/callback/"
+    assert fake_client.callback_url == "http://django.home/sso/callback/"
 
 
 @override_settings(
@@ -63,7 +63,7 @@ def test_sso_enabled_requires_client_credentials(client):
     sso._oauth.cache_clear()
 
     with pytest.raises(ImproperlyConfigured):
-        client.get("/django/sso/login/")
+        client.get("/sso/login/")
 
 
 @override_settings(
@@ -95,13 +95,13 @@ def test_sso_callback_creates_django_user_and_logs_in(client, monkeypatch):
         ),
     )
     session = client.session
-    session[sso.SESSION_NEXT_URL] = "/django/admin/"
+    session[sso.SESSION_NEXT_URL] = "/admin/"
     session.save()
 
-    response = client.get("/django/sso/callback/")
+    response = client.get("/sso/callback/")
 
     assert response.status_code == 302
-    assert response["Location"] == "/django/admin/"
+    assert response["Location"] == "/admin/"
     assert "_auth_user_id" in client.session
 
 
@@ -129,10 +129,10 @@ def test_sso_callback_denies_users_without_admin_group(client, monkeypatch):
         ),
     )
 
-    response = client.get("/django/sso/callback/")
+    response = client.get("/sso/callback/")
 
     assert response.status_code == 302
-    assert response["Location"] == "/django/admin/login/"
+    assert response["Location"] == "/admin/login/"
     assert "_auth_user_id" not in client.session
 
 

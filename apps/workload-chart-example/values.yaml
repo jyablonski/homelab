@@ -34,20 +34,25 @@ livenessProbe:
 service:
   port: 8080
 
-# Available at http://apps.home/workload-chart/api
+# Available at http://workload-chart.home
 ingress:
   enabled: true
   className: traefik
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Workload Example"
+    gethomepage.dev/group: "Apps"
+    gethomepage.dev/icon: "mdi-cube-outline"
+    gethomepage.dev/href: "http://workload-chart.home/health/ready"
+    gethomepage.dev/description: "Go reference workload"
   hosts:
-    - host: apps.home
+    - host: workload-chart.home
       paths:
-        - path: /workload-chart/api
+        - path: /
           pathType: Prefix
   traefik:
     stripPrefix:
-      enabled: true
-      prefixes:
-        - /workload-chart/api
+      enabled: false
 
 serviceMonitor:
   enabled: true
