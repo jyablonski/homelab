@@ -320,21 +320,13 @@ If the existing Traefik release keeps the class name `traefik`, then treat `trae
 
 ## Auth Strategy
 
-Public apps fall into two categories.
+Public apps are fully public by default.
 
-Public-by-design:
-
-- The app is meant to be reachable by anyone.
-- App-level auth is optional or domain-specific.
-- Use rate limiting, security headers, and conservative app defaults.
-
-Restricted public:
-
-- The app is reachable from the internet but should require login.
-- Prefer Cloudflare Access in front of the app if the app is not meant for everyone.
-- Use Authentik only if you deliberately want Authentik reachable or proxied for public login flows.
-
-Do not expose the existing `authentik.home` admin surface by accident. If public Authentik becomes necessary later, give it a separate public hostname and review callback URLs, issuer URLs, cookie settings, and admin access.
+- No public-facing app uses a login gate.
+- Do not use Cloudflare Access for the public app hostnames.
+- Do not expose Authentik publicly.
+- Authentik remains internal-only for cluster operations and private `.home` services.
+- Public apps should rely on normal public-web hardening: rate limiting, security headers, conservative app defaults, resource limits, and clear separation from private services.
 
 ## Security Controls
 
@@ -356,7 +348,6 @@ Minimum controls before making a public app live:
 
 Good follow-ups:
 
-- Cloudflare Access for private-but-internet-reachable tools.
 - Uptime checks from outside the LAN.
 - Backup/restore plan for any public app state.
 
@@ -386,12 +377,6 @@ Good follow-ups:
 - Do not cut over `jyablonski.dev` from AWS S3 -> CloudFront until the Next.js server is running in K3s and has passed external smoke tests.
 - Do not reuse `.home` Authentik callback URLs for public apps.
 - Do not use a wildcard public tunnel route until explicit hostnames are working safely.
-
-## Open Decisions
-
-- Whether `www.jyablonski.dev` should redirect to the apex at Cloudflare or route to the same Next.js Service.
-- Whether the first migrated app should be the Next.js personal site, `doqs`, or `nbadashboard`.
-- Whether any public app needs Cloudflare Access before launch.
 
 ## Definition of Done
 
