@@ -23,31 +23,7 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
-    name: Dagster unit tests
-
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          version: ${{ env.UV_VERSION }}
-          python-version: ${{ env.PYTHON_VERSION }}
-          enable-cache: true
-          cache-dependency-glob: apps/dagster/uv.lock
-
-      - name: Install dependencies
-        working-directory: apps/dagster
-        run: uv sync --locked --dev
-
-      - name: Run unit tests
-        working-directory: apps/dagster
-        run: uv run pytest -m "not integration"
-
-  integration:
-    runs-on: ubuntu-latest
-    name: Dagster integration tests
-    needs: test
+    name: Dagster tests
 
     steps:
       - uses: actions/checkout@v5
@@ -68,6 +44,6 @@ jobs:
         working-directory: apps/django
         run: uv sync --locked --dev
 
-      - name: Run integration tests
+      - name: Run tests
         working-directory: apps/dagster
-        run: uv run pytest -m integration --no-cov
+        run: uv run pytest

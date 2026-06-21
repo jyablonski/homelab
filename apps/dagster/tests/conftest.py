@@ -17,6 +17,12 @@ EVENT_LANDING_TABLES = (
 DJANGO_APP_DIR = Path(__file__).resolve().parents[2] / "django"
 
 
+# TODO(dagster): stop running Django migrations to set up the test schema.
+# Coupling Dagster's unit/integration tests to the Django app (installing its
+# deps in CI and shelling out to manage.py) is brittle and slow. Instead, add a
+# script that dumps the `source` schema to a checked-in .sql file that each
+# downstream app's test suite can load directly. (e2e tests, which exercise the
+# real cross-app flow, are a separate concern and should keep running migrations.)
 def _run_django_migrate(container: PostgresContainer) -> None:
     env = os.environ.copy()
     env.update(
