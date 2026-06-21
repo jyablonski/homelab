@@ -3,7 +3,7 @@
 # The dev loop, by file type:
 #   - App source (apps/<app>/src, api jobs/): live-synced into the running pod;
 #     uvicorn --reload (api/runner via values-dev.yaml), Django runserver
-#     autoreload, and a Go process restart pick the changes up in-place.
+#     autoreload, and process restarts for Dagster/Go pick changes up in-place.
 #   - Dependency/build inputs (pyproject.toml, uv.lock, go.mod, go.sum,
 #     Dockerfile, entrypoint.sh): full image rebuild + redeploy. These are the
 #     build-context files not covered by a sync() step, so Tilt rebuilds
@@ -34,6 +34,15 @@ for name in APP_NAMES:
         if os.path.exists(path):
             watch_file(path)
 watch_file("apps/runner/rbac.yaml")
+# Dagster splits its values across role-specific files rather than one values.yaml.
+for dep in [
+    "values-common.yaml",
+    "values-code-server.yaml",
+    "values-webserver.yaml",
+    "values-daemon.yaml",
+    "secrets.sops.yaml",
+]:
+    watch_file("apps/dagster/%s" % dep)
 
 # One render for all app releases. `-e dev` activates the per-app
 # values-dev.yaml.gotmpl overlays (uvicorn --reload, single replica Go app).
@@ -104,6 +113,32 @@ python_app(
     objects=["runner:role", "runner:rolebinding"],
     extra_ignores=["rbac.yaml"],
 )
+
+
+# --- Dagster -----------------------------------------------------------------
+# Three deployments (code server, webserver, daemon) share one image. Build it
+# once; Tilt live-syncs src into every pod using it and restarts each role's
+# process so Dagster reloads already-imported Python modules.
+docker_build_with_restart(
+    app_image_ref("dagster"),
+    "apps/dagster",
+    entrypoint=["/app/entrypoint.sh"],
+    dockerfile="apps/dagster/Dockerfile",
+    live_update=[sync("apps/dagster/src", "/app/src")],
+    ignore=PYTHON_NON_IMAGE_FILES + [
+        "values-common.yaml",
+        "values-code-server.yaml",
+        "values-webserver.yaml",
+        "values-daemon.yaml",
+    ],
+)
+k8s_resource("dagster-code-server")
+k8s_resource(
+    "dagster-webserver",
+    links=[link("http://dagster.home", "Dagster UI")],
+    resource_deps=["dagster-code-server"],
+)
+k8s_resource("dagster-daemon", resource_deps=["dagster-code-server"])
 
 
 # --- Go app ------------------------------------------------------------------

@@ -1,0 +1,81 @@
+# Dagster instance config (lives at $DAGSTER_HOME). Run/event/schedule storage
+# is Postgres, pointed at the dedicated `dagster` database so its tables stay
+# separate from the application/source data in the `postgres` database.
+storage:
+  postgres:
+    postgres_db:
+      username:
+        env: DAGSTER_POSTGRES_USER
+      password:
+        env: DAGSTER_POSTGRES_PASSWORD
+      hostname:
+        env: DAGSTER_POSTGRES_HOST
+      db_name:
+        env: DAGSTER_POSTGRES_DB
+      port:
+        env: DAGSTER_POSTGRES_PORT
+
+run_coordinator:
+  module: dagster.core.run_coordinator
+  class: QueuedRunCoordinator
+  config:
+    max_concurrent_runs: 5
+
+run_launcher:
+  module: dagster_k8s.launcher
+  class: K8sRunLauncher
+  config:
+    service_account_name: dagster-runner
+    job_image: registry.home:5000/homelab/dagster:dev
+    image_pull_policy: Always
+    job_namespace: apps
+    instance_config_map: dagster-instance
+    dagster_home: /opt/dagster/dagster_home
+    env_vars:
+      - DAGSTER_WAIT_FOR_DB
+      - DAGSTER_INCLUDE_EXAMPLES
+      - DAGSTER_POSTGRES_HOST
+      - DAGSTER_POSTGRES_PORT
+      - DAGSTER_POSTGRES_DB
+      - DAGSTER_POSTGRES_USER
+      - DAGSTER_POSTGRES_PASSWORD
+      - DAGSTER_SLACK_WEBHOOK_URL
+      - DB_HOST
+      - DB_PORT
+      - DB_NAME
+      - DB_SEARCH_PATH
+      - DB_USER
+      - DB_PASSWORD
+      - EVENT_FORWARD_WINDOW_DAYS
+      - HLTV_PROXY_URL
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 2Gi
+    run_k8s_config:
+      pod_spec_config:
+        security_context:
+          run_as_non_root: true
+          run_as_user: 1000
+          run_as_group: 1000
+          fs_group: 1000
+      job_spec_config:
+        ttl_seconds_after_finished: 86400
+
+compute_logs:
+  module: dagster._core.storage.local_compute_log_manager
+  class: LocalComputeLogManager
+  config:
+    base_dir: /opt/dagster/dagster_home/compute_logs
+
+local_artifact_storage:
+  module: dagster.core.storage.root
+  class: LocalArtifactStorage
+  config:
+    base_dir: /opt/dagster/dagster_home/artifacts
+
+telemetry:
+  enabled: false

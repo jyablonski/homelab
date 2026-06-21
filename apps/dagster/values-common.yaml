@@ -1,0 +1,29 @@
+# Shared values for all three Dagster deployments (code server, webserver,
+# daemon). They run the same image; only args/service/probes differ per role.
+image:
+  repository: registry.home:5000/homelab/dagster
+  tag: dev
+
+env:
+  DAGSTER_HOME: "/opt/dagster/dagster_home"
+  DAGSTER_WAIT_FOR_DB: "true"
+  DAGSTER_INCLUDE_EXAMPLES: "false"
+  # Dagster metadata database (dedicated `dagster` database, separate tables).
+  DAGSTER_POSTGRES_HOST: "postgres.postgres.svc.cluster.local"
+  DAGSTER_POSTGRES_PORT: "5432"
+  DAGSTER_POSTGRES_DB: "dagster"
+  # Source/application database (assets read the `source` schema from here).
+  DB_HOST: "postgres.postgres.svc.cluster.local"
+  DB_PORT: "5432"
+  DB_NAME: "postgres"
+  DB_SEARCH_PATH: "source,public"
+  EVENT_FORWARD_WINDOW_DAYS: "21"
+  HLTV_PROXY_URL: ""
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 1Gi

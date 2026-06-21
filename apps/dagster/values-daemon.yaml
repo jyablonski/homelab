@@ -1,0 +1,29 @@
+# Dagster daemon: runs schedules, sensors, and the run queue. No service.
+args:
+  - dagster-daemon
+  - run
+  - -w
+  - /opt/dagster/dagster_home/workspace.yaml
+
+service:
+  enabled: false
+
+serviceAccount:
+  name: dagster-runner
+  automount: true
+
+livenessProbe:
+  exec:
+    command: ["dagster-daemon", "liveness-check"]
+  initialDelaySeconds: 30
+  periodSeconds: 60
+  timeoutSeconds: 10
+  failureThreshold: 3
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 2Gi

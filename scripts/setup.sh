@@ -13,7 +13,7 @@ discover_local_apps() {
   for app_dir in "$repo_root"/apps/*; do
     [[ -d "$app_dir" ]] || continue
     [[ -f "$app_dir/Dockerfile" ]] || continue
-    [[ -f "$app_dir/values.yaml" ]] || continue
+    [[ -f "$app_dir/values.yaml" || -f "$app_dir/values-common.yaml" ]] || continue
     basename "$app_dir"
   done
 }

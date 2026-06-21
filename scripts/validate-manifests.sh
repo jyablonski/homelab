@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-for cmd in kubeconform kube-linter mktemp; do
+for cmd in kubectl kubeconform kube-linter mktemp; do
   if ! command -v "$cmd" >/dev/null 2>&1; then
     echo "error: $cmd is required but not found in PATH"
     exit 1
@@ -20,6 +20,9 @@ for manifest in "${standalone_manifests[@]}"; do
   cat "$manifest" >> "$tmp_manifest"
   printf '\n---\n' >> "$tmp_manifest"
 done
+
+kubectl kustomize apps/dagster >> "$tmp_manifest"
+printf '\n---\n' >> "$tmp_manifest"
 
 echo "Validating standalone Kubernetes manifests..."
 kubeconform \

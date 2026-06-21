@@ -8,5 +8,11 @@ authentik:
     username: authentik
     password: replace-me
 
+dagster:
+  database:
+    name: dagster
+    username: dagster
+    password: replace-me
+
 loadBalancerService:
   loadBalancerIP: 192.168.76.243

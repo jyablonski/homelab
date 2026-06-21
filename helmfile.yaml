@@ -253,6 +253,68 @@ releases:
       - postgres/postgres
       - registry/registry
 
+  # Dagster runs as three deployments off one image: optional gRPC code server,
+  # webserver (UI), and daemon. The daemon launches each run as a Kubernetes Job.
+  - name: dagster-code-server
+    namespace: apps
+    labels:
+      bootstrap: app
+    chart: ./charts/workload
+    values:
+      - apps/dagster/values-common.yaml
+      - apps/dagster/values-code-server.yaml
+    secrets:
+      - apps/dagster/secrets.sops.yaml
+    needs:
+      - postgres/postgres
+      - registry/registry
+
+  - name: dagster-webserver
+    namespace: apps
+    labels:
+      bootstrap: app
+    chart: ./charts/workload
+    values:
+      - apps/dagster/values-common.yaml
+      - apps/dagster/values-webserver.yaml
+    secrets:
+      - apps/dagster/secrets.sops.yaml
+    hooks:
+      - events: ["presync"]
+        showlogs: true
+        command: bash
+        args:
+          - -c
+          - |
+            kubectl create namespace apps --dry-run=client -o yaml | kubectl apply -f -
+            kubectl apply --server-side --field-manager=helmfile -k apps/dagster
+    needs:
+      - postgres/postgres
+      - registry/registry
+
+  - name: dagster-daemon
+    namespace: apps
+    labels:
+      bootstrap: app
+    chart: ./charts/workload
+    values:
+      - apps/dagster/values-common.yaml
+      - apps/dagster/values-daemon.yaml
+    secrets:
+      - apps/dagster/secrets.sops.yaml
+    hooks:
+      - events: ["presync"]
+        showlogs: true
+        command: bash
+        args:
+          - -c
+          - |
+            kubectl create namespace apps --dry-run=client -o yaml | kubectl apply -f -
+            kubectl apply --server-side --field-manager=helmfile -k apps/dagster
+    needs:
+      - postgres/postgres
+      - registry/registry
+
   - name: traefik
     namespace: kube-system
     labels:

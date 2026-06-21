@@ -1,0 +1,58 @@
+[project]
+name = "homelab-dagster"
+version = "0.1.0"
+description = "Dagster orchestration for homelab data pipelines"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+  "beautifulsoup4>=4.12.0",
+  "dagster>=1.13.10,<1.14.0",
+  "dagster-dbt>=0.29.10,<0.30.0",
+  "dagster-k8s>=0.29.10,<0.30.0",
+  "dagster-postgres>=0.29.10,<0.30.0",
+  "dagster-webserver>=1.13.10,<1.14.0",
+  "hltv-async-api>=0.8.3",
+  "httpx>=0.27.0",
+  "lxml>=5.0.0",
+  "nba_api>=1.11.4",
+  "polars>=1.0.0",
+  "psycopg2-binary>=2.9.10",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.0.0",
+  "pytest-cov>=5.0.0",
+  "testcontainers[postgres]>=4.9.0",
+]
+local = [
+  "ty==0.0.32",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+  "-v",
+  "--tb=short",
+  "--strict-markers",
+  "--cov=src",
+  "--cov-report=term-missing",
+  "--cov-report=html",
+  "--cov-fail-under=80",
+  "--color=yes",
+]
+filterwarnings = [
+  "ignore:Support for class-based `config` is deprecated:DeprecationWarning",
+  "ignore:sqlglotrs is deprecated:DeprecationWarning",
+  "ignore:sqlglot\\[rs\\] is deprecated:UserWarning",
+]
+markers = [
+  "integration: Integration tests that require external services",
+  "unit: Unit tests that don't require external dependencies",
+]

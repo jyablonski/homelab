@@ -80,7 +80,15 @@ jobs:
         # renders all helm charts into kubernetes yaml manifests, but doesn't apply them.
         # it will error out if any chart is missing a required value or has a syntax error.
       - name: Template Charts
-        run: helmfile template > /tmp/manifests.yaml
+        run: |
+          helmfile template > /tmp/manifests.yaml
+          # The dagster Deployments run as the `dagster-runner` ServiceAccount,
+          # which is created by the kustomize layer (apps/dagster, applied via a
+          # presync hook) rather than Helm. Append it so kubeconform/kube-linter
+          # validate against the full rendered set instead of flagging the SA as
+          # missing.
+          printf '\n---\n' >> /tmp/manifests.yaml
+          kubectl kustomize apps/dagster >> /tmp/manifests.yaml
 
       - name: Install Kube Validation Tools
         run: |
