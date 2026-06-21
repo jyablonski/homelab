@@ -109,6 +109,31 @@ def test_source_schema_migration_shape():
     assert len(migration.operations) == 1
 
 
+def test_event_landing_tables_migration_shape():
+    migration_module = importlib.import_module(
+        "core.migrations.0005_event_landing_tables"
+    )
+    migration = migration_module.Migration
+
+    assert migration.dependencies == [("core", "0004_feature_flags_table")]
+    assert len(migration.operations) == 4
+    assert {operation.name for operation in migration.operations} == {
+        "EventsCs",
+        "EventsNba",
+        "EventsUfc",
+        "EventsUfcFighter",
+    }
+    assert migration.operations[1].options["db_table"] == "events_nba"
+    assert migration.operations[3].options["db_table"] == "events_ufc_fighters"
+    nba_fields = {name for name, _field in migration.operations[1].fields}
+    assert {"id", "source_event_id", "created_at"}.issubset(nba_fields)
+    fighter_constraints = migration.operations[3].options.get("constraints", [])
+    assert any(
+        getattr(constraint, "name", None) == "uniq_events_ufc_fighters_event_fighter"
+        for constraint in fighter_constraints
+    )
+
+
 def test_default_database_search_path_prefers_source():
     settings_module = importlib.import_module("core.settings")
     default_database = cast(dict[str, Any], settings_module.DATABASES["default"])

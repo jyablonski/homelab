@@ -1,0 +1,73 @@
+name: Dagster CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/dagster/**"
+      - ".github/workflows/dagster.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/dagster/**"
+      - ".github/workflows/dagster.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_VERSION: "0.11.7"
+  PYTHON_VERSION: "3.13"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Dagster unit tests
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: apps/dagster/uv.lock
+
+      - name: Install dependencies
+        working-directory: apps/dagster
+        run: uv sync --locked --dev
+
+      - name: Run unit tests
+        working-directory: apps/dagster
+        run: uv run pytest -m "not integration"
+
+  integration:
+    runs-on: ubuntu-latest
+    name: Dagster integration tests
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: apps/dagster/uv.lock
+
+      - name: Install Dagster dependencies
+        working-directory: apps/dagster
+        run: uv sync --locked --dev
+
+      - name: Install Django dependencies for migrations
+        working-directory: apps/django
+        run: uv sync --locked --dev
+
+      - name: Run integration tests
+        working-directory: apps/dagster
+        run: uv run pytest -m integration --no-cov

@@ -93,6 +93,13 @@ tests:
           path: spec.template.spec.containers[0].ports[0].hostIP
           value: 127.0.0.1
 
+  - it: omits the ports block for a portless workload (e.g. a daemon)
+    set:
+      service.enabled: false
+    asserts:
+      - notExists:
+          path: spec.template.spec.containers[0].ports
+
   - it: renders optional hostAliases for pod DNS overrides
     set:
       service.port: 8080

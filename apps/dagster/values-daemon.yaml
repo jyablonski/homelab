@@ -1,0 +1,27 @@
+# Dagster daemon: runs schedules, sensors, and the run queue. No service.
+args:
+  - dagster-daemon
+  - run
+  - -w
+  - /opt/dagster/dagster_home/workspace.yaml
+
+service:
+  enabled: false
+
+livenessProbe:
+  exec:
+    command: ["dagster-daemon", "liveness-check"]
+  initialDelaySeconds: 30
+  periodSeconds: 60
+  timeoutSeconds: 10
+  failureThreshold: 3
+
+# Scheduled runs execute step subprocesses on the daemon pod (DefaultRunLauncher).
+# daily_events launches three network-heavy assets in parallel.
+resources:
+  requests:
+    cpu: 100m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 2Gi

@@ -21,6 +21,17 @@ stringData:
   password: {{ required "authentik.database.password is required" .Values.authentik.database.password | quote }}
 ---
 apiVersion: v1
+kind: Secret
+metadata:
+  name: dagster-db-secret
+  namespace: {{ .Release.Namespace }}
+type: Opaque
+stringData:
+  database: {{ required "dagster.database.name is required" .Values.dagster.database.name | quote }}
+  username: {{ required "dagster.database.username is required" .Values.dagster.database.username | quote }}
+  password: {{ required "dagster.database.password is required" .Values.dagster.database.password | quote }}
+---
+apiVersion: v1
 kind: ConfigMap
 metadata:
   name: postgres-init
@@ -40,7 +51,21 @@ data:
     GRANT ALL PRIVILEGES ON DATABASE :"authentik_db_name" TO :"authentik_db_user";
     ALTER DATABASE :"authentik_db_name" OWNER TO :"authentik_db_user";
     SQL
-  02-bootstrap.sql: |
+  02-dagster.sh: |
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    psql \
+      --username "$POSTGRES_USER" \
+      --set=dagster_db_name="$DAGSTER_DB_NAME" \
+      --set=dagster_db_user="$DAGSTER_DB_USER" \
+      --set=dagster_db_password="$DAGSTER_DB_PASSWORD" <<'SQL'
+    CREATE DATABASE :"dagster_db_name";
+    CREATE USER :"dagster_db_user" WITH PASSWORD :'dagster_db_password';
+    GRANT ALL PRIVILEGES ON DATABASE :"dagster_db_name" TO :"dagster_db_user";
+    ALTER DATABASE :"dagster_db_name" OWNER TO :"dagster_db_user";
+    SQL
+  03-bootstrap.sql: |
 {{ .Files.Get "files/bootstrap.sql" | indent 4 }}
 ---
 apiVersion: v1
@@ -99,6 +124,21 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: authentik-db-secret
+                  key: password
+            - name: DAGSTER_DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: dagster-db-secret
+                  key: database
+            - name: DAGSTER_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: dagster-db-secret
+                  key: username
+            - name: DAGSTER_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dagster-db-secret
                   key: password
             - name: POSTGRES_DB
               value: postgres

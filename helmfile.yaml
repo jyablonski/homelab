@@ -253,6 +253,51 @@ releases:
       - postgres/postgres
       - registry/registry
 
+  # Dagster runs as three deployments off one image: optional gRPC code server,
+  # webserver (UI), and daemon. Daemon/webserver load user code from the baked-in
+  # Python module (workspace.yaml); the code server is not on the run path.
+  - name: dagster-code-server
+    namespace: apps
+    labels:
+      bootstrap: app
+    chart: ./charts/workload
+    values:
+      - apps/dagster/values-common.yaml
+      - apps/dagster/values-code-server.yaml
+    secrets:
+      - apps/dagster/secrets.sops.yaml
+    needs:
+      - postgres/postgres
+      - registry/registry
+
+  - name: dagster-webserver
+    namespace: apps
+    labels:
+      bootstrap: app
+    chart: ./charts/workload
+    values:
+      - apps/dagster/values-common.yaml
+      - apps/dagster/values-webserver.yaml
+    secrets:
+      - apps/dagster/secrets.sops.yaml
+    needs:
+      - postgres/postgres
+      - registry/registry
+
+  - name: dagster-daemon
+    namespace: apps
+    labels:
+      bootstrap: app
+    chart: ./charts/workload
+    values:
+      - apps/dagster/values-common.yaml
+      - apps/dagster/values-daemon.yaml
+    secrets:
+      - apps/dagster/secrets.sops.yaml
+    needs:
+      - postgres/postgres
+      - registry/registry
+
   - name: traefik
     namespace: kube-system
     labels:

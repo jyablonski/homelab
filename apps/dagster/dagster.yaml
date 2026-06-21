@@ -1,0 +1,44 @@
+# Dagster instance config (lives at $DAGSTER_HOME). Run/event/schedule storage
+# is Postgres, pointed at the dedicated `dagster` database so its tables stay
+# separate from the application/source data in the `postgres` database.
+storage:
+  postgres:
+    postgres_db:
+      username:
+        env: DAGSTER_POSTGRES_USER
+      password:
+        env: DAGSTER_POSTGRES_PASSWORD
+      hostname:
+        env: DAGSTER_POSTGRES_HOST
+      db_name:
+        env: DAGSTER_POSTGRES_DB
+      port:
+        env: DAGSTER_POSTGRES_PORT
+
+run_coordinator:
+  module: dagster.core.run_coordinator
+  class: QueuedRunCoordinator
+  config:
+    max_concurrent_runs: 5
+
+# Default (subprocess) launcher: the daemon/webserver share the same image as
+# the code server, so run workers find the user code locally. Swap for the
+# K8sRunLauncher if runs need to scale out to separate pods.
+run_launcher:
+  module: dagster.core.launcher
+  class: DefaultRunLauncher
+
+compute_logs:
+  module: dagster._core.storage.local_compute_log_manager
+  class: LocalComputeLogManager
+  config:
+    base_dir: /opt/dagster/dagster_home/compute_logs
+
+local_artifact_storage:
+  module: dagster.core.storage.root
+  class: LocalArtifactStorage
+  config:
+    base_dir: /opt/dagster/dagster_home/artifacts
+
+telemetry:
+  enabled: false

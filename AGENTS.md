@@ -232,6 +232,7 @@ Keep local validation aligned with CI when changing validation-sensitive files.
 ## Editing Conventions
 
 - Prefer small, focused changes.
+- Do not add module docstrings or other top-of-file comment blocks to Python (or other source) files; start with imports or code.
 - Preserve existing YAML style and key ordering where practical.
 - Use Helm functions and structured YAML rendering in chart templates.
 - Keep chart values backward-compatible unless intentionally changing the API.

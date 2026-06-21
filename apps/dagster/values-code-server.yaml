@@ -1,0 +1,47 @@
+# gRPC code server: serves user code to the webserver and daemon.
+args:
+  - dagster
+  - code-server
+  - start
+  - -h
+  - "0.0.0.0"
+  - -p
+  - "4000"
+  - -m
+  - dagster_project.definitions
+
+env:
+  # The code server does not touch the metadata DB, so it can start eagerly.
+  DAGSTER_WAIT_FOR_DB: "false"
+
+portName: grpc
+
+service:
+  enabled: true
+  port: 4000
+
+readinessProbe:
+  exec:
+    command: ["dagster", "api", "grpc-health-check", "-p", "4000"]
+  initialDelaySeconds: 15
+  timeoutSeconds: 30
+  periodSeconds: 10
+  failureThreshold: 3
+
+# Optional in production (daemon/webserver load python_module directly). Kept for
+# Tilt live reload and manual gRPC testing.
+resources:
+  requests:
+    cpu: 100m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 2Gi
+
+livenessProbe:
+  exec:
+    command: ["dagster", "api", "grpc-health-check", "-p", "4000"]
+  initialDelaySeconds: 60
+  timeoutSeconds: 30
+  periodSeconds: 60
+  failureThreshold: 5

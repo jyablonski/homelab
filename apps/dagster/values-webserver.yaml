@@ -1,0 +1,44 @@
+# Dagster webserver (UI), reachable via Traefik at dagster.home.
+args:
+  - dagster-webserver
+  - -h
+  - "0.0.0.0"
+  - -p
+  - "3000"
+  - -w
+  - /opt/dagster/dagster_home/workspace.yaml
+
+service:
+  enabled: true
+  port: 3000
+
+readinessProbe:
+  tcpSocket:
+    port: http
+  periodSeconds: 10
+  failureThreshold: 3
+
+livenessProbe:
+  tcpSocket:
+    port: http
+  periodSeconds: 20
+  failureThreshold: 3
+
+ingress:
+  enabled: true
+  className: traefik
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Dagster"
+    gethomepage.dev/group: "Apps"
+    gethomepage.dev/icon: "dagster.png"
+    gethomepage.dev/href: "http://dagster.home"
+    gethomepage.dev/description: "Data orchestration"
+  hosts:
+    - host: dagster.home
+      paths:
+        - path: /
+          pathType: Prefix
+  traefik:
+    stripPrefix:
+      enabled: false

@@ -83,7 +83,7 @@ homelab.jacob/job: {{ .jobName | quote }}
 {{- .Values.service.targetPort -}}
 {{- else if .Values.service.port -}}
 {{- .Values.service.port -}}
-{{- else -}}
+{{- else if .Values.containerPort -}}
 {{- .Values.containerPort -}}
 {{- end -}}
 {{- end -}}

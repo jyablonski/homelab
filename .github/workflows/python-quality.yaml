@@ -43,7 +43,7 @@ jobs:
     outputs:
       services:
         ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' &&
-        '["api","django","runner"]' || steps.filter.outputs.changes }}
+        '["api", "dagster", "django","runner"]' || steps.filter.outputs.changes }}
     steps:
       - uses: actions/checkout@v5
 
@@ -54,6 +54,10 @@ jobs:
           filters: |
             api:
               - "apps/api/**"
+              - "ruff.toml"
+              - ".github/workflows/python-quality.yaml"
+            dagster:
+              - "apps/dagster/**"
               - "ruff.toml"
               - ".github/workflows/python-quality.yaml"
             django:
