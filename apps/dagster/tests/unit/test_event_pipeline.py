@@ -29,6 +29,10 @@ from dagster_project.assets.ingestion.events_ufc import (
     events_ufc_fighters,
     ufc_upcoming,
 )
+from dagster_project.common.event_checks import (
+    event_start_valid_check,
+    required_string_columns_check,
+)
 from dagster_project.common.landing import (
     empty_frame,
     filter_forward_window,
@@ -117,9 +121,12 @@ def test_cs_helpers_handle_edge_cases():
     assert _parse_match_datetime("bad-date", "12:00") is None
     assert _as_optional_str("  ") is None
     assert _as_optional_int("bad") is None
-    row = _match_to_row({"id": "1", "team1": None, "team2": None})
+    row = _match_to_row(
+        {"id": "1", "date": "2026-01-02", "time": "12:30", "team1": None, "team2": None}
+    )
     assert row is not None
     assert row["event_name"] == "CS2 match"
+    assert _match_to_row({"id": "1", "team1": "A", "team2": "B"}) is None
     assert _match_to_row({"team1": "A", "team2": "B"}) is None
     assert _matches_to_frame([]).is_empty()
 
@@ -194,8 +201,38 @@ def test_fetch_espn_scoreboard_rejects_non_dict_payload(monkeypatch):
 
 
 class _FakePostgres:
+    def __init__(self):
+        self.merged_frames: list[pl.DataFrame] = []
+
     def merge_polars(self, df, **_kwargs):
+        self.merged_frames.append(df)
         return df.height
+
+    def fetch_value(self, query, *_args):
+        return None
+
+
+def test_event_ingestion_checks_validate_dataframes_before_storage():
+    df = pl.DataFrame(
+        {
+            "source_event_id": ["ok", " "],
+            "event_start": [datetime(2026, 1, 1, tzinfo=UTC), None],
+        },
+        schema={
+            "source_event_id": pl.String,
+            "event_start": pl.Datetime(time_zone="UTC"),
+        },
+    )
+
+    key_result = required_string_columns_check(
+        df,
+        check_name="source_event_id_present",
+        columns=["source_event_id"],
+    )
+    date_result = event_start_valid_check(df, check_name="event_start_valid")
+
+    assert not key_result.passed
+    assert not date_result.passed
 
 
 class _FakeHLTV:
@@ -223,11 +260,23 @@ def test_events_cs_materializes_with_fake_resources():
     assert result.output_for_node("events_cs") == 1
 
 
-def test_events_cs_logs_when_matches_have_missing_start_or_miss_window():
+def test_events_cs_skips_matches_with_missing_start():
     class MissingStartHLTV(_FakeHLTV):
         def fetch_upcoming(self):
             return [{"id": "1", "team1": "A", "team2": "B", "event": "X"}]
 
+    postgres = _FakePostgres()
+    result = materialize(
+        [events_cs],
+        resources={"hltv": MissingStartHLTV(), "postgres": postgres},
+    )
+
+    assert result.success
+    assert result.output_for_node("events_cs") == 0
+    assert postgres.merged_frames[0].is_empty()
+
+
+def test_events_cs_logs_when_matches_miss_window():
     class OutsideWindowHLTV:
         forward_window_days = 21
 
@@ -244,17 +293,11 @@ def test_events_cs_logs_when_matches_have_missing_start_or_miss_window():
                 }
             ]
 
-    missing = materialize(
-        [events_cs],
-        resources={"hltv": MissingStartHLTV(), "postgres": _FakePostgres()},
-    )
     outside = materialize(
         [events_cs],
         resources={"hltv": OutsideWindowHLTV(), "postgres": _FakePostgres()},
     )
-    assert missing.success
     assert outside.success
-    assert missing.output_for_node("events_cs") == 0
     assert outside.output_for_node("events_cs") == 0
 
 

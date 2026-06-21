@@ -12,7 +12,11 @@ from dagster_project.sql import ingestion as sql
 GROUP = "ingestion"
 
 
-@asset(group_name=GROUP, compute_kind="postgres")
+@asset(
+    group_name=GROUP,
+    compute_kind="postgres",
+    description="Read the source reminders table and publish row-count freshness metadata.",
+)
 def reminders_raw(context: AssetExecutionContext, postgres: PostgresResource) -> int:
     """Row count of the source reminders table, with the latest timestamp.
 

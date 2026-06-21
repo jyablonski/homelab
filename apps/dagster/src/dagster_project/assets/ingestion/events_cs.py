@@ -2,8 +2,18 @@ from datetime import UTC, datetime
 from typing import Any
 
 import polars as pl
-from dagster import AssetExecutionContext, asset
+from dagster import (
+    AssetCheckSpec,
+    AssetExecutionContext,
+    MaterializeResult,
+    asset,
+)
 
+from dagster_project.common.event_checks import (
+    event_start_valid_check,
+    raise_for_failed_event_checks,
+    required_string_columns_check,
+)
 from dagster_project.common.landing import empty_frame, land_events
 from dagster_project.resources import HLTVResource, PostgresResource
 
@@ -36,19 +46,53 @@ UPDATE_COLS = [
 ]
 
 
-@asset(group_name=GROUP, compute_kind="hltv")
+@asset(
+    group_name=GROUP,
+    compute_kind="hltv",
+    dagster_type=int,
+    description=(
+        "Fetch upcoming CS2 matches from HLTV and land them into source.events_cs."
+    ),
+    check_specs=[
+        AssetCheckSpec(
+            name="source_event_id_present",
+            asset="events_cs",
+            blocking=True,
+            description="Every parsed CS2 event row has a non-empty source_event_id.",
+        ),
+        AssetCheckSpec(
+            name="event_start_valid",
+            asset="events_cs",
+            blocking=True,
+            description="Every parsed CS2 event row has a non-null event_start.",
+        ),
+    ],
+)
 def events_cs(
     context: AssetExecutionContext,
     hltv: HLTVResource,
     postgres: PostgresResource,
-) -> int:
+) -> MaterializeResult:
     matches = hltv.fetch_upcoming()
     fetched = len(matches)
     df = _matches_to_frame(matches)
-    missing_start = df.height - df.filter(pl.col("event_start").is_not_null()).height
+    missing_start = sum(
+        1
+        for match in matches
+        if match.get("id")
+        and _parse_match_datetime(match.get("date"), match.get("time")) is None
+    )
     detail_parts = []
     if missing_start:
         detail_parts.append(f"missing_event_start={missing_start}")
+
+    source_event_id_check = required_string_columns_check(
+        df,
+        check_name="source_event_id_present",
+        columns=["source_event_id"],
+    )
+    event_start_check = event_start_valid_check(df, check_name="event_start_valid")
+    raise_for_failed_event_checks(source_event_id_check, event_start_check)
 
     rows = land_events(
         context,
@@ -62,10 +106,14 @@ def events_cs(
         fetched=fetched,
         log_source="hltv",
         detail=", ".join(detail_parts),
+        output_name="result",
     )
     if fetched and rows == 0 and not detail_parts:
         context.log.info("all matches outside forward window or unparseable dates")
-    return rows
+    return MaterializeResult(
+        value=rows,
+        check_results=[source_event_id_check, event_start_check],
+    )
 
 
 def _matches_to_frame(matches: list[dict[str, Any]]) -> pl.DataFrame:
@@ -82,6 +130,10 @@ def _match_to_row(match: dict[str, Any]) -> dict[str, Any] | None:
     if not match_id:
         return None
 
+    event_start = _parse_match_datetime(match.get("date"), match.get("time"))
+    if event_start is None:
+        return None
+
     team1 = _as_optional_str(match.get("team1"))
     team2 = _as_optional_str(match.get("team2"))
     tournament = _as_optional_str(match.get("event"))
@@ -91,7 +143,7 @@ def _match_to_row(match: dict[str, Any]) -> dict[str, Any] | None:
         "source_event_id": str(match_id),
         "league": "CS2",
         "event_name": event_name,
-        "event_start": _parse_match_datetime(match.get("date"), match.get("time")),
+        "event_start": event_start,
         "status": _as_optional_str(match.get("status")),
         "team1": team1,
         "team2": team2,

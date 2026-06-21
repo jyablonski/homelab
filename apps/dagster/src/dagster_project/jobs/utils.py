@@ -1,4 +1,5 @@
 from __future__ import annotations
+from enum import StrEnum
 from typing import overload
 
 from dagster import (
@@ -15,16 +16,19 @@ from dagster._core.definitions.unresolved_asset_job_definition import (
 
 JobLike = JobDefinition | UnresolvedAssetJobDefinition
 
+
 # Standard tag keys every job is expected to set. Enforced in the test suite so
 # new jobs stay self-describing.
-TAG_AUDIENCE = "audience"
-TAG_DOMAIN = "domain"
-TAG_APP = "app"
+class JobTag(StrEnum):
+    AUDIENCE = "audience"
+    DOMAIN = "domain"
+    APP = "app"
+
 
 DEFAULT_AUDIENCE = "jacob"
 DEFAULT_APP = "dashboard"
 
-REQUIRED_JOB_TAGS = (TAG_AUDIENCE, TAG_DOMAIN, TAG_APP)
+REQUIRED_JOB_TAGS = tuple(JobTag)
 
 
 @overload
@@ -75,9 +79,9 @@ def create_job(
     Returns just the job, or ``(job, schedule)`` when ``cron_schedule`` is set.
     """
     tags = {
-        TAG_AUDIENCE: audience,
-        TAG_DOMAIN: domain,
-        TAG_APP: app,
+        JobTag.AUDIENCE.value: audience,
+        JobTag.DOMAIN.value: domain,
+        JobTag.APP.value: app,
     }
     if extra_tags:
         tags.update(extra_tags)

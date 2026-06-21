@@ -6,7 +6,11 @@ from dagster_project.sql import exports as sql
 GROUP = "exports"
 
 
-@asset(group_name=GROUP, compute_kind="postgres")
+@asset(
+    group_name=GROUP,
+    compute_kind="postgres",
+    description="Upsert the daily reminder summary into source.reminders_summary.",
+)
 def reminders_summary_export(
     context: AssetExecutionContext,
     postgres: PostgresResource,

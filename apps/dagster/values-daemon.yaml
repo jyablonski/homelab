@@ -8,6 +8,10 @@ args:
 service:
   enabled: false
 
+serviceAccount:
+  name: dagster-runner
+  automount: true
+
 livenessProbe:
   exec:
     command: ["dagster-daemon", "liveness-check"]
@@ -16,8 +20,6 @@ livenessProbe:
   timeoutSeconds: 10
   failureThreshold: 3
 
-# Scheduled runs execute step subprocesses on the daemon pod (DefaultRunLauncher).
-# daily_events launches three network-heavy assets in parallel.
 resources:
   requests:
     cpu: 100m

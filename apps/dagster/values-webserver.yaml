@@ -12,6 +12,10 @@ service:
   enabled: true
   port: 3000
 
+serviceAccount:
+  name: dagster-runner
+  automount: true
+
 readinessProbe:
   tcpSocket:
     port: http

@@ -20,7 +20,8 @@ def test_definitions_import_cleanly():
 def test_real_job_and_schedule_registered():
     definitions = build_definitions(with_examples=False)
     assert "reminders_pipeline" in _job_names(definitions)
-    assert {"nba_job", "cs_job", "ufc_job", "daily_events"} <= _job_names(definitions)
+    assert "daily_events" in _job_names(definitions)
+    assert {"nba_job", "cs_job", "ufc_job"}.isdisjoint(_job_names(definitions))
     assert any(
         s.name == "reminders_pipeline_schedule" for s in (definitions.schedules or [])
     )
@@ -57,3 +58,14 @@ def test_every_job_has_required_tags():
         assert isinstance(job, (JobDefinition, UnresolvedAssetJobDefinition))
         for tag in REQUIRED_JOB_TAGS:
             assert tag in (job.tags or {}), f"{job.name} missing tag {tag}"
+
+
+def test_every_asset_has_description():
+    definitions = build_definitions(with_examples=True)
+    missing = [
+        spec.key.to_user_string()
+        for assets_def in definitions.assets or []
+        for spec in assets_def.specs
+        if not spec.description
+    ]
+    assert missing == []

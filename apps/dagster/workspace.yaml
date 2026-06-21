@@ -1,6 +1,6 @@
-# Webserver and daemon load user code from the baked-in module (same image as
-# the optional gRPC code server). Scheduled runs execute step subprocesses on
-# the daemon pod; loading locally avoids hangs when the code server restarts.
+# Webserver and daemon load user code from the baked-in module. K8sRunLauncher
+# starts run-worker Jobs from the same image, so scheduled runs do not depend on
+# the optional gRPC code server staying healthy.
 load_from:
   - python_module:
       module_name: dagster_project.definitions

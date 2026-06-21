@@ -5,6 +5,13 @@ environments:
   default: {}
   dev: {}
 
+helmDefaults:
+  # Helm 4 defaults `upgrade` to server-side apply auto-detection, which can
+  # conflict with existing client-side-managed homelab objects. Keep chart
+  # upgrades client-side; standalone manifests can still opt into SSA directly.
+  args:
+    - --server-side=false
+
 
 # helmfile v1 requires environments and releases in separate YAML parts
 ---
@@ -254,8 +261,7 @@ releases:
       - registry/registry
 
   # Dagster runs as three deployments off one image: optional gRPC code server,
-  # webserver (UI), and daemon. Daemon/webserver load user code from the baked-in
-  # Python module (workspace.yaml); the code server is not on the run path.
+  # webserver (UI), and daemon. The daemon launches each run as a Kubernetes Job.
   - name: dagster-code-server
     namespace: apps
     labels:
@@ -280,6 +286,15 @@ releases:
       - apps/dagster/values-webserver.yaml
     secrets:
       - apps/dagster/secrets.sops.yaml
+    hooks:
+      - events: ["presync"]
+        showlogs: true
+        command: bash
+        args:
+          - -c
+          - |
+            kubectl create namespace apps --dry-run=client -o yaml | kubectl apply -f -
+            kubectl apply --server-side --field-manager=helmfile -k apps/dagster
     needs:
       - postgres/postgres
       - registry/registry
@@ -294,6 +309,15 @@ releases:
       - apps/dagster/values-daemon.yaml
     secrets:
       - apps/dagster/secrets.sops.yaml
+    hooks:
+      - events: ["presync"]
+        showlogs: true
+        command: bash
+        args:
+          - -c
+          - |
+            kubectl create namespace apps --dry-run=client -o yaml | kubectl apply -f -
+            kubectl apply --server-side --field-manager=helmfile -k apps/dagster
     needs:
       - postgres/postgres
       - registry/registry

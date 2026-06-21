@@ -18,7 +18,7 @@ def test_slack_run_failure_sensor_posts_message(monkeypatch):
     )
 
     context = SimpleNamespace(
-        dagster_run=SimpleNamespace(job_name="nba_job", run_id="abcdef1234567890"),
+        dagster_run=SimpleNamespace(job_name="daily_events", run_id="abcdef1234567890"),
         failure_event=SimpleNamespace(message="step failed"),
     )
     slack = SlackResource(webhook_url="https://hooks.example/x")

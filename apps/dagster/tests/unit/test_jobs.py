@@ -4,9 +4,7 @@ from dagster import AssetSelection, ScheduleDefinition
 from dagster_project.jobs.utils import (
     DEFAULT_APP,
     DEFAULT_AUDIENCE,
-    TAG_APP,
-    TAG_AUDIENCE,
-    TAG_DOMAIN,
+    JobTag,
     UnresolvedAssetJobDefinition,
     create_job,
 )
@@ -41,16 +39,16 @@ def test_create_job_sets_standard_tags():
         app="dashboard",
     )
     tags = job.tags or {}
-    assert tags[TAG_AUDIENCE] == "jacob"
-    assert tags[TAG_DOMAIN] == "sales"
-    assert tags[TAG_APP] == "dashboard"
+    assert tags[JobTag.AUDIENCE] == "jacob"
+    assert tags[JobTag.DOMAIN] == "sales"
+    assert tags[JobTag.APP] == "dashboard"
 
 
 def test_create_job_defaults_audience_and_app():
     job = create_job("j", AssetSelection.all(), domain="d")
     tags = job.tags or {}
-    assert tags[TAG_AUDIENCE] == DEFAULT_AUDIENCE
-    assert tags[TAG_APP] == DEFAULT_APP
+    assert tags[JobTag.AUDIENCE] == DEFAULT_AUDIENCE
+    assert tags[JobTag.APP] == DEFAULT_APP
 
 
 def test_create_job_merges_extra_tags():

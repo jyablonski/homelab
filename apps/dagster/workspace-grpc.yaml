@@ -1,5 +1,5 @@
-# Optional gRPC workspace for local experiments. Not used by default in cluster
-# deploys; see workspace.yaml (python_module) for the production path.
+# Optional gRPC workspace for experiments. Cluster deploys use workspace.yaml to
+# import the Python module directly; run workers are launched by K8sRunLauncher.
 load_from:
   - grpc_server:
       host: dagster-code-server.apps.svc.cluster.local

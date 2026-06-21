@@ -3,7 +3,11 @@ from dagster import AssetExecutionContext, MetadataValue, asset
 GROUP = "transformations"
 
 
-@asset(group_name=GROUP, compute_kind="python")
+@asset(
+    group_name=GROUP,
+    compute_kind="python",
+    description="Shape raw reminder metrics into the daily reminder summary payload.",
+)
 def reminders_daily(
     context: AssetExecutionContext, reminders_raw: int
 ) -> dict[str, int]:

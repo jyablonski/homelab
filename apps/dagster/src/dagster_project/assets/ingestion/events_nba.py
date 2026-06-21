@@ -1,10 +1,21 @@
 from typing import Any
 
 import polars as pl
-from dagster import AssetExecutionContext, MetadataValue, asset
+from dagster import (
+    AssetCheckSpec,
+    AssetExecutionContext,
+    MaterializeResult,
+    MetadataValue,
+    asset,
+)
 from nba_api.stats.endpoints.scheduleleaguev2 import ScheduleLeagueV2
 
 from dagster_project.common.config import event_forward_window_days
+from dagster_project.common.event_checks import (
+    event_start_valid_check,
+    raise_for_failed_event_checks,
+    required_string_columns_check,
+)
 from dagster_project.common.landing import (
     empty_frame,
     land_events,
@@ -39,11 +50,33 @@ UPDATE_COLS = [
 ]
 
 
-@asset(group_name=GROUP, compute_kind="nba")
+@asset(
+    group_name=GROUP,
+    compute_kind="nba",
+    dagster_type=int,
+    description=(
+        "Fetch upcoming NBA games from stats.nba.com and land them into "
+        "source.events_nba."
+    ),
+    check_specs=[
+        AssetCheckSpec(
+            name="source_event_id_present",
+            asset="events_nba",
+            blocking=True,
+            description="Every parsed NBA event row has a non-empty source_event_id.",
+        ),
+        AssetCheckSpec(
+            name="event_start_valid",
+            asset="events_nba",
+            blocking=True,
+            description="Every parsed NBA event row has a non-null event_start.",
+        ),
+    ],
+)
 def events_nba(
     context: AssetExecutionContext,
     postgres: PostgresResource,
-) -> int:
+) -> MaterializeResult:
     raw = fetch_nba_schedule()
     schedule = raw.get("leagueSchedule", {})
     game_dates = schedule.get("gameDates", [])
@@ -51,11 +84,20 @@ def events_nba(
     season = schedule.get("seasonYear")
     window_days = event_forward_window_days()
     detail = f"season={season}, game_dates={len(game_dates)}" if season else ""
+    df = _schedule_to_frame(raw)
 
-    return land_events(
+    source_event_id_check = required_string_columns_check(
+        df,
+        check_name="source_event_id_present",
+        columns=["source_event_id"],
+    )
+    event_start_check = event_start_valid_check(df, check_name="event_start_valid")
+    raise_for_failed_event_checks(source_event_id_check, event_start_check)
+
+    rows = land_events(
         context,
         postgres,
-        df=_schedule_to_frame(raw),
+        df=df,
         target=TARGET,
         source="nba",
         conflict_keys=["source_event_id"],
@@ -65,6 +107,11 @@ def events_nba(
         log_source="nba",
         detail=detail,
         extra_metadata={"source": MetadataValue.url(NBA_SCHEDULE_SOURCE)},
+        output_name="result",
+    )
+    return MaterializeResult(
+        value=rows,
+        check_results=[source_event_id_check, event_start_check],
     )
 
 
@@ -92,6 +139,10 @@ def _game_to_row(game: dict[str, Any]) -> dict[str, Any] | None:
     if not source_event_id:
         return None
 
+    event_start = parse_iso_utc(game.get("gameDateTimeUTC") or game.get("gameDateUTC"))
+    if event_start is None:
+        return None
+
     home = game.get("homeTeam") or {}
     away = game.get("awayTeam") or {}
     home_name = _team_name(home)
@@ -104,9 +155,7 @@ def _game_to_row(game: dict[str, Any]) -> dict[str, Any] | None:
         "source_event_id": str(source_event_id),
         "league": "NBA",
         "event_name": event_name,
-        "event_start": parse_iso_utc(
-            game.get("gameDateTimeUTC") or game.get("gameDateUTC")
-        ),
+        "event_start": event_start,
         "status": game.get("gameStatusText"),
         "home_team": home_name,
         "away_team": away_name,

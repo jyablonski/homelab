@@ -77,6 +77,7 @@ def land_events(
     detail: str = "",
     apply_forward_window: bool = True,
     extra_metadata: dict[str, MetadataValue] | None = None,
+    output_name: str | None = None,
 ) -> int:
     parsed = df.height
     if apply_forward_window:
@@ -105,7 +106,7 @@ def land_events(
     )
     if extra_metadata:
         metadata.update(extra_metadata)
-    context.add_output_metadata(metadata)
+    context.add_output_metadata(metadata, output_name=output_name)
     return rows
 
 

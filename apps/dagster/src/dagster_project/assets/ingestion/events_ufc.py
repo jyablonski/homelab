@@ -3,9 +3,20 @@ from typing import Any
 
 import httpx
 import polars as pl
-from dagster import AssetExecutionContext, MetadataValue, asset
+from dagster import (
+    AssetCheckSpec,
+    AssetExecutionContext,
+    MaterializeResult,
+    MetadataValue,
+    asset,
+)
 
 from dagster_project.common.config import event_forward_window_days
+from dagster_project.common.event_checks import (
+    event_start_valid_check,
+    raise_for_failed_event_checks,
+    required_string_columns_check,
+)
 from dagster_project.common.landing import empty_frame, land_events, parse_iso_utc
 from dagster_project.resources import PostgresResource
 
@@ -51,7 +62,14 @@ FIGHTER_UPDATE_COLS = [
 ]
 
 
-@asset(group_name=GROUP, compute_kind="http")
+@asset(
+    group_name=GROUP,
+    compute_kind="http",
+    description=(
+        "Fetch upcoming UFC event and fighter payloads from ESPN's public MMA "
+        "scoreboard."
+    ),
+)
 def ufc_upcoming() -> dict[str, Any]:
     payload = _fetch_espn_scoreboard()
     events, fighters, stats = _parse_espn_scoreboard(payload)
@@ -60,12 +78,33 @@ def ufc_upcoming() -> dict[str, Any]:
     return {"events": events, "fighters": fighters, "stats": stats}
 
 
-@asset(group_name=GROUP, compute_kind="http")
+@asset(
+    group_name=GROUP,
+    compute_kind="http",
+    dagster_type=int,
+    description=(
+        "Land upcoming UFC cards from the ESPN scoreboard into source.events_ufc."
+    ),
+    check_specs=[
+        AssetCheckSpec(
+            name="source_event_id_present",
+            asset="events_ufc",
+            blocking=True,
+            description="Every parsed UFC event row has a non-empty source_event_id.",
+        ),
+        AssetCheckSpec(
+            name="event_start_valid",
+            asset="events_ufc",
+            blocking=True,
+            description="Every parsed UFC event row has a non-null event_start.",
+        ),
+    ],
+)
 def events_ufc(
     context: AssetExecutionContext,
     ufc_upcoming: dict[str, Any],
     postgres: PostgresResource,
-) -> int:
+) -> MaterializeResult:
     events = ufc_upcoming["events"]
     scrape_stats = ufc_upcoming["stats"]
     window_days = event_forward_window_days()
@@ -75,10 +114,19 @@ def events_ufc(
         f"skipped_future={scrape_stats['skipped_future']}, "
         f"skipped_unparsed_date={scrape_stats['skipped_unparsed_date']}"
     )
-    return land_events(
+    df = _events_to_frame(events)
+    source_event_id_check = required_string_columns_check(
+        df,
+        check_name="source_event_id_present",
+        columns=["source_event_id"],
+    )
+    event_start_check = event_start_valid_check(df, check_name="event_start_valid")
+    raise_for_failed_event_checks(source_event_id_check, event_start_check)
+
+    rows = land_events(
         context,
         postgres,
-        df=_events_to_frame(events),
+        df=df,
         target=EVENT_TARGET,
         source="espn",
         conflict_keys=["source_event_id"],
@@ -89,16 +137,37 @@ def events_ufc(
         detail=detail,
         apply_forward_window=False,
         extra_metadata={"source": MetadataValue.url(ESPN_UFC_SCOREBOARD_URL)},
+        output_name="result",
+    )
+    return MaterializeResult(
+        value=rows,
+        check_results=[source_event_id_check, event_start_check],
     )
 
 
-@asset(group_name=GROUP, compute_kind="http")
+@asset(
+    group_name=GROUP,
+    compute_kind="http",
+    dagster_type=int,
+    description="Land fighters for upcoming UFC cards into source.events_ufc_fighters.",
+    check_specs=[
+        AssetCheckSpec(
+            name="fighter_key_present",
+            asset="events_ufc_fighters",
+            blocking=True,
+            description=(
+                "Every parsed UFC fighter row has non-empty source_event_id and "
+                "fighter_id values."
+            ),
+        ),
+    ],
+)
 def events_ufc_fighters(
     context: AssetExecutionContext,
     ufc_upcoming: dict[str, Any],
     events_ufc: int,
     postgres: PostgresResource,
-) -> int:
+) -> MaterializeResult:
     kept_event_ids = {event["source_event_id"] for event in ufc_upcoming["events"]}
     fighters = [
         fighter
@@ -106,10 +175,18 @@ def events_ufc_fighters(
         if fighter.get("source_event_id") in kept_event_ids
     ]
     scrape_stats = ufc_upcoming["stats"]
-    return land_events(
+    df = _fighters_to_frame(fighters)
+    fighter_key_check = required_string_columns_check(
+        df,
+        check_name="fighter_key_present",
+        columns=["source_event_id", "fighter_id"],
+    )
+    raise_for_failed_event_checks(fighter_key_check)
+
+    rows = land_events(
         context,
         postgres,
-        df=_fighters_to_frame(fighters),
+        df=df,
         target=FIGHTER_TARGET,
         source="espn",
         conflict_keys=["source_event_id", "fighter_id"],
@@ -117,9 +194,17 @@ def events_ufc_fighters(
         forward_window_days=event_forward_window_days(),
         fetched=len(fighters),
         log_source="ufc-fighters",
-        detail=f"parent_events={scrape_stats['events_kept']}, bouts={scrape_stats['bouts_kept']}",
+        detail=(
+            f"parent_events={scrape_stats['events_kept']}, "
+            f"bouts={scrape_stats['bouts_kept']}"
+        ),
         apply_forward_window=False,
         extra_metadata={"parent_event_rows": MetadataValue.int(events_ufc)},
+        output_name="result",
+    )
+    return MaterializeResult(
+        value=rows,
+        check_results=[fighter_key_check],
     )
 
 
