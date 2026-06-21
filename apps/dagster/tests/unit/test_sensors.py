@@ -1,9 +1,11 @@
 from types import SimpleNamespace
+from typing import cast
 
 import pytest
+from dagster import RunFailureSensorContext
 
 from dagster_project.resources import SlackResource
-from dagster_project.sensors.failure import slack_run_failure_sensor
+from dagster_project.sensors.failure import notify_slack_run_failure
 
 pytestmark = pytest.mark.unit
 
@@ -21,6 +23,6 @@ def test_slack_run_failure_sensor_posts_message(monkeypatch):
     )
     slack = SlackResource(webhook_url="https://hooks.example/x")
 
-    slack_run_failure_sensor._run_status_sensor_fn(context, slack)
+    notify_slack_run_failure(cast(RunFailureSensorContext, context), slack)
 
     assert len(calls) == 1

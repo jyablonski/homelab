@@ -138,8 +138,11 @@ class TestHLTVResource:
         end = today + timedelta(days=7)
 
         class FakePage:
-            def find_all(self, tag, class_=None):
-                return BeautifulSoup(html, "lxml").find_all(tag, class_=class_)
+            def find_all(self, tag: str, class_: str | None = None):
+                soup = BeautifulSoup(html, "lxml")
+                if class_ is None:
+                    return soup.find_all(name=tag)
+                return soup.find_all(name=tag, class_=class_)
 
         class FakeHltv:
             async def get_events(self):

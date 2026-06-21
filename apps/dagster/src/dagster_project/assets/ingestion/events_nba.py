@@ -70,7 +70,10 @@ def events_nba(
 
 def fetch_nba_schedule() -> dict[str, Any]:
     schedule = ScheduleLeagueV2(timeout=HTTP_TIMEOUT_SECONDS)
-    return schedule.nba_response.get_dict()
+    response = schedule.nba_response
+    if response is None:
+        return {"leagueSchedule": {"gameDates": []}}
+    return response.get_dict()
 
 
 def _schedule_to_frame(payload: dict[str, Any]) -> pl.DataFrame:

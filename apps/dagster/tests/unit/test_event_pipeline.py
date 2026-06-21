@@ -1,9 +1,10 @@
 from __future__ import annotations
 from datetime import UTC, datetime, timedelta
+from typing import cast
 
 import polars as pl
 import pytest
-from dagster import materialize
+from dagster import AssetExecutionContext, materialize
 
 from dagster_project.assets.ingestion import events_nba as nba_module
 from dagster_project.assets.ingestion import events_ufc as ufc_module
@@ -96,9 +97,9 @@ def test_nba_schedule_parser_returns_empty_frame_for_no_games():
 def test_nba_helpers_handle_missing_fields():
     assert parse_iso_utc(None) is None
     assert parse_iso_utc("bad-date") is None
-    assert parse_iso_utc("2026-01-02T03:00:00").replace(tzinfo=UTC) == parse_iso_utc(
-        "2026-01-02T03:00:00Z"
-    )
+    naive = parse_iso_utc("2026-01-02T03:00:00")
+    assert naive is not None
+    assert naive.replace(tzinfo=UTC) == parse_iso_utc("2026-01-02T03:00:00Z")
     assert _team_name({"teamTricode": "LAL"}) == "LAL"
     assert _schedule_to_frame(
         {
@@ -117,6 +118,7 @@ def test_cs_helpers_handle_edge_cases():
     assert _as_optional_str("  ") is None
     assert _as_optional_int("bad") is None
     row = _match_to_row({"id": "1", "team1": None, "team2": None})
+    assert row is not None
     assert row["event_name"] == "CS2 match"
     assert _match_to_row({"team1": "A", "team2": "B"}) is None
     assert _matches_to_frame([]).is_empty()
@@ -516,7 +518,7 @@ def test_log_landing_summary_emits_metadata():
         log = FakeLog()
 
     metadata = log_landing_summary(
-        FakeContext(),  # type: ignore[arg-type]
+        cast(AssetExecutionContext, FakeContext()),
         source="test",
         fetched=10,
         parsed=9,

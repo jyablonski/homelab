@@ -35,7 +35,9 @@ def test_slack_on_failure_hook_posts_message(monkeypatch):
         run_id="abcdef1234567890",
         resources={"slack": SlackResource(webhook_url="https://hooks.example/x")},
     )
-    slack_on_failure.decorated_fn(context)
+    hook_fn = slack_on_failure.decorated_fn
+    assert hook_fn is not None
+    hook_fn(context)
     assert len(calls) == 1
 
 
@@ -50,5 +52,7 @@ def test_slack_on_success_hook_posts_message(monkeypatch):
         run_id="abcdef1234567890",
         resources={"slack": SlackResource(webhook_url="https://hooks.example/x")},
     )
-    slack_on_success.decorated_fn(context)
+    hook_fn = slack_on_success.decorated_fn
+    assert hook_fn is not None
+    hook_fn(context)
     assert len(calls) == 1
