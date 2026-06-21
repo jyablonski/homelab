@@ -1,5 +1,5 @@
 import pytest
-from dagster import JobDefinition
+from dagster import AssetsDefinition, JobDefinition
 
 from dagster_project.definitions import build_definitions, defs
 from dagster_project.jobs.utils import REQUIRED_JOB_TAGS, UnresolvedAssetJobDefinition
@@ -65,6 +65,7 @@ def test_every_asset_has_description():
     missing = [
         spec.key.to_user_string()
         for assets_def in definitions.assets or []
+        if isinstance(assets_def, AssetsDefinition)
         for spec in assets_def.specs
         if not spec.description
     ]

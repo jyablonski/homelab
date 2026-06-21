@@ -17,7 +17,12 @@ from dagster_project.common.event_checks import (
     raise_for_failed_event_checks,
     required_string_columns_check,
 )
-from dagster_project.common.landing import empty_frame, land_events, parse_iso_utc
+from dagster_project.common.landing import (
+    ROW_COUNT_DAGSTER_TYPE,
+    empty_frame,
+    land_events,
+    parse_iso_utc,
+)
 from dagster_project.resources import PostgresResource
 
 GROUP = "ufc"
@@ -81,7 +86,7 @@ def ufc_upcoming() -> dict[str, Any]:
 @asset(
     group_name=GROUP,
     compute_kind="http",
-    dagster_type=int,
+    dagster_type=ROW_COUNT_DAGSTER_TYPE,
     description=(
         "Land upcoming UFC cards from the ESPN scoreboard into source.events_ufc."
     ),
@@ -148,7 +153,7 @@ def events_ufc(
 @asset(
     group_name=GROUP,
     compute_kind="http",
-    dagster_type=int,
+    dagster_type=ROW_COUNT_DAGSTER_TYPE,
     description="Land fighters for upcoming UFC cards into source.events_ufc_fighters.",
     check_specs=[
         AssetCheckSpec(

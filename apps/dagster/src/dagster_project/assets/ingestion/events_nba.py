@@ -17,6 +17,7 @@ from dagster_project.common.event_checks import (
     required_string_columns_check,
 )
 from dagster_project.common.landing import (
+    ROW_COUNT_DAGSTER_TYPE,
     empty_frame,
     land_events,
     parse_iso_utc,
@@ -53,7 +54,7 @@ UPDATE_COLS = [
 @asset(
     group_name=GROUP,
     compute_kind="nba",
-    dagster_type=int,
+    dagster_type=ROW_COUNT_DAGSTER_TYPE,
     description=(
         "Fetch upcoming NBA games from stats.nba.com and land them into "
         "source.events_nba."

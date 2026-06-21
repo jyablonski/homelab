@@ -14,7 +14,11 @@ from dagster_project.common.event_checks import (
     raise_for_failed_event_checks,
     required_string_columns_check,
 )
-from dagster_project.common.landing import empty_frame, land_events
+from dagster_project.common.landing import (
+    ROW_COUNT_DAGSTER_TYPE,
+    empty_frame,
+    land_events,
+)
 from dagster_project.resources import HLTVResource, PostgresResource
 
 GROUP = "cs"
@@ -49,7 +53,7 @@ UPDATE_COLS = [
 @asset(
     group_name=GROUP,
     compute_kind="hltv",
-    dagster_type=int,
+    dagster_type=ROW_COUNT_DAGSTER_TYPE,
     description=(
         "Fetch upcoming CS2 matches from HLTV and land them into source.events_cs."
     ),

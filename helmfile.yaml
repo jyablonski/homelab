@@ -5,13 +5,6 @@ environments:
   default: {}
   dev: {}
 
-helmDefaults:
-  # Helm 4 defaults `upgrade` to server-side apply auto-detection, which can
-  # conflict with existing client-side-managed homelab objects. Keep chart
-  # upgrades client-side; standalone manifests can still opt into SSA directly.
-  args:
-    - --server-side=false
-
 
 # helmfile v1 requires environments and releases in separate YAML parts
 ---

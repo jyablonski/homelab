@@ -1,12 +1,18 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
 import polars as pl
-from dagster import AssetExecutionContext, MetadataValue
+from dagster import AssetExecutionContext, DagsterType, MetadataValue
 
 from dagster_project.resources import PostgresResource
+
+# Event ingestion assets return MaterializeResult(value=<rows merged>), so their
+# output is a plain int. Dagster resolves the builtin `int` to a DagsterType at
+# runtime, but the `@asset(dagster_type=...)` stub only accepts DagsterType, so
+# cast keeps the type checker happy without changing runtime behavior.
+ROW_COUNT_DAGSTER_TYPE = cast(DagsterType, int)
 
 
 def utc_now() -> datetime:
