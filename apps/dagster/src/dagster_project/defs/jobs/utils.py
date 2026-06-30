@@ -1,7 +1,7 @@
 from __future__ import annotations
 from collections.abc import Iterable
 from enum import StrEnum
-from typing import Any, cast
+from typing import Any, cast, overload
 
 from dagster import (
     AssetSelection,
@@ -57,6 +57,40 @@ def schedule_for_job(
         cron_schedule=cron_schedule,
         execution_timezone=execution_timezone,
     )
+
+
+@overload
+def create_job(
+    *,
+    name: str,
+    audience: Audience,
+    domain: Domain,
+    pii: bool,
+    assets: Iterable[Any] | None = ...,
+    selection: AssetSelection | None = ...,
+    schedule: None = None,
+    schedule_name: str | None = ...,
+    execution_timezone: str | None = ...,
+    description: str | None = ...,
+    hooks: Any = ...,
+) -> JobLike: ...
+
+
+@overload
+def create_job(
+    *,
+    name: str,
+    audience: Audience,
+    domain: Domain,
+    pii: bool,
+    assets: Iterable[Any] | None = ...,
+    selection: AssetSelection | None = ...,
+    schedule: str,
+    schedule_name: str | None = ...,
+    execution_timezone: str | None = ...,
+    description: str | None = ...,
+    hooks: Any = ...,
+) -> tuple[JobLike, ScheduleDefinition]: ...
 
 
 def create_job(
