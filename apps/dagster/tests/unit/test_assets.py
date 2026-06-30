@@ -1,7 +1,10 @@
 import pytest
 from dagster import materialize
 
-from dagster_project.assets.internal.example import example_greeting, example_length
+from dagster_project.defs.assets.internal.example import (
+    example_greeting,
+    example_length,
+)
 
 pytestmark = pytest.mark.unit
 

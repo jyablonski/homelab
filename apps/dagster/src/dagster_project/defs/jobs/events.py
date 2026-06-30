@@ -1,13 +1,15 @@
 from __future__ import annotations
 from dagster import AssetSelection
 
-from dagster_project.jobs.utils import create_job
+from dagster_project.defs.jobs.utils import Audience, Domain, create_job
 
 daily_events_job, daily_events_schedule = create_job(
-    "daily_events",
-    AssetSelection.groups("nba", "cs", "ufc"),
-    domain="events",
+    name="daily_events",
+    selection=AssetSelection.groups("nba", "cs", "ufc"),
+    audience=Audience.INTERNAL,
+    domain=Domain.EVENTS,
+    pii=False,
     description="Refresh upcoming event landing tables for all configured sources.",
-    cron_schedule="0 6 * * *",
+    schedule="0 6 * * *",
     execution_timezone="America/Los_Angeles",
 )

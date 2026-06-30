@@ -5,11 +5,11 @@ import polars as pl
 import pytest
 from dagster import materialize
 
-from dagster_project.assets.ingestion import events_nba as nba_module
-from dagster_project.assets.ingestion import events_ufc as ufc_module
-from dagster_project.assets.ingestion.events_cs import events_cs
-from dagster_project.assets.ingestion.events_nba import events_nba
-from dagster_project.assets.ingestion.events_ufc import (
+from dagster_project.defs.assets.ingestion import events_nba as nba_module
+from dagster_project.defs.assets.ingestion import events_ufc as ufc_module
+from dagster_project.defs.assets.ingestion.events_cs import events_cs
+from dagster_project.defs.assets.ingestion.events_nba import events_nba
+from dagster_project.defs.assets.ingestion.events_ufc import (
     events_ufc,
     events_ufc_fighters,
     ufc_upcoming,

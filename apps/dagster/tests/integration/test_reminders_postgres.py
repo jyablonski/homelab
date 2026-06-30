@@ -1,12 +1,12 @@
 import pytest
 from dagster import materialize
 
-from dagster_project.assets.exports.reminders import reminders_summary_export
-from dagster_project.assets.ingestion.reminders import (
+from dagster_project.defs.assets.exports.reminders import reminders_summary_export
+from dagster_project.defs.assets.ingestion.reminders import (
     reminders_raw,
     reminders_raw_non_negative,
 )
-from dagster_project.assets.transformations.reminders import reminders_daily
+from dagster_project.defs.assets.transformations.reminders import reminders_daily
 
 pytestmark = pytest.mark.integration
 

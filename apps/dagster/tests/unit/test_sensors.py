@@ -5,7 +5,7 @@ import pytest
 from dagster import RunFailureSensorContext
 
 from dagster_project.resources import SlackResource
-from dagster_project.sensors.failure import notify_slack_run_failure
+from dagster_project.defs.sensors.failure import notify_slack_run_failure
 
 pytestmark = pytest.mark.unit
 

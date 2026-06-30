@@ -2,9 +2,12 @@ import pytest
 from dagster import AssetsDefinition, JobDefinition
 
 from dagster_project.definitions import build_definitions, defs
-from dagster_project.jobs.utils import REQUIRED_JOB_TAGS, UnresolvedAssetJobDefinition
+from dagster_project.defs.jobs.utils import UnresolvedAssetJobDefinition
 
 pytestmark = pytest.mark.unit
+
+# Standard tag keys every registered job is expected to set (see jobs.utils).
+REQUIRED_JOB_TAGS = ("audience", "domain", "pii")
 
 
 def _job_names(definitions) -> set[str]:
