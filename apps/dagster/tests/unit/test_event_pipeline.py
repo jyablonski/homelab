@@ -6,9 +6,9 @@ import polars as pl
 import pytest
 from dagster import AssetExecutionContext, materialize
 
-from dagster_project.assets.ingestion import events_nba as nba_module
-from dagster_project.assets.ingestion import events_ufc as ufc_module
-from dagster_project.assets.ingestion.events_cs import (
+from dagster_project.defs.assets.ingestion import events_nba as nba_module
+from dagster_project.defs.assets.ingestion import events_ufc as ufc_module
+from dagster_project.defs.assets.ingestion.events_cs import (
     _as_optional_int,
     _as_optional_str,
     _match_to_row,
@@ -16,12 +16,12 @@ from dagster_project.assets.ingestion.events_cs import (
     _parse_match_datetime,
     events_cs,
 )
-from dagster_project.assets.ingestion.events_nba import (
+from dagster_project.defs.assets.ingestion.events_nba import (
     _schedule_to_frame,
     _team_name,
     events_nba,
 )
-from dagster_project.assets.ingestion.events_ufc import (
+from dagster_project.defs.assets.ingestion.events_ufc import (
     _events_to_frame,
     _fighters_to_frame,
     _format_espn_location,
@@ -40,7 +40,7 @@ from dagster_project.common.landing import (
     parse_iso_utc,
     stamp,
 )
-from dagster_project.jobs.events import daily_events_schedule
+from dagster_project.defs.jobs.events import daily_events_schedule
 
 pytestmark = pytest.mark.unit
 

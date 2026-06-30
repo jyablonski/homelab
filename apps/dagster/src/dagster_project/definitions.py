@@ -13,11 +13,11 @@ from dagster import (
     load_assets_from_modules,
 )
 
-from dagster_project import assets as assets_pkg
-from dagster_project import jobs as jobs_pkg
-from dagster_project import sensors as sensors_pkg
 from dagster_project.dbt_config import dbt_resource
-from dagster_project.jobs.utils import JobLike
+from dagster_project.defs import assets as assets_pkg
+from dagster_project.defs import jobs as jobs_pkg
+from dagster_project.defs import sensors as sensors_pkg
+from dagster_project.defs.jobs.utils import JobLike
 from dagster_project.resources import RESOURCES
 
 
