@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+/*
+ * Agenda is a personal ops dashboard, not a marketing site: it commits to a
+ * single dark theme (no prefers-color-scheme toggle) to match the reference
+ * design.
+ */
+:root {
+  --background: #0a0e16;
+  --sidebar-background: #0b0f18;
+  --foreground: #e5e9f0;
+  --muted: #7c8697;
+  --muted-background: #131826;
+  --border: #1c2333;
+  --surface: #10141f;
+  --accent: #3b82f6;
+  --accent-foreground: #f8fafc;
+  --success: #4ade80;
+  --success-background: #052e16;
+  --warning: #fbbf24;
+  --warning-background: #2b1c05;
+  --warning-border: #4a3410;
+  --danger: #f87171;
+  --danger-background: #3f0d0d;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-sidebar-background: var(--sidebar-background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-background: var(--muted-background);
+  --color-border: var(--border);
+  --color-surface: var(--surface);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-success: var(--success);
+  --color-success-background: var(--success-background);
+  --color-warning: var(--warning);
+  --color-warning-background: var(--warning-background);
+  --color-warning-border: var(--warning-border);
+  --color-danger: var(--danger);
+  --color-danger-background: var(--danger-background);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.5) opacity(0.6);
+}

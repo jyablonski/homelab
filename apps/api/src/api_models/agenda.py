@@ -39,6 +39,8 @@ class AgendaEvent(BaseModel):
 class AgendaFreshness(BaseModel):
     source: str
     last_success_at: datetime | None
+    # TODO(events-pipeline): "placeholder" only exists for the dummy event data in
+    # crud/agenda.py; drop it once real per-source freshness (nba/ufc/cs2) lands.
     status: Literal["fresh", "stale", "fetch_failed", "placeholder"]
     message: str | None = None
 

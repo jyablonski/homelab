@@ -132,6 +132,12 @@ def _window(
     )
 
 
+# TODO(events-pipeline): Dagster already lands real rows into `source.events_nba`,
+# `source.events_ufc` (+ `source.events_ufc_fighters`), and `source.events_cs` (see
+# apps/dagster/src/dagster_project/defs/assets/ingestion/events_*.py). Once dbt owns
+# silver/gold normalization for these tables (see notes/ideas/frontend-app.md), swap
+# this dummy data for a real query against the gold view(s) and map rows onto the
+# same AgendaEvent contract below so the frontend response shape does not change.
 def _dummy_events(
     generated_at: datetime,
     *,
@@ -169,6 +175,10 @@ def _dummy_events(
     return [event for event in events if window.start <= event.start_at <= window.end]
 
 
+# TODO(events-pipeline): Replace with real freshness rows derived from each
+# source's last successful Dagster run (or a dbt-owned freshness/audit table)
+# once silver/gold event models exist, one AgendaFreshness entry per real
+# source (nba/ufc/cs2) instead of the single "events_gold" placeholder.
 def _dummy_freshness(generated_at: datetime) -> list[AgendaFreshness]:
     return [
         AgendaFreshness(

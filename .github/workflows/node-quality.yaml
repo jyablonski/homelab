@@ -1,0 +1,60 @@
+name: Node Quality
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/agenda/**"
+      - ".github/workflows/node-quality.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22"
+
+jobs:
+  eslint:
+    name: ESLint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: apps/agenda/package-lock.json
+
+      - name: Install dependencies
+        working-directory: apps/agenda
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: apps/agenda
+        run: npm run lint
+
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: apps/agenda/package-lock.json
+
+      - name: Install dependencies
+        working-directory: apps/agenda
+        run: npm ci
+
+      - name: Run typecheck
+        working-directory: apps/agenda
+        run: npm run typecheck

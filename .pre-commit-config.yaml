@@ -30,6 +30,13 @@ repos:
         files: ^apps/(api|django|runner)/
         pass_filenames: true
         require_serial: true
+      - id: node-quality
+        name: node quality (changed ts apps)
+        entry: bash scripts/pre-commit-node-quality.sh
+        language: system
+        files: ^apps/[^/]+/(src/.*\.(ts|tsx)|package(-lock)?\.json|tsconfig\.json)$
+        pass_filenames: true
+        require_serial: true
       - id: validate-fast
         name: make validate-fast
         entry: make validate-fast

@@ -1,0 +1,43 @@
+name: Agenda CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/agenda/**"
+      - ".github/workflows/agenda.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/agenda/**"
+      - ".github/workflows/agenda.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Agenda tests
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: apps/agenda/package-lock.json
+
+      - name: Install dependencies
+        working-directory: apps/agenda
+        run: npm ci
+
+      - name: Run test suite
+        working-directory: apps/agenda
+        run: npm test

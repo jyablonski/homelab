@@ -35,3 +35,11 @@ dist/
 # Django collectstatic output (image build runs collectstatic)
 apps/django/src/staticfiles/*
 !apps/django/src/staticfiles/.gitkeep
+
+# Node dependencies and Next.js build output
+node_modules/
+.next/
+next-env.d.ts
+*.tsbuildinfo
+coverage/
+apps/agenda/.env*
