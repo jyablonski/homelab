@@ -81,6 +81,20 @@ def unavailable_database_client(unavailable_database_env):
 
 
 @pytest.fixture()
+def api_key_env():
+    restore_env = _set_env({"API_KEY": "test-api-key"})
+    get_settings.cache_clear()
+    yield "test-api-key"
+    restore_env()
+    get_settings.cache_clear()
+
+
+@pytest.fixture()
+def api_key_client(api_key_env):
+    return TestClient(create_app(Settings()))
+
+
+@pytest.fixture()
 def reminders_table(postgres_settings):
     engine = get_engine(postgres_settings)
     with engine.begin() as connection:

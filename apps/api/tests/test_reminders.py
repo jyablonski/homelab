@@ -1,6 +1,6 @@
 def _create_reminder(test_client):
     return test_client.post(
-        "/reminders",
+        "/v1/reminders",
         json={
             "reminder_type": "chores",
             "reminder_message": "Water the plants",
@@ -11,7 +11,7 @@ def _create_reminder(test_client):
 
 def test_list_reminders_returns_reminders(reminders_table, db_test_client):
     create_response = _create_reminder(db_test_client)
-    response = db_test_client.get("/reminders")
+    response = db_test_client.get("/v1/reminders")
 
     assert create_response.status_code == 201
     assert response.status_code == 200
@@ -19,7 +19,7 @@ def test_list_reminders_returns_reminders(reminders_table, db_test_client):
 
 
 def test_get_reminder_returns_404_when_missing(reminders_table, db_test_client):
-    response = db_test_client.get("/reminders/404")
+    response = db_test_client.get("/v1/reminders/404")
 
     assert response.status_code == 404
     assert response.json() == {"detail": "reminder not found"}
@@ -27,7 +27,7 @@ def test_get_reminder_returns_404_when_missing(reminders_table, db_test_client):
 
 def test_get_reminder_returns_reminder(reminders_table, db_test_client):
     create_response = _create_reminder(db_test_client)
-    response = db_test_client.get("/reminders/1")
+    response = db_test_client.get("/v1/reminders/1")
 
     assert create_response.status_code == 201
     assert response.status_code == 200
@@ -45,9 +45,9 @@ def test_create_reminder_returns_created_reminder(reminders_table, db_test_clien
 
 def test_update_reminder_persists_partial_changes(reminders_table, db_test_client):
     create_response = _create_reminder(db_test_client)
-    response = db_test_client.patch("/reminders/1", json={"is_completed": True})
-    active_response = db_test_client.get("/reminders")
-    all_response = db_test_client.get("/reminders?include_completed=true")
+    response = db_test_client.patch("/v1/reminders/1", json={"is_completed": True})
+    active_response = db_test_client.get("/v1/reminders")
+    all_response = db_test_client.get("/v1/reminders?include_completed=true")
 
     assert create_response.status_code == 201
     assert response.status_code == 200
@@ -58,7 +58,7 @@ def test_update_reminder_persists_partial_changes(reminders_table, db_test_clien
 
 
 def test_update_reminder_returns_404_when_missing(reminders_table, db_test_client):
-    response = db_test_client.patch("/reminders/404", json={"is_completed": True})
+    response = db_test_client.patch("/v1/reminders/404", json={"is_completed": True})
 
     assert response.status_code == 404
     assert response.json() == {"detail": "reminder not found"}
@@ -67,10 +67,12 @@ def test_update_reminder_returns_404_when_missing(reminders_table, db_test_clien
 def test_update_reminder_reopens_completed_reminder(reminders_table, db_test_client):
     create_response = _create_reminder(db_test_client)
     complete_response = db_test_client.patch(
-        "/reminders/1", json={"is_completed": True}
+        "/v1/reminders/1", json={"is_completed": True}
     )
-    reopen_response = db_test_client.patch("/reminders/1", json={"is_completed": False})
-    active_response = db_test_client.get("/reminders")
+    reopen_response = db_test_client.patch(
+        "/v1/reminders/1", json={"is_completed": False}
+    )
+    active_response = db_test_client.get("/v1/reminders")
 
     assert create_response.status_code == 201
     assert complete_response.status_code == 200

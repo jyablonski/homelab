@@ -1,13 +1,18 @@
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+from auth import require_api_key
 from crud import reminders
 from dependencies import DatabaseSession
 from database_models.reminder import Reminder, ReminderCreate, ReminderUpdate
 
-router = APIRouter(prefix="/reminders", tags=["reminders"])
+router = APIRouter(
+    prefix="/reminders",
+    tags=["reminders"],
+    dependencies=[Depends(require_api_key)],
+)
 logger = logging.getLogger(__name__)
 
 
