@@ -21,6 +21,7 @@ class Settings:
     db_connect_timeout: int = field(
         default_factory=lambda: int(getenv("DB_CONNECT_TIMEOUT", "5"))
     )
+    api_key: str = field(default_factory=lambda: getenv("API_KEY", ""))
 
     @property
     def normalized_database_url(self) -> str:
