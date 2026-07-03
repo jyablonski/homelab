@@ -1,7 +1,6 @@
 # Agenda
 
-Next.js app for personal reminders and a daily agenda view. Design and rollout
-plan: `notes/ideas/frontend-app.md`.
+Next.js app for personal reminders and a daily agenda view. Design and rollout plan: `notes/ideas/frontend-app.md`.
 
 After deployment, access the app through Traefik at `http://agenda.home`.
 
@@ -20,10 +19,7 @@ apps/agenda/
 └── values.yaml          # Helm values for workload chart
 ```
 
-All calls to `apps/api` happen server-side (Server Components, route handlers,
-and Server Actions in `src/lib/api/*` and `src/features/*/*-actions.ts`) using
-`AGENDA_API_BASE_URL` and `AGENDA_API_KEY`. The API key is never exposed to the
-browser.
+All calls to `apps/api` happen server-side (Server Components, route handlers, and Server Actions in `src/lib/api/*` and `src/features/*/*-actions.ts`) using `AGENDA_API_BASE_URL` and `AGENDA_API_KEY`. The API key is never exposed to the browser.
 
 ## Local Development
 
@@ -48,8 +44,7 @@ Build and push through the repository helper:
 make image-build-push SERVICE=agenda
 ```
 
-The API key shared with `apps/api` is sourced from
-`apps/agenda/secrets.sops.yaml`. Edit it with:
+The API key shared with `apps/api` is sourced from `apps/agenda/secrets.sops.yaml`. Edit it with:
 
 ```bash
 sops apps/agenda/secrets.sops.yaml
@@ -57,10 +52,6 @@ sops apps/agenda/secrets.sops.yaml
 
 ## Known Gaps
 
-- Authentik SSO is not wired up yet (planned as the final rollout step in
-  `notes/ideas/frontend-app.md`); the agenda UI is currently unauthenticated.
-- The backend has no `is_archived`/`archived_at` fields or archive endpoints
-  yet, so there is no Archived view or archive/unarchive actions in this V1.
-- "Upcoming" grouping (`active`/`due-soon`/`upcoming`) is computed client-side
-  in `src/lib/api/reminders.ts` against the plain reminders list, since there
-  is no `/reminders?status=` or `/reminders/due-soon` endpoint yet.
+- Authentik SSO is not wired up yet (planned as the final rollout step in `notes/ideas/frontend-app.md`); the agenda UI is currently unauthenticated.
+- The backend has no `is_archived`/`archived_at` fields or archive endpoints yet, so there is no Archived view or archive/unarchive actions in this V1.
+- "Upcoming" grouping (`active`/`due-soon`/`upcoming`) is computed client-side in `src/lib/api/reminders.ts` against the plain reminders list, since there is no `/reminders?status=` or `/reminders/due-soon` endpoint yet.
