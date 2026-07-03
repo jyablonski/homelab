@@ -38,17 +38,17 @@ make pihole-dns-status
 
 ### Default Access
 
-| Service        | Access                                                  | Credentials                                       |
-| -------------- | ------------------------------------------------------- | ------------------------------------------------- |
-| Homepage       | [apps.home](http://apps.home)                           | —                                                 |
-| Grafana        | [grafana.home](http://grafana.home)                     | Authentik SSO (`auto_login`, login form disabled) |
-| Prometheus     | [prometheus.home](http://prometheus.home)               | —                                                 |
-| Home Assistant | [homeassistant.home](http://homeassistant.home)         | Setup on first visit                              |
-| Authentik      | [authentik.home](http://authentik.home)                 | Setup on first visit                              |
-| Longhorn UI    | [longhorn.home](http://longhorn.home)                   | —                                                 |
-| Pi-hole        | [pihole.home/admin/](http://pihole.home/admin/)         | admin / `pihole`                                  |
-| Apps           | api.home, django.home, runner.home, workload-chart.home | —                                                 |
-| PostgreSQL     | `192.168.76.243:5432` / in-cluster service              | SOPS-managed postgres credentials                 |
+| Service        | Access                                                               | Credentials                                       |
+| -------------- | -------------------------------------------------------------------- | ------------------------------------------------- |
+| Homepage       | [apps.home](http://apps.home)                                        | —                                                 |
+| Grafana        | [grafana.home](http://grafana.home)                                  | Authentik SSO (`auto_login`, login form disabled) |
+| Prometheus     | [prometheus.home](http://prometheus.home)                            | —                                                 |
+| Home Assistant | [homeassistant.home](http://homeassistant.home)                      | Setup on first visit                              |
+| Authentik      | [authentik.home](http://authentik.home)                              | Setup on first visit                              |
+| Longhorn UI    | [longhorn.home](http://longhorn.home)                                | —                                                 |
+| Pi-hole        | [pihole.home/admin/](http://pihole.home/admin/)                      | admin / `pihole`                                  |
+| Apps           | api.home, django.home, runner.home, workload-chart.home, agenda.home | —                                                 |
+| PostgreSQL     | `192.168.76.243:5432` / in-cluster service                           | SOPS-managed postgres credentials                 |
 
 ## Services
 
@@ -72,6 +72,7 @@ make pihole-dns-status
 | [API](apps/api/)                                       | REST API app for custom workloads                              |
 | [Django](apps/django/)                                 | Database migration tool and admin interface                    |
 | [Runner](apps/runner/)                                 | Internal UI for running approved app-owned jobs                |
+| [Agenda](apps/agenda/)                                 | Next.js app for personal reminders and a daily agenda view     |
 | [Workload Chart Example](apps/workload-chart-example/) | Deployed reference app using the workload chart                |
 
 ### Prepared but Disabled

@@ -218,6 +218,20 @@ releases:
       - postgres/postgres
       - registry/registry
 
+  - name: agenda
+    namespace: apps
+    labels:
+      bootstrap: app
+    chart: ./charts/workload
+    values:
+      - apps/agenda/values.yaml
+      - apps/agenda/values-dev.yaml.gotmpl
+    secrets:
+      - apps/agenda/secrets.sops.yaml
+    needs:
+      - registry/registry
+      - apps/api
+
   - name: runner
     namespace: apps
     createNamespace: true

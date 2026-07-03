@@ -1,0 +1,63 @@
+env:
+  AGENDA_API_BASE_URL: "http://api.apps.svc.cluster.local:8000"
+
+# memory.limits is generous because `next dev` (used under Tilt) runs
+# Turbopack, which spikes well past a typical `next start` footprint while
+# compiling routes; 512Mi got OOMKilled (exit 137) mid-compile in testing.
+resources:
+  requests:
+    cpu: 100m
+    memory: 384Mi
+  limits:
+    cpu: 750m
+    memory: 1Gi
+
+# timeoutSeconds is generous (Kubernetes defaults to 1s) because `next dev`
+# (used under Tilt) lazily compiles each route with Turbopack on its first
+# hit; a cold /healthz request can take over a second, which trips the
+# default 1s timeout even though the app is healthy.
+startupProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  periodSeconds: 5
+  timeoutSeconds: 5
+  failureThreshold: 30
+
+readinessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  periodSeconds: 20
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+service:
+  port: 3000
+
+ingress:
+  enabled: true
+  className: traefik
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Agenda"
+    gethomepage.dev/group: "Apps"
+    gethomepage.dev/icon: "nextjs.png"
+    gethomepage.dev/href: "http://agenda.home"
+    gethomepage.dev/description: "Personal reminders and daily agenda"
+  hosts:
+    - host: agenda.home
+      paths:
+        - path: /
+          pathType: Prefix
+  traefik:
+    stripPrefix:
+      enabled: false

@@ -1,0 +1,10 @@
+# Dev-only overrides, active for `helmfile -e dev` (used by Tilt); renders to
+# {} otherwise. `next dev` picks up files live-synced into /app/src.
+{{- if eq .Environment.Name "dev" }}
+args:
+  - npm
+  - run
+  - dev
+{{- else }}
+{}
+{{- end }}

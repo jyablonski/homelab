@@ -17,7 +17,7 @@ load("ext://restart_process", "docker_build_with_restart")
 
 allow_k8s_contexts("default")
 
-APP_NAMES = ["django", "api", "runner", "workload-chart-example"]
+APP_NAMES = ["django", "api", "runner", "workload-chart-example", "agenda"]
 
 def app_image_ref(name):
     return "registry.home:5000/homelab/%s" % name
@@ -112,6 +112,42 @@ python_app(
     ],
     objects=["runner:role", "runner:rolebinding"],
     extra_ignores=["rbac.yaml"],
+)
+
+
+# --- Node app ----------------------------------------------------------------
+# Files in apps/<app>/ that are not image build inputs; keep them out of Tilt's
+# context watch so editing them never triggers an image rebuild (no
+# .dockerignore, so the Dockerfile's COPY steps are the only source of truth).
+NODE_NON_IMAGE_FILES = [
+    "node_modules",
+    ".next",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "values.yaml",
+    "values-dev.yaml.gotmpl",
+    "secrets.sops.yaml",
+    "README.md",
+]
+
+def node_app(name, sync_dirs, links=[]):
+    app_dir = "apps/%s" % name
+    docker_build(
+        app_image_ref(name),
+        app_dir,
+        dockerfile="%s/Dockerfile" % app_dir,
+        live_update=[sync("%s/%s" % (app_dir, d), "/app/%s" % d) for d in sync_dirs],
+        ignore=NODE_NON_IMAGE_FILES,
+    )
+    k8s_resource(name, links=links)
+
+node_app(
+    "agenda",
+    sync_dirs=["src", "public"],
+    links=[
+        link("http://agenda.home", "Agenda"),
+        link("http://agenda.home/healthz", "Health"),
+    ],
 )
 
 
