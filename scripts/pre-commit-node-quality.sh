@@ -37,7 +37,10 @@ for app in $(printf '%s\n' "${!apps[@]}" | sort); do
   echo "node quality ($app)..."
   (
     cd "$app_dir"
-    npm install --no-audit --no-fund
+    # npm ci (not install): install never writes to package-lock.json, so a
+    # different npm version on this machine/runner can't reformat it and trip
+    # pre-commit's "files were modified by this hook" guard.
+    npm ci --no-audit --no-fund
     npm run lint
     npm run typecheck
   )
