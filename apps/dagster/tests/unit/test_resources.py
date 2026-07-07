@@ -1,4 +1,5 @@
 import asyncio
+import json
 import sys
 from datetime import UTC, date, datetime, timedelta
 from types import SimpleNamespace
@@ -7,11 +8,13 @@ import pytest
 from bs4 import BeautifulSoup
 
 from dagster_project.resources import (
+    GoogleCalendarResource,
     HLTVResource,
     PostgresResource,
     RESOURCES,
     SlackResource,
 )
+from dagster_project.resources.google_calendar import GoogleCalendarAccount
 from dagster_project.resources.hltv import (
     _event_overlaps_window,
     _parse_event_match_wrappers,
@@ -24,9 +27,86 @@ pytestmark = pytest.mark.unit
 
 
 def test_registry_keys_present():
-    assert set(RESOURCES) >= {"hltv", "postgres", "slack"}
+    assert set(RESOURCES) >= {"google_calendar", "hltv", "postgres", "slack"}
     assert "nba" not in RESOURCES
     assert "ufcstats" not in RESOURCES
+
+
+class TestGoogleCalendarResource:
+    def test_accounts_parses_json(self):
+        resource = GoogleCalendarResource(
+            accounts_json=json.dumps(
+                [
+                    {
+                        "email": "jyablonski9@gmail.com",
+                        "refresh_token": "rt-a",
+                        "label": "personal",
+                    },
+                    {
+                        "email": "jacob.yablonski@axios.com",
+                        "refresh_token": "rt-b",
+                        "calendar_id": "primary",
+                        "label": "work",
+                    },
+                ]
+            )
+        )
+        accounts = resource.accounts()
+        assert accounts == [
+            GoogleCalendarAccount(
+                email="jyablonski9@gmail.com",
+                refresh_token="rt-a",
+                calendar_id="primary",
+                label="personal",
+            ),
+            GoogleCalendarAccount(
+                email="jacob.yablonski@axios.com",
+                refresh_token="rt-b",
+                calendar_id="primary",
+                label="work",
+            ),
+        ]
+
+    def test_accounts_defaults_to_empty_list(self):
+        assert GoogleCalendarResource(accounts_json="").accounts() == []
+        assert GoogleCalendarResource().accounts() == []
+
+    def test_accounts_rejects_invalid_json(self):
+        with pytest.raises(ValueError, match="not valid JSON"):
+            GoogleCalendarResource(accounts_json="not-json").accounts()
+
+    def test_fetch_events_paginates(self, monkeypatch):
+        pages = [
+            {"items": [{"id": "1"}], "nextPageToken": "page-2"},
+            {"items": [{"id": "2"}]},
+        ]
+        calls: list[str | None] = []
+
+        class FakeEvents:
+            def list(self, **kwargs):
+                calls.append(kwargs["pageToken"])
+
+                class _Request:
+                    def execute(self_inner):
+                        return pages[len(calls) - 1]
+
+                return _Request()
+
+        class FakeService:
+            def events(self):
+                return FakeEvents()
+
+        resource = GoogleCalendarResource(client_id="cid", client_secret="csecret")
+        monkeypatch.setattr(resource, "_build_service", lambda account: FakeService())
+
+        account = GoogleCalendarAccount(email="a@example.com", refresh_token="rt")
+        events = resource.fetch_events(
+            account,
+            time_min=datetime(2026, 1, 1, tzinfo=UTC),
+            time_max=datetime(2026, 1, 15, tzinfo=UTC),
+        )
+        assert [event["id"] for event in events] == ["1", "2"]
+        assert calls == [None, "page-2"]
 
 
 class TestPostgresResource:
