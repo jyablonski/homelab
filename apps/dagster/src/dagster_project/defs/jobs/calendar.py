@@ -13,6 +13,6 @@ calendar_sync_job, calendar_sync_schedule = create_job(
     domain=Domain.CALENDAR,
     pii=True,
     description=load_doc("events_google_calendar.md"),
-    schedule="0 */6 * * *",
+    schedule="0 6 * * *",
     execution_timezone="America/Los_Angeles",
 )

@@ -8,11 +8,14 @@ LATEST_REMINDER_TS = "SELECT max(created_at) FROM source.reminders"
 # Calendar pull for an account/calendar, instead of hard-deleting them.
 MARK_STALE_GOOGLE_CALENDAR_EVENTS = """
 UPDATE source.events_google_calendar
-SET status = 'cancelled', modified_at = %s
-WHERE account_email = %s
-  AND calendar_id = %s
-  AND event_start >= %s
-  AND event_start <= %s
-  AND last_seen_at < %s
-  AND status <> 'cancelled'
+SET
+    status = 'cancelled',
+    modified_at = %s
+WHERE
+    account_email = %s
+    AND calendar_id = %s
+    AND event_start >= %s
+    AND event_start <= %s
+    AND last_seen_at < %s
+    AND status <> 'cancelled'
 """

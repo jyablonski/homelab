@@ -12,5 +12,7 @@ UPSERT_REMINDERS_SUMMARY = """
 INSERT INTO source.reminders_summary (snapshot_date, reminder_count)
 VALUES (current_date, %s)
 ON CONFLICT (snapshot_date)
-DO UPDATE SET reminder_count = excluded.reminder_count, refreshed_at = now()
+DO UPDATE SET
+    reminder_count = excluded.reminder_count,
+    refreshed_at = now()
 """

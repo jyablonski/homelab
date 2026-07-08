@@ -282,7 +282,7 @@ def test_mark_stale_rows_updates_unseen_rows_in_window():
 
 
 def test_calendar_sync_schedule_cadence_and_timezone():
-    assert calendar_sync_schedule.cron_schedule == "0 */6 * * *"
+    assert calendar_sync_schedule.cron_schedule == "0 6 * * *"
     assert calendar_sync_schedule.execution_timezone == "America/Los_Angeles"
     assert calendar_sync_job.name == "calendar_sync"
 

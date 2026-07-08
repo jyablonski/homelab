@@ -1,6 +1,6 @@
 ### Google Calendar Sync
 
-Pulls upcoming events for each configured Google account/calendar into `source.events_google_calendar`. Runs on the `calendar_sync` schedule (every 6 hours, `America/Los_Angeles`) and can be manually materialized at any time.
+Pulls upcoming events for each configured Google account/calendar into `source.events_google_calendar`. Runs on the `calendar_sync` schedule (daily at 6am `America/Los_Angeles`) and can be manually materialized at any time.
 
 Kept in its own job, separate from `daily_events`, so a Google auth failure never makes the sports event syncs look failed, and a failure on one account never blocks the other account's sync.
 
