@@ -29,6 +29,7 @@ class Audience(StrEnum):
 class Domain(StrEnum):
     """Allowed job domain tag values."""
 
+    CALENDAR = "calendar"
     EVENTS = "events"
     REMINDERS = "reminders"
     EXAMPLES = "examples"

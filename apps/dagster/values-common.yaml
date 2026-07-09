@@ -18,6 +18,8 @@ env:
   DB_NAME: "postgres"
   DB_SEARCH_PATH: "source,public"
   EVENT_FORWARD_WINDOW_DAYS: "21"
+  CALENDAR_LOOKBACK_DAYS: "1"
+  CALENDAR_FORWARD_WINDOW_DAYS: "14"
   HLTV_PROXY_URL: ""
 
 resources:

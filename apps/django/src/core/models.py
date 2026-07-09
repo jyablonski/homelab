@@ -158,3 +158,50 @@ class EventsUfcFighter(models.Model):
 
     def __str__(self) -> str:
         return str(self.fighter_name)
+
+
+class EventsGoogleCalendar(models.Model):
+    """Landing table for synced Google Calendar events (written by Dagster)."""
+
+    account_email = models.TextField()
+    calendar_id = models.TextField()
+    calendar_summary = models.TextField(blank=True, null=True)
+    source_event_id = models.TextField()
+    source_instance_id = models.TextField()
+    event_name = models.TextField()
+    event_start = models.DateTimeField()
+    event_end = models.DateTimeField(blank=True, null=True)
+    is_all_day = models.BooleanField(default=False)
+    status = models.TextField()
+    transparency = models.TextField(blank=True, null=True)
+    visibility = models.TextField(blank=True, null=True)
+    location = models.TextField(blank=True, null=True)
+    html_link = models.TextField(blank=True, null=True)
+    raw = models.JSONField(default=dict)
+    source = models.TextField(default="google_calendar")
+    last_seen_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True, db_default=Now())
+    modified_at = models.DateTimeField()
+
+    class Meta:
+        db_table = "events_google_calendar"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["account_email", "calendar_id", "source_instance_id"],
+                name="uniq_events_google_calendar_instance",
+            )
+        ]
+        indexes = [
+            models.Index(
+                fields=["event_start", "event_end"],
+                name="idx_events_gcal_start_end",
+            ),
+            models.Index(
+                fields=["account_email", "calendar_id", "last_seen_at"],
+                name="idx_events_gcal_account_seen",
+            ),
+            models.Index(fields=["status"], name="idx_events_gcal_status"),
+        ]
+
+    def __str__(self) -> str:
+        return str(self.event_name)
