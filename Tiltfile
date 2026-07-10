@@ -143,7 +143,7 @@ def node_app(name, sync_dirs, links=[]):
 
 node_app(
     "agenda",
-    sync_dirs=["src", "public"],
+    sync_dirs=["src"],
     links=[
         link("http://agenda.home", "Agenda"),
         link("http://agenda.home/healthz", "Health"),
