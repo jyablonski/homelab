@@ -1,0 +1,20 @@
+name: homelab
+version: "1.0.0"
+config-version: 2
+require-dbt-version: [">=1.11.12", "<1.11.13"]
+
+profile: homelab
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  homelab:
+    silver:
+      +materialized: table
+      +schema: silver
+    gold:
+      +materialized: table
+      +schema: gold

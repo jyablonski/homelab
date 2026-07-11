@@ -32,6 +32,12 @@ venv/
 build/
 dist/
 
+# dbt build artifacts
+apps/dbt/target/
+apps/dbt/logs/
+apps/dbt/dbt_packages/
+apps/dbt/.user.yml
+
 # Django collectstatic output (image build runs collectstatic)
 apps/django/src/staticfiles/*
 !apps/django/src/staticfiles/.gitkeep

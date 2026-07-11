@@ -40,10 +40,6 @@ jobs:
         working-directory: apps/dagster
         run: uv sync --locked --dev
 
-      - name: Install Django dependencies for migrations
-        working-directory: apps/django
-        run: uv sync --locked --dev
-
       - name: Run tests
         working-directory: apps/dagster
         run: uv run pytest

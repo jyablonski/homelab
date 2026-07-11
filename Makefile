@@ -62,7 +62,7 @@ $(STUBS):
 	@:
 endif
 
-.PHONY: migrate migrations showmigrations django-manage
+.PHONY: migrate migrations showmigrations django-manage generate-dbt-source-schema
 migrate:
 	@scripts/django-manage.sh migrate $(MIGRATE_EXTRAS)
 
@@ -79,6 +79,9 @@ django-manage:
 		exit 1; \
 	fi
 	@scripts/django-manage.sh $(ARGS)
+
+generate-dbt-source-schema:
+	@bash scripts/dump-django-source-schema.sh
 
 # used to run the fast local checks that are reasonable on every commit
 .PHONY: validate-fast
