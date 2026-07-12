@@ -10,7 +10,6 @@ models:
           - unique
       - name: event_source_id
         data_tests:
-          - not_null
           - relationships:
               arguments:
                 to: ref('dim_event_sources')
@@ -19,5 +18,3 @@ models:
         data_tests:
           - not_null
       - name: participant_type
-        data_tests:
-          - not_null

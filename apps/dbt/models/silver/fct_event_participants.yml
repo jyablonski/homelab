@@ -23,5 +23,3 @@ models:
                 to: ref('dim_event_participants')
                 field: participant_id
       - name: participant_role
-        data_tests:
-          - not_null

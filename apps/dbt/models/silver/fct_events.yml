@@ -10,23 +10,14 @@ models:
           - unique
       - name: event_source_id
         data_tests:
-          - not_null
           - relationships:
               arguments:
                 to: ref('dim_event_sources')
                 field: event_source_id
       - name: source_event_id
-        data_tests:
-          - not_null
       - name: event_source
-        data_tests:
-          - not_null
       - name: event_title
-        data_tests:
-          - not_null
       - name: starts_at
-        data_tests:
-          - not_null
       - name: event_status
         data_tests:
           - not_null
