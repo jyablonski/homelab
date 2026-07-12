@@ -5,11 +5,13 @@ on:
     branches: [main]
     paths:
       - "apps/dbt/**"
+      - "apps/django/schema/source.sql"
       - ".github/workflows/dbt.yaml"
   pull_request:
     branches: [main]
     paths:
       - "apps/dbt/**"
+      - "apps/django/schema/source.sql"
       - ".github/workflows/dbt.yaml"
 
 concurrency:
@@ -45,7 +47,11 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            apps/dbt
+            apps/django/schema
 
       - name: Setup uv
         uses: astral-sh/setup-uv@v6

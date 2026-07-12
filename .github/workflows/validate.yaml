@@ -3,8 +3,32 @@ name: Validation Pipeline
 on:
   push:
     branches: [main]
+    paths:
+      - ".github/**"
+      - ".kube-linter.yaml"
+      - ".pre-commit-config.yaml"
+      - ".sops.yaml"
+      - "apps/**/*.gotmpl"
+      - "apps/**/*.yaml"
+      - "charts/**"
+      - "helmfile.yaml"
+      - "scripts/**"
+      - "services/**"
+      - "terraform/**"
   pull_request:
     branches: [main]
+    paths:
+      - ".github/**"
+      - ".kube-linter.yaml"
+      - ".pre-commit-config.yaml"
+      - ".sops.yaml"
+      - "apps/**/*.gotmpl"
+      - "apps/**/*.yaml"
+      - "charts/**"
+      - "helmfile.yaml"
+      - "scripts/**"
+      - "services/**"
+      - "terraform/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -16,6 +40,7 @@ env:
   HELM_SECRETS_VERSION: v4.6.11
   SOPS_VERSION: v3.12.2
   KUBECONFORM_VERSION: v0.7.0
+  KUBE_LINTER_VERSION: v0.8.3
   HELM_UNITTEST_VERSION: v1.0.3
   TERRAFORM_VERSION: 1.14.7
 
@@ -24,7 +49,18 @@ jobs:
     name: Helm Validation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            /apps/**/*.yaml
+            /apps/**/*.gotmpl
+            /charts/workload/
+            /helmfile.yaml
+            /.kube-linter.yaml
+            /.sops.yaml
+            /scripts/validate-manifests.sh
+            /services/
+          sparse-checkout-cone-mode: false
 
       - name: Install Helm
         uses: azure/setup-helm@v4
@@ -61,11 +97,11 @@ jobs:
           chmod 600 "${RUNNER_TEMP}/sops/age-keys.txt"
           echo "SOPS_AGE_KEY_FILE=${RUNNER_TEMP}/sops/age-keys.txt" >> "${GITHUB_ENV}"
 
-      # validation check to ensure an expected value can be decrypted from a sops file
+      # Validate that a required SOPS secret decrypts without exposing its value in CI.
       - name: Validate SOPS Secret Decryption
         run: |
-          if [ "$(sops --decrypt --extract '["grafana"]["adminPassword"]' services/prometheus/secrets.sops.yaml)" != "admin" ]; then
-            echo "::error::Failed to decrypt expected Grafana admin password from services/prometheus/secrets.sops.yaml."
+          if ! sops --decrypt --extract '["grafana"]["adminPassword"]' services/prometheus/secrets.sops.yaml | grep -q '[^[:space:]]'; then
+            echo "::error::Grafana admin password could not be decrypted or is empty."
             exit 1
           fi
 
@@ -95,7 +131,7 @@ jobs:
           curl -fsSL https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz | tar xz
           sudo mv kubeconform /usr/local/bin/
 
-          curl -fsSL https://github.com/stackrox/kube-linter/releases/latest/download/kube-linter-linux.tar.gz | tar xz
+          curl -fsSL https://github.com/stackrox/kube-linter/releases/download/${KUBE_LINTER_VERSION}/kube-linter-linux.tar.gz | tar xz
           sudo mv kube-linter /usr/local/bin/
 
         # validates rendered manifests against the kubernetes openapi spec.
@@ -122,7 +158,11 @@ jobs:
     name: Helm Unit Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            charts
+            services/postgres/chart
 
       - name: Install Helm
         uses: azure/setup-helm@v4
@@ -139,7 +179,9 @@ jobs:
     name: Shell And Workflow Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: scripts
 
       # simple bash linter to catch common scripting mistakes and enforce best practices
       - name: Run Shellcheck
@@ -149,7 +191,11 @@ jobs:
     name: Pre-commit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
+        with:
+          # This job's contract is to run every configured hook against every tracked file.
+          sparse-checkout: /*
+          sparse-checkout-cone-mode: false
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -172,7 +218,9 @@ jobs:
       run:
         working-directory: terraform
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: terraform
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
