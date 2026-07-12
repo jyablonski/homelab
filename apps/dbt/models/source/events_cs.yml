@@ -1,0 +1,18 @@
+version: 2
+
+sources:
+  - name: bronze
+    schema: source
+    tables:
+      - name: events_cs
+        loaded_at_field: modified_at
+        freshness:
+          warn_after: { count: 30, period: hour }
+          error_after: { count: 54, period: hour }
+        columns:
+          - name: source_event_id
+            data_tests:
+              - not_null
+          - name: event_start
+            data_tests:
+              - not_null

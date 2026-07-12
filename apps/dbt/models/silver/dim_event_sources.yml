@@ -1,0 +1,17 @@
+version: 2
+
+models:
+  - name: dim_event_sources
+    description: Canonical event source, category, and league attributes.
+    columns:
+      - name: event_source_id
+        data_tests:
+          - not_null
+          - unique
+      - name: event_source
+        data_tests:
+          - not_null
+          - unique
+      - name: source_name
+      - name: category
+      - name: league

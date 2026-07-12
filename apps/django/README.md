@@ -85,6 +85,8 @@ Admin appearance uses the **Quiet** theme: `src/core/static/admin/css/quiet.css`
 
 If you modify models in `src/core/models.py`, generate migrations before committing (from repo root **`make migrations`**, or **`cd apps/django`** and **`uv run python src/manage.py makemigrations`**). Apply with **`make migrate`**. The startup script will reject boot if migrations are missing. Tests: **`cd apps/django`** and **`uv run pytest`**.
 
+After applying a migration that changes downstream-owned tables in the `source` schema, run **`make generate-dbt-source-schema`** against the cluster and commit the updated `schema/source.sql`. Django CI regenerates this contract from a clean database and fails when it drifts from the migrations.
+
 ## Notes
 
 - On first boot against an empty database, the entrypoint applies all migrations once. After that, schema changes are applied manually with **`make migrate`** (cluster or local).

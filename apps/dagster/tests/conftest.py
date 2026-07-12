@@ -1,6 +1,4 @@
 from __future__ import annotations
-import os
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -14,47 +12,24 @@ EVENT_LANDING_TABLES = (
     "source.events_ufc",
     "source.events_ufc_fighters",
 )
-DJANGO_APP_DIR = Path(__file__).resolve().parents[2] / "django"
-
-
-# TODO(dagster): stop running Django migrations to set up the test schema.
-# Coupling Dagster's unit/integration tests to the Django app (installing its
-# deps in CI and shelling out to manage.py) is brittle and slow. Instead, add a
-# script that dumps the `source` schema to a checked-in .sql file that each
-# downstream app's test suite can load directly. (e2e tests, which exercise the
-# real cross-app flow, are a separate concern and should keep running migrations.)
-def _run_django_migrate(container: PostgresContainer) -> None:
-    env = os.environ.copy()
-    env.update(
-        {
-            "DB_USER": "postgres",
-            "DB_PASSWORD": "postgres",
-            "DB_HOST": container.get_container_host_ip(),
-            "DB_PORT": str(container.get_exposed_port(5432)),
-            "DB_NAME": "postgres",
-            "DJANGO_SUPERUSER_USERNAME": "postgres",
-            "DJANGO_SUPERUSER_PASSWORD": "postgres",
-            "DJANGO_SETTINGS_MODULE": "core.settings",
-        }
-    )
-    subprocess.run(
-        ["uv", "run", "python", "src/manage.py", "migrate", "--noinput"],
-        cwd=DJANGO_APP_DIR,
-        env=env,
-        check=True,
-    )
+SOURCE_SCHEMA_PATH = Path(__file__).resolve().parents[2] / "django/schema/source.sql"
 
 
 @pytest.fixture(scope="session")
 def postgres_container():
-    with PostgresContainer(
+    container = PostgresContainer(
         "postgres:17-alpine",
         username="postgres",
         password="postgres",
         dbname="postgres",
-    ) as container:
-        _run_django_migrate(container)
-        yield container
+    )
+    container.with_volume_mapping(
+        str(SOURCE_SCHEMA_PATH),
+        "/docker-entrypoint-initdb.d/01-source.sql",
+        mode="ro",
+    )
+    with container as running_container:
+        yield running_container
 
 
 @pytest.fixture

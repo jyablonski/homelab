@@ -1,0 +1,25 @@
+version: 2
+
+models:
+  - name: fct_event_participants
+    description: Deduplicated event-to-participant relationships and source roles.
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "event_id || ':' || participant_id"
+    columns:
+      - name: event_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('fct_events')
+                field: event_id
+      - name: participant_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_event_participants')
+                field: participant_id
+      - name: participant_role

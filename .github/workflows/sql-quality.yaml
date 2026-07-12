@@ -1,0 +1,47 @@
+name: SQL Quality
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/dbt/**"
+      - ".github/workflows/sql-quality.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/dbt/**"
+      - ".github/workflows/sql-quality.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sqlfluff:
+    name: SQLFluff
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.7"
+          python-version: "3.13"
+          enable-cache: true
+          cache-dependency-glob: apps/dbt/uv.lock
+
+      - name: Install dependencies
+        working-directory: apps/dbt
+        run: uv sync --locked --group dev
+
+      - name: Lint dbt models
+        working-directory: apps/dbt
+        run: uv run sqlfluff lint --config pyproject.toml models
+
+      - name: Check SQLFluff fixes
+        working-directory: apps/dbt
+        run: |
+          uv run sqlfluff fix --config pyproject.toml models
+          git diff --exit-code -- apps/dbt/models

@@ -1,0 +1,75 @@
+name: dbt CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/dbt/**"
+      - ".github/workflows/dbt.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/dbt/**"
+      - ".github/workflows/dbt.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_VERSION: "0.11.7"
+  PYTHON_VERSION: "3.13"
+  DB_HOST: localhost
+  DB_PORT: "5432"
+  DB_USER: postgres
+  DB_PASSWORD: postgres
+  DB_NAME: postgres
+
+jobs:
+  test:
+    name: Build And Test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: apps/dbt/uv.lock
+
+      - name: Install dependencies
+        working-directory: apps/dbt
+        run: uv sync --locked
+
+      - name: Install dbt packages
+        working-directory: apps/dbt
+        run: uv run dbt deps
+
+      - name: Restore source schema and fixtures
+        env:
+          POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          docker exec -i "${POSTGRES_CONTAINER}" psql --username postgres --dbname postgres --set ON_ERROR_STOP=1 < apps/django/schema/source.sql
+          docker exec -i "${POSTGRES_CONTAINER}" psql --username postgres --dbname postgres --set ON_ERROR_STOP=1 < apps/dbt/fixtures/bronze.sql
+
+      - name: Build and test models
+        working-directory: apps/dbt
+        run: uv run dbt build --profiles-dir .
