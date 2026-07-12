@@ -229,6 +229,12 @@ Pre-commit behavior:
 
 Keep local validation aligned with CI when changing validation-sensitive files.
 
+### CI checkout and triggers
+
+- Use `actions/checkout@v7` with `sparse-checkout` for every focused CI job. Include its working directory and every transitive runtime input such as shared schemas, scripts, Helm charts, fixtures, and config files; use `sparse-checkout-cone-mode: false` when selecting individual files or glob patterns.
+- Add `push` and `pull_request` `paths:` filters to focused workflows so unrelated changes do not start them, and keep those filters aligned with the job's actual inputs. The Validation Pipeline is intentionally limited to infrastructure, deployment configuration, scripts, Terraform, and GitHub configuration changes; app source uses its dedicated CI.
+- Do not path-filter a job that runs `pre-commit --all-files` unless its repository-wide checks are moved or split first; otherwise changes can evade formatting and hygiene validation.
+
 ## Editing Conventions
 
 - Prefer small, focused changes.
