@@ -90,6 +90,7 @@ select
     rating,
     upstream_source,
     source_created_at,
-    source_modified_at
+    source_modified_at,
+    current_timestamp as __dbt_generated_at
 from deduplicated
 where row_number = 1

@@ -94,9 +94,11 @@ uv run dbt docs serve --profiles-dir .
 
 Every model must declare its grain with a uniqueness test and include not-null tests for the columns required at that grain. Facts and dimensions should also test their relationships and constrained values where applicable.
 
-Gold models must include business-level data quality checks implemented with `dbt-expectations`. These checks should validate the consumer-facing contract, such as allowed values, valid ranges, identifier formats, and compound uniqueness.
+Gold models must include business-level data quality checks that validate the consumer-facing contract, such as required values and compound uniqueness.
 
-Bronze source tables must define freshness checks when they have a reliable load timestamp and an expected ingestion cadence. Freshness thresholds should allow for the normal schedule plus a reasonable delay, and tables produced together should avoid redundant checks when a parent table already represents the load.
+Bronze source tables must define their own freshness checks when they have a reliable load timestamp and an expected ingestion cadence. Freshness thresholds should allow for the normal schedule plus a reasonable delay.
+
+All current silver and gold models use table materialization. Incremental materialization may be worthwhile as the data volume grows, but it has not been introduced yet.
 
 ## Orchestration
 

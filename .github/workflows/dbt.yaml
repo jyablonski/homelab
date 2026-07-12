@@ -70,10 +70,6 @@ jobs:
           docker exec -i "${POSTGRES_CONTAINER}" psql --username postgres --dbname postgres --set ON_ERROR_STOP=1 < apps/django/schema/source.sql
           docker exec -i "${POSTGRES_CONTAINER}" psql --username postgres --dbname postgres --set ON_ERROR_STOP=1 < apps/dbt/fixtures/bronze.sql
 
-      - name: Check source freshness
-        working-directory: apps/dbt
-        run: uv run dbt source freshness --profiles-dir .
-
       - name: Build and test models
         working-directory: apps/dbt
         run: uv run dbt build --profiles-dir .

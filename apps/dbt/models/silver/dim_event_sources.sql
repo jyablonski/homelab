@@ -3,7 +3,8 @@ select
     event_source,
     source_name,
     category,
-    league
+    league,
+    current_timestamp as __dbt_generated_at
 from (
     values
     ('nba', 'NBA schedule', 'sports', 'NBA'),

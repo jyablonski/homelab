@@ -1,8 +1,8 @@
-{#
-    The completed branch is a full-string match (no surrounding %) and is checked
-    last so stage labels like "Grand Final" / "Semifinal" and statuses like
-    "Incomplete" fall through to scheduled instead of being bucketed as completed.
-#}
+/*
+ * The completed branch is a full-string match (no surrounding %) and is checked
+ * last so stage labels like "Grand Final" / "Semifinal" and statuses like
+ * "Incomplete" fall through to scheduled instead of being bucketed as completed.
+ */
 {% macro normalize_event_status(status, live_pattern='live|progress') -%}
     case
         when lower(coalesce({{ status }}, '')) like '%postponed%' then 'postponed'

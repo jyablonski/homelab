@@ -9,5 +9,5 @@ homelab:
       password: "{{ env_var('DB_PASSWORD', 'postgres') }}"
       dbname: "{{ env_var('DB_NAME', 'postgres') }}"
       schema: public
-      threads: 4
+      threads: 12
       connect_timeout: 10

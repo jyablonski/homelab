@@ -11,6 +11,7 @@ select
     participant_role,
     bout_id,
     outcome,
-    source_modified_at
+    source_modified_at,
+    current_timestamp as __dbt_generated_at
 from deduplicated
 where row_number = 1

@@ -20,7 +20,8 @@
         null::text as bout_id,
         null::text as outcome,
         created_at::timestamptz as source_created_at,
-        modified_at::timestamptz as source_modified_at
+        modified_at::timestamptz as source_modified_at,
+        current_timestamp as __dbt_generated_at
     from {{ source('bronze', table_name) }}
     where nullif(trim({{ team_column }}), '') is not null
 
@@ -39,6 +40,7 @@ select
     nullif(trim(bout_id), '')::text as bout_id,
     nullif(trim(outcome), '')::text as outcome,
     created_at::timestamptz as source_created_at,
-    modified_at::timestamptz as source_modified_at
+    modified_at::timestamptz as source_modified_at,
+    current_timestamp as __dbt_generated_at
 from {{ source('bronze', 'events_ufc_fighters') }}
 where nullif(trim(fighter_name), '') is not null

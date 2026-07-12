@@ -12,6 +12,7 @@ select
     source_participant_id,
     participant_name,
     participant_type,
-    source_modified_at
+    source_modified_at,
+    current_timestamp as __dbt_generated_at
 from deduplicated
 where row_number = 1

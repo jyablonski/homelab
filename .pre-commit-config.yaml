@@ -21,15 +21,20 @@ repos:
         types_or: [python, pyi]
       - id: ruff-format
         types_or: [python, pyi]
-  - repo: https://github.com/sqlfluff/sqlfluff
-    rev: 4.2.2
-    hooks:
-      - id: sqlfluff-fix
-        files: ^apps/dbt/models/.*\.sql$
-      - id: sqlfluff-lint
-        files: ^apps/dbt/models/.*\.sql$
   - repo: local
     hooks:
+      - id: sqlfluff-fix
+        name: sqlfluff fix (dbt models)
+        entry: env -u VIRTUAL_ENV apps/dbt/.venv/bin/sqlfluff fix --config apps/dbt/pyproject.toml apps/dbt/models
+        language: system
+        files: ^apps/dbt/models/.*\.sql$
+        pass_filenames: false
+      - id: sqlfluff-lint
+        name: sqlfluff lint (dbt models)
+        entry: env -u VIRTUAL_ENV apps/dbt/.venv/bin/sqlfluff lint --config apps/dbt/pyproject.toml apps/dbt/models
+        language: system
+        files: ^apps/dbt/models/.*\.sql$
+        pass_filenames: false
       - id: ty
         name: ty (changed apps)
         entry: bash scripts/pre-commit-ty.sh
@@ -54,5 +59,12 @@ repos:
         name: make validate
         entry: make validate
         language: system
+        pass_filenames: false
+        stages: [pre-push]
+      - id: generate-dbt-source-schema
+        name: generate dbt source schema (Django contract changes)
+        entry: make generate-dbt-source-schema
+        language: system
+        files: ^apps/django/(src/.*/migrations/.*\.py|schema/source\.sql)$
         pass_filenames: false
         stages: [pre-push]

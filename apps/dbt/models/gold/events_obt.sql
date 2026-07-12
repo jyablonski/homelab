@@ -36,7 +36,8 @@ select
             'participants', participant_metadata.participants
         )
     ) as metadata,
-    events.source_modified_at
+    events.source_modified_at,
+    current_timestamp as __dbt_generated_at
 from {{ ref('fct_events') }} as events
 inner join {{ ref('dim_event_sources') }} as sources
     on events.event_source_id = sources.event_source_id

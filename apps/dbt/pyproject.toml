@@ -8,5 +8,21 @@ dependencies = [
   "dbt-postgres==1.10.2",
 ]
 
+[dependency-groups]
+dev = [
+  "sqlfluff==4.2.2",
+  "sqlfluff-templater-dbt==4.2.2",
+]
+
 [tool.uv]
 package = false
+
+[tool.sqlfluff.core]
+dialect = "postgres"
+templater = "jinja"
+max_line_length = 100
+exclude_rules = "ST06"
+
+[tool.sqlfluff.templater.jinja]
+apply_dbt_builtins = true
+load_macros_from_path = "macros"

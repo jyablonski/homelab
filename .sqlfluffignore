@@ -1,5 +1,0 @@
-apps/dbt/.venv/
-apps/dbt/dbt_packages/
-apps/dbt/logs/
-apps/dbt/macros/
-apps/dbt/target/

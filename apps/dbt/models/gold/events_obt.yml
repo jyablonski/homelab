@@ -1,0 +1,32 @@
+version: 2
+
+models:
+  - name: events_obt
+    description: Agenda-ready one-big-table projection of all normalized sports events.
+    columns:
+      - name: id
+        description: Stable identifier namespaced by event source.
+        data_tests:
+          - not_null
+          - unique
+      - name: source
+        data_tests:
+          - not_null
+      - name: category
+        data_tests:
+          - not_null
+      - name: league
+        data_tests:
+          - not_null
+      - name: title
+        data_tests:
+          - not_null
+      - name: start_at
+        data_tests:
+          - not_null
+      - name: status
+        data_tests:
+          - not_null
+      - name: metadata
+        data_tests:
+          - not_null
