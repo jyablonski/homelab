@@ -3,6 +3,9 @@ name: Node Quality
 on:
   push:
     branches: [main]
+    paths:
+      - "apps/agenda/**"
+      - ".github/workflows/node-quality.yaml"
   pull_request:
     branches: [main]
     paths:
@@ -21,7 +24,9 @@ jobs:
     name: ESLint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: apps/agenda
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -42,7 +47,9 @@ jobs:
     name: Typecheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: apps/agenda
 
       - name: Setup Node
         uses: actions/setup-node@v4

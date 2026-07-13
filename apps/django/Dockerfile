@@ -20,7 +20,7 @@ ARG INSTALL_DEV_DEPENDENCIES=false
 
 WORKDIR /app
 
-COPY --from=ghcr.io/astral-sh/uv:0.9.18 /uv /bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.11.7-python3.13-trixie /usr/local/bin/uv /bin/uv
 COPY pyproject.toml uv.lock ./
 
 RUN if [ "$INSTALL_DEV_DEPENDENCIES" = "true" ]; then \

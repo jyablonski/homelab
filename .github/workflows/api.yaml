@@ -26,7 +26,9 @@ jobs:
     name: API tests
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: apps/api
 
       - name: Setup uv
         uses: astral-sh/setup-uv@v6

@@ -28,7 +28,9 @@ jobs:
     name: Django tests
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: apps/django
 
       - name: Setup uv
         uses: astral-sh/setup-uv@v6
@@ -65,7 +67,11 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            apps/django
+            scripts
 
       - name: Setup uv
         uses: astral-sh/setup-uv@v6

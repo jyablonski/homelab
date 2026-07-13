@@ -24,7 +24,9 @@ jobs:
     name: Ruff
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: apps
 
       - name: Setup Ruff
         uses: astral-sh/ruff-action@v3
@@ -45,7 +47,9 @@ jobs:
         ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' &&
         '["api", "dagster", "django","runner"]' || steps.filter.outputs.changes }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .
 
       - name: Detect changed apps
         id: filter
@@ -79,7 +83,9 @@ jobs:
       matrix:
         service: ${{ fromJSON(needs.detect-changes.outputs.services) }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: apps/${{ matrix.service }}
 
       - name: Setup uv
         uses: astral-sh/setup-uv@v6
