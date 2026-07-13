@@ -28,7 +28,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          sparse-checkout: apps/dagster
+          sparse-checkout: |
+            apps/dagster
+            apps/django/schema
 
       - name: Setup uv
         uses: astral-sh/setup-uv@v6
