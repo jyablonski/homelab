@@ -82,7 +82,3 @@ build_and_push_local_apps
 
 echo "Running Helmfile app bootstrap..."
 "$repo_root/scripts/run-with-service-status.sh" bootstrap=app -- helmfile sync --selector bootstrap=app
-
-# this works to apply the cron job, but ive disabled for now
-# feel free to use it to test loki for logs querying as an example
-# kubectl apply -f apps/go-cron-test/cronjob.yaml

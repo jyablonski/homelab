@@ -1,0 +1,34 @@
+name: Homelab Tools
+
+on:
+  push:
+    paths:
+      - "apps/tools/**"
+      - ".github/workflows/tools.yaml"
+  pull_request:
+    paths:
+      - "apps/tools/**"
+      - ".github/workflows/tools.yaml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: apps/tools
+          sparse-checkout-cone-mode: true
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.26.5"
+          cache-dependency-path: apps/tools/go.sum
+
+      - name: Test (unit and Testcontainers integration)
+        run: go tool gotestsum --format=short-verbose -- ./...
+
+      - name: Vet
+        run: go vet ./...

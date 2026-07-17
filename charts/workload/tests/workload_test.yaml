@@ -125,6 +125,13 @@ tests:
       - equal:
           path: spec.strategy.rollingUpdate
           value: null
+
+  - it: does not render a deployment for a jobs-only release
+    set:
+      deployment.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
 ---
 suite: workload service
 templates:
@@ -161,6 +168,13 @@ tests:
   - it: does not render a service when disabled
     set:
       service.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: does not render a service for a jobs-only release
+    set:
+      deployment.enabled: false
     asserts:
       - hasDocuments:
           count: 0

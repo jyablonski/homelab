@@ -1,5 +1,8 @@
 {{- $autoscaling := .Values.scale.autoscaling | default .Values.autoscaling }}
 {{- if $autoscaling.enabled }}
+{{- if not .Values.deployment.enabled }}
+{{- fail "scale.autoscaling.enabled requires deployment.enabled" }}
+{{- end }}
 {{- if and (not $autoscaling.targetCPUUtilizationPercentage) (not $autoscaling.targetMemoryUtilizationPercentage) }}
 {{- fail "scale.autoscaling.enabled requires a CPU or memory utilization target" }}
 {{- end }}

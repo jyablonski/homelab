@@ -51,3 +51,4 @@ coverage/
 apps/agenda/.env*
 .env
 private/**
+notes/historical/**
