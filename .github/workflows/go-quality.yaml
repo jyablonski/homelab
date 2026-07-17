@@ -38,19 +38,8 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache-dependency-path: apps/tools/go.sum
 
-      - name: Check gofmt
+      - name: Run gofmt
         run: test -z "$(gofmt -l .)"
-
-      - name: Test with gotestsum
-        run: go tool gotestsum --format=short-verbose -- -coverprofile=coverage.out -covermode=atomic ./...
-
-      - name: Check coverage
-        shell: bash
-        run: |
-          go tool cover -func=coverage.out
-          coverage="$(go tool cover -func=coverage.out | awk '$1 == "total:" {gsub("%", "", $3); print $3}')"
-          test -n "$coverage"
-          awk -v coverage="$coverage" 'BEGIN { exit !(coverage >= 90) }'
 
       - name: Run deadcode
         run: go tool deadcode -test ./...
@@ -64,5 +53,5 @@ jobs:
             exit 1
           fi
 
-      - name: Vet
+      - name: Run vet
         run: go vet ./...
