@@ -1,0 +1,40 @@
+# The release is intentionally not wired into Helmfile yet. Once the required
+# tool workload is ready, add scheduled entries under jobs:.
+deployment:
+  enabled: false
+
+jobs: {}
+
+# Future PostgreSQL backup job. Before enabling it, create the referenced
+# password Secret in the apps namespace and provide durable /backups storage.
+# env:
+#   PGHOST: "postgres.postgres.svc.cluster.local"
+#   PGPORT: "5432"
+#   PGUSER: "postgres"
+# secretEnv:
+#   - name: PGPASSWORD
+#     secretName: tools-postgres-backup
+#     secretKey: password
+#
+# extraVolumes:
+#   - name: backups
+#     persistentVolumeClaim:
+#       claimName: tools-backups
+# extraVolumeMounts:
+#   - name: backups
+#     mountPath: /backups
+#
+# jobs:
+#   postgres-backup:
+#     enabled: true
+#     suspend: false
+#     schedule: "0 3 * * *"
+#     description: Back up PostgreSQL globals and application databases
+#     command: ["/usr/local/bin/homelab-backup"]
+#     args:
+#       - postgres
+#       - --output-dir
+#       - /backups
+#       - --databases
+#       - postgres,authentik,dagster
+#       - --include-globals

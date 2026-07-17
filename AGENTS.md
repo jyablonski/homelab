@@ -32,7 +32,7 @@ This repo declares a personal K3s homelab in Git. Helmfile is the main source of
 - `services/*/secrets.sops.yaml`: encrypted secrets merged by Helmfile.
 - `services/metallb/ip-pool.yaml`: standalone MetalLB address pool.
 - `apps/workload-chart-example/`: reference app-owned workload.
-- `apps/go-cron-test/cronjob.yaml`: standalone manifest used for validation.
+- `apps/tools/`: standalone Go tools app, including the backup command and future jobs-only workload.
 
 ## Common Tools
 
@@ -144,11 +144,12 @@ When adding an app:
 
 ## Workload Chart
 
-`charts/workload` is intentionally narrow: one simple stateless deployment.
+`charts/workload` is intentionally narrow: one simple stateless deployment plus optional app-owned CronJobs.
 
 In scope:
 
 - `Deployment`, single container, optional `Service`, optional `Ingress`.
+- Jobs-only releases by setting `deployment.enabled: false`; deployment-owned resources are suppressed and autoscaling must remain disabled.
 - Optional Traefik strip-prefix middleware.
 - Optional `HorizontalPodAutoscaler`.
 - Optional `ServiceMonitor`.
@@ -159,7 +160,7 @@ In scope:
 
 Out of scope:
 
-- CronJobs, StatefulSets, PVC ownership.
+- StatefulSets and PVC ownership.
 - Sidecars or init containers.
 - Multiple service ports.
 - Bundled app-specific infra such as databases or queues.

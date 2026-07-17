@@ -10,7 +10,7 @@ Reusable Helm chart for a single deployable application workload. It is designed
 - Optional `Ingress`, including a small Traefik strip-prefix helper for shared-host path routing
 - Optional HPA
 - Optional `ServiceMonitor`
-- Optional app-owned `CronJob` entries for scheduled or manual-only runs
+- Optional app-owned `CronJob` entries for scheduled or manual-only runs, including jobs-only releases
 - Plain env vars, secret-backed env vars, and `envFrom`
 - Existing Secret / ConfigMap mounts through `extraVolumes` and `extraVolumeMounts`
 - Service account, pod metadata, probes, resources, and scheduling controls
@@ -102,6 +102,7 @@ livenessProbe:
 | `image.tag`                     | `dev`                                       | Single homelab image line; no per-environment tags in app values                          |
 | `image.pullPolicy`              | `Always`                                    | Ensures nodes pull fresh layers after local registry pushes                               |
 | `scale.replicas`                | `1`                                         | Sufficient for most homelab apps; use `scale.autoscaling` when you need more              |
+| `deployment.enabled`            | `true`                                      | Set to `false` for a release that only owns app-defined CronJobs                          |
 | `service.port`                  | — (required in app values)                  | Sets both Service port and container listen port                                          |
 | `service.targetPort`            | falls back to `service.port`                | Escape hatch when ingress Service port ≠ app port (see `examples/frontend.yaml`)          |
 | `podLabels`                     | `component: <Release.Name>`                 | Avoids repeating the same label in every app file                                         |
@@ -140,6 +141,7 @@ releases:
 ## Design notes
 
 - Resource names default to the Helm release name, so a release named `lotus-frontend` renders to `lotus-frontend` rather than `lotus-frontend-workload`.
+- Deployments are enabled by default. A jobs-only release sets `deployment.enabled: false`; Service, Ingress, and ServiceMonitor resources are suppressed automatically. Autoscaling must remain disabled.
 - The chart gives first-class values to the common cases and keeps only a small escape hatch for mounted config through `extraVolumes` and `extraVolumeMounts`.
 - Replicated or autoscaled workloads get a default preferred pod anti-affinity unless you provide an explicit `affinity:` block, which keeps the chart aligned with this repo's linting and HA direction.
 - Jobs reuse the workload image and inherited pod settings. They are intended for app-owned maintenance scripts, not as a general workflow engine.
@@ -184,6 +186,25 @@ That keeps the application code, probes, and `ServiceMonitor` paths simple becau
 ## Jobs
 
 Use `jobs:` for app-owned scripts that should run from the same image as the main workload. A job entry renders as a Kubernetes `CronJob`.
+
+For a jobs-only release, disable the Deployment and other deployment-owned resources while retaining the shared image, environment, secret, volume, and scheduling settings:
+
+```yaml
+deployment:
+  enabled: false
+
+scale:
+  autoscaling:
+    enabled: false
+
+jobs:
+  backup:
+    enabled: true
+    suspend: false
+    schedule: "0 3 * * *"
+    command: ["/usr/local/bin/homelab-backup"]
+    args: ["postgres"]
+```
 
 Manual-only jobs should set `suspend: true`. Kubernetes still requires a valid cron schedule, so the chart defaults suspended jobs to `0 0 * * *`; the suspend flag prevents scheduled execution.
 

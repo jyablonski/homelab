@@ -15,6 +15,9 @@ scale:
 
 deploymentStrategy: {}
 
+deployment:
+  enabled: true
+
 # Image defaults assume the Helm release name matches apps/<app> and
 # make image-build-push SERVICE=<app> (registry.home:5000/homelab/<app>:<tag>).
 image:

@@ -1,8 +1,8 @@
 {{- $stripPrefix := .Values.ingress.traefik.stripPrefix | default dict }}
-{{- if and (not .Values.ingress.enabled) $stripPrefix.enabled }}
+{{- if and .Values.deployment.enabled (not .Values.ingress.enabled) $stripPrefix.enabled }}
 {{- fail "ingress.traefik.stripPrefix.enabled requires ingress.enabled" }}
 {{- end }}
-{{- if and .Values.ingress.enabled $stripPrefix.enabled }}
+{{- if and .Values.deployment.enabled .Values.ingress.enabled $stripPrefix.enabled }}
 {{- if eq (len $stripPrefix.prefixes) 0 }}
 {{- fail "ingress.traefik.stripPrefix.enabled requires at least one ingress.traefik.stripPrefix.prefixes entry" }}
 {{- end }}
