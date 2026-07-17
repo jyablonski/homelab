@@ -2,6 +2,7 @@ name: Homelab Tools
 
 on:
   push:
+    branches: [main]
     paths:
       - "apps/tools/**"
       - ".github/workflows/tools.yaml"
