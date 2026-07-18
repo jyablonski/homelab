@@ -78,10 +78,6 @@ Devices on your network query Pi-hole instead of your ISP’s DNS. Pi-hole block
 
 Pi-hole uses an IP from MetalLB's managed pool. After MetalLB assigns an IP, it announces it to the local network so other devices can send DNS queries to it.
 
-## Keycloak
-
-https://github.com/bitnami/charts/tree/main/bitnami
-
 ## UI Dashboard
 
 Multiple options:

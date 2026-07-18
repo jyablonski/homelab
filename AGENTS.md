@@ -13,6 +13,7 @@ This repo declares a personal K3s homelab in Git. Helmfile is the main source of
 - `helmfile.yaml`: all Helm repos and release definitions.
 - `charts/workload/`: local Helm chart for one simple stateless workload.
 - `services/`: service values, SOPS secrets, and the local Postgres chart.
+- `notes/services/<service>.md`: service-level architecture, operational runbooks, bootstrap flows, integrations, and troubleshooting; keep these documents under `notes/services/` rather than inside each service configuration directory.
 - `apps/`: app source, Dockerfiles, chart values, and standalone manifests.
 - `scripts/`: bootstrap, DNS, image, chart update, and validation helpers.
 - `terraform/`: WIP Authentik/OIDC provider and Kubernetes secret resources.
@@ -105,7 +106,6 @@ Service configuration lives in `services/`.
 - `frigate`: NVR/object detection; not deployed by default per README.
 - `mosquitto`: MQTT broker values are prepared, but no current Helmfile release wires it.
 - `authentik`: SSO/OIDC; Terraform-managed OAuth apps on `make up`.
-- `keycloak`: values/secrets exist, but no current Helmfile release wires it.
 
 When adding a service:
 
@@ -239,6 +239,7 @@ Keep local validation aligned with CI when changing validation-sensitive files.
 ## Editing Conventions
 
 - Prefer small, focused changes.
+- Keep service documentation in `notes/services/<service>.md`; keep service deployment configuration under `services/<service>/`.
 - Do not add module docstrings or other top-of-file comment blocks to Python (or other source) files; start with imports or code.
 - Preserve existing YAML style and key ordering where practical.
 - Use Helm functions and structured YAML rendering in chart templates.
