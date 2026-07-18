@@ -8,33 +8,7 @@ Personal Kubernetes homelab running on [K3s](https://k3s.io/), fully declared in
 
 **Prerequisites:** Linux system with `kubectl`, `helm`, and `helmfile` installed.
 
-```bash
-# Bring up the cluster
-make up
-
-# Re-sync after config changes
-make sync
-
-# Tilt dev loop for apps/* (live code reload, auto helm re-render)
-make dev
-
-# Run local validation
-make validate-fast
-make validate
-
-# Tear down the cluster
-make down
-```
-
 `make up` installs K3s, deploys the Helmfile releases, builds local app images, and points this workstation at the in-cluster Pi-hole DNS once it is ready. Browser-facing services use `.home` hostnames, which Pi-hole resolves to Traefik so requests can be routed to the right in-cluster service.
-
-To toggle homelab DNS manually on this machine:
-
-```bash
-make pihole-dns-enable
-make pihole-dns-disable
-make pihole-dns-status
-```
 
 ### Default Access
 
@@ -67,8 +41,8 @@ make pihole-dns-status
 | [Registry](services/registry/)                         | Local registry for Docker images built from `apps/`            |
 | [Home Assistant](services/home-assistant/)             | Home automation platform                                       |
 | [Mosquitto](services/mosquitto/)                       | MQTT broker for smart-home integrations                        |
-| [Pi-hole](services/pihole/)                            | DNS and `.home` records                                        |
-| [Authentik](services/authentik/)                       | SSO / OIDC; Terraform-managed on `make up`                     |
+| [Pi-hole](services/pihole)                             | DNS and `.home` records                                        |
+| [Authentik](services/authentik)                        | SSO / OIDC; Terraform-managed on `make up`                     |
 | [API](apps/api/)                                       | REST API app for custom workloads                              |
 | [Django](apps/django/)                                 | Database migration tool and admin interface                    |
 | [Runner](apps/runner/)                                 | Internal UI for running approved app-owned jobs                |
@@ -139,18 +113,6 @@ sops -d services/<service>/secrets.sops.yaml
 ```
 
 Add new secret files to the release's `secrets:` list in `helmfile.yaml` so Helmfile decrypts and merges them during `helmfile sync`.
-
-## Authentik SSO
-
-Authentik at [authentik.home](http://authentik.home) is the homelab identity provider. Before the first `make up`, set `homelab_admin_password` in `services/authentik/secrets.sops.yaml` (SOPS). During bootstrap, `setup.sh` applies Terraform using the Helm bootstrap API token from the cluster: OAuth apps for Grafana, Django, and Runner, the `homelab-admins` group, and the `jyablonski` admin user.
-
-| Service      | Access                               |
-| ------------ | ------------------------------------ |
-| Grafana      | Authentik SSO (`auto_login`)         |
-| Django admin | Authentik SSO; `homelab-admins` only |
-| Runner       | Authentik SSO; `homelab-admins` only |
-
-Re-apply after Authentik changes: `make authentik-apply`.
 
 ## Project Layout
 

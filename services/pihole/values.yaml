@@ -45,6 +45,12 @@ dnsmasq:
     - address=/home/192.168.76.245
     - address=/registry.home/192.168.76.250
 
+# These are imported during Pi-hole initialization. Existing persistent
+# installations may also need the URLs added in the UI followed by Update Gravity.
+adlists:
+  - https://big.oisd.nl
+  - https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/pro.txt
+
 extraEnvVars:
   FTLCONF_dns_listeningMode: "all"
 

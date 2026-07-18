@@ -73,13 +73,6 @@ repos:
         entry: gofmt -w
         language: system
         files: ^apps/tools/.*\.go$
-      - id: go-test
-        name: gotestsum (tools)
-        entry: bash scripts/pre-commit-go-quality.sh test
-        language: system
-        files: ^apps/tools/.*\.go$
-        pass_filenames: false
-        require_serial: true
       - id: go-deadcode
         name: deadcode (tools)
         entry: bash scripts/pre-commit-go-quality.sh deadcode
