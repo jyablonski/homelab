@@ -41,8 +41,8 @@ Personal Kubernetes homelab running on [K3s](https://k3s.io/), fully declared in
 | [Registry](services/registry/)                         | Local registry for Docker images built from `apps/`            |
 | [Home Assistant](services/home-assistant/)             | Home automation platform                                       |
 | [Mosquitto](services/mosquitto/)                       | MQTT broker for smart-home integrations                        |
-| [Pi-hole](notes/services/pihole.md)                    | DNS and `.home` records                                        |
-| [Authentik](notes/services/authentik.md)               | SSO / OIDC; Terraform-managed on `make up`                     |
+| [Pi-hole](services/pihole)                             | DNS and `.home` records                                        |
+| [Authentik](services/authentik)                        | SSO / OIDC; Terraform-managed on `make up`                     |
 | [API](apps/api/)                                       | REST API app for custom workloads                              |
 | [Django](apps/django/)                                 | Database migration tool and admin interface                    |
 | [Runner](apps/runner/)                                 | Internal UI for running approved app-owned jobs                |
