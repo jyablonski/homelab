@@ -3,10 +3,18 @@ name: Python Quality
 on:
   push:
     branches: [main]
+    paths:
+      - "apps/**/*.py"
+      - "apps/**/*.pyi"
+      - "apps/**/pyproject.toml"
+      - "apps/**/uv.lock"
+      - "ruff.toml"
+      - ".github/workflows/python-quality.yaml"
   pull_request:
     branches: [main]
     paths:
       - "apps/**/*.py"
+      - "apps/**/*.pyi"
       - "apps/**/pyproject.toml"
       - "apps/**/uv.lock"
       - "ruff.toml"
@@ -26,7 +34,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          sparse-checkout: apps
+          sparse-checkout: |
+            apps
+            ruff.toml
+          sparse-checkout-cone-mode: false
 
       - name: Setup Ruff
         uses: astral-sh/ruff-action@v3
@@ -43,9 +54,7 @@ jobs:
     name: Detect Python App Changes
     runs-on: ubuntu-latest
     outputs:
-      services:
-        ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' &&
-        '["api", "dagster", "django","runner"]' || steps.filter.outputs.changes }}
+      services: ${{ steps.filter.outputs.changes }}
     steps:
       - uses: actions/checkout@v7
         with:
