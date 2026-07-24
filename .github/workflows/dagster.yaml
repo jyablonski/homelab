@@ -5,11 +5,13 @@ on:
     branches: [main]
     paths:
       - "apps/dagster/**"
+      - "apps/django/schema/**"
       - ".github/workflows/dagster.yaml"
   pull_request:
     branches: [main]
     paths:
       - "apps/dagster/**"
+      - "apps/django/schema/**"
       - ".github/workflows/dagster.yaml"
 
 concurrency:

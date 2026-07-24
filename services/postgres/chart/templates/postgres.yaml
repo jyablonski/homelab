@@ -98,7 +98,7 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: postgres:17
+          image: {{ printf "%s:%s" (required "postgres.image.repository is required" .Values.postgres.image.repository) (required "postgres.image.tag is required" .Values.postgres.image.tag) | quote }}
           env:
             - name: POSTGRES_USER
               valueFrom:

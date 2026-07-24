@@ -74,7 +74,7 @@ tests:
           path: spec.clusterIP
           value: None
 
-  - it: should create a statefulset with postgres 17 image
+  - it: should create a statefulset with the configured postgres image
     documentIndex: 5
     asserts:
       - isKind:
@@ -91,6 +91,16 @@ tests:
       - equal:
           path: spec.template.spec.containers[0].ports[0].containerPort
           value: 5432
+
+  - it: should allow overriding the postgres image and tag
+    set:
+      postgres.image.repository: postgres
+      postgres.image.tag: "18"
+    documentIndex: 5
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "postgres:18"
 
   - it: should create a 4Gi PVC with longhorn storage class
     documentIndex: 5

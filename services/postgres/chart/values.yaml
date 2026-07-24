@@ -1,4 +1,7 @@
 postgres:
+  image:
+    repository: postgres
+    tag: "17"
   username: postgres
   password: replace-me
 
