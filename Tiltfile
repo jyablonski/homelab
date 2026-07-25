@@ -17,7 +17,7 @@ load("ext://restart_process", "docker_build_with_restart")
 
 allow_k8s_contexts("default")
 
-APP_NAMES = ["django", "api", "runner", "workload-chart-example", "agenda"]
+APP_NAMES = ["django", "api", "mcp", "runner", "workload-chart-example", "agenda"]
 
 def app_image_ref(name):
     return "registry.home:5000/homelab/%s" % name
@@ -71,7 +71,14 @@ PYTHON_NON_IMAGE_FILES = [
     "README.md",
 ]
 
-def python_app(name, sync_dirs, links=[], objects=[], extra_ignores=[]):
+def python_app(
+    name,
+    sync_dirs,
+    links=[],
+    objects=[],
+    port_forwards=[],
+    extra_ignores=[],
+):
     app_dir = "apps/%s" % name
     docker_build(
         app_image_ref(name),
@@ -80,7 +87,12 @@ def python_app(name, sync_dirs, links=[], objects=[], extra_ignores=[]):
         live_update=[sync("%s/%s" % (app_dir, d), "/app/%s" % d) for d in sync_dirs],
         ignore=PYTHON_NON_IMAGE_FILES + extra_ignores,
     )
-    k8s_resource(name, links=links, objects=objects)
+    k8s_resource(
+        name,
+        links=links,
+        objects=objects,
+        port_forwards=port_forwards,
+    )
 
 
 python_app(
@@ -100,6 +112,16 @@ python_app(
         link("http://api.home/docs", "API docs"),
         link("http://api.home/healthz", "Health"),
         link("http://api.home/metrics", "Metrics"),
+    ],
+)
+
+python_app(
+    "mcp",
+    sync_dirs=["src"],
+    port_forwards=[8000],
+    links=[
+        link("http://localhost:8000/mcp", "MCP (via port-forward)"),
+        link("http://localhost:8000/healthz", "Health (via port-forward)"),
     ],
 )
 

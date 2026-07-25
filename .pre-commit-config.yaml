@@ -55,7 +55,7 @@ repos:
         name: ty (changed apps)
         entry: bash scripts/pre-commit-ty.sh
         language: system
-        files: ^apps/(api|django|runner)/
+        files: ^apps/(api|django|mcp|runner)/
         pass_filenames: true
         require_serial: true
       # TypeScript / Node.js.
