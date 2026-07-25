@@ -1,0 +1,47 @@
+name: MCP CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/mcp/**"
+      - ".github/workflows/mcp.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/mcp/**"
+      - ".github/workflows/mcp.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_VERSION: "0.11.7"
+  PYTHON_VERSION: "3.14"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: MCP tests
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: apps/mcp
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: apps/mcp/uv.lock
+
+      - name: Install dependencies
+        working-directory: apps/mcp
+        run: uv sync --locked --dev
+
+      - name: Run test suite
+        working-directory: apps/mcp
+        run: uv run pytest

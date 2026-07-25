@@ -1,0 +1,56 @@
+env:
+  MCP_ALLOWED_HOSTS: >-
+    ["127.0.0.1:*","localhost:*","[::1]:*","mcp.home","mcp.home:*"]
+  MCP_ALLOWED_ORIGINS: >-
+    ["http://127.0.0.1:*","http://localhost:*","http://[::1]:*","http://mcp.home","http://mcp.home:*"]
+  MCP_API_BASE_URL: "http://api.apps.svc.cluster.local:8000"
+  MCP_ENVIRONMENT: "production"
+  MCP_EXTERNAL_URL: "http://mcp.home/mcp"
+  MCP_HEALTH_TARGETS: >-
+    {"agenda":"http://agenda.apps.svc.cluster.local:3000/healthz","api":"http://api.apps.svc.cluster.local:8000/healthz","django":"http://django.apps.svc.cluster.local:8000/healthz","runner":"http://runner.apps.svc.cluster.local:8080/healthz"}
+  MCP_LOG_LEVEL: "INFO"
+  MCP_REQUEST_TIMEOUT_SECONDS: "5"
+  MCP_REQUIRE_API_KEY: "true"
+  MCP_REQUIRE_INBOUND_AUTH: "true"
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 128Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
+
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: http
+  periodSeconds: 10
+  failureThreshold: 3
+
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  periodSeconds: 20
+  failureThreshold: 3
+
+serviceAccount:
+  create: true
+  name: mcp
+  automount: false
+
+service:
+  port: 8000
+
+ingress:
+  enabled: true
+  className: traefik
+  hosts:
+    - host: mcp.home
+      paths:
+        - path: /
+          pathType: Prefix
+
+serviceMonitor:
+  enabled: true

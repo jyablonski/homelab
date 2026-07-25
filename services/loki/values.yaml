@@ -27,7 +27,7 @@ singleBinary:
   replicas: 1
   persistence:
     enabled: true
-    storageClassName: longhorn
+    storageClass: longhorn
     size: 5Gi
 
 gateway:

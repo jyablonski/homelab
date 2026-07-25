@@ -41,6 +41,8 @@ releases:
       - services/prometheus/values.yaml
     secrets:
       - services/prometheus/secrets.sops.yaml
+    needs:
+      - longhorn-system/longhorn
     hooks:
       - events:
           - postsync
@@ -59,6 +61,8 @@ releases:
     version: 6.53.0
     values:
       - services/loki/values.yaml
+    needs:
+      - longhorn-system/longhorn
 
   - name: promtail
     namespace: monitoring
@@ -68,6 +72,8 @@ releases:
     version: 6.17.1
     values:
       - services/promtail/values.yaml
+    needs:
+      - monitoring/loki
 
   - name: postgres
     namespace: postgres
@@ -79,6 +85,7 @@ releases:
       - services/postgres/secrets.sops.yaml
     needs:
       - longhorn-system/longhorn
+      - metallb-system/metallb
     wait: true
 
   - name: home-assistant
@@ -92,6 +99,7 @@ releases:
       - services/home-assistant/values.yaml
     needs:
       - home-automation/mosquitto
+      - longhorn-system/longhorn
       - monitoring/prometheus-operator
 
   - name: mosquitto
@@ -145,6 +153,7 @@ releases:
     version: 1.11.0
     values:
       - services/longhorn/values.yaml
+    wait: true
 
   - name: registry
     namespace: registry
@@ -217,6 +226,22 @@ releases:
       - monitoring/prometheus-operator
       - postgres/postgres
       - registry/registry
+    wait: true
+
+  - name: mcp
+    namespace: apps
+    labels:
+      bootstrap: app
+    chart: ./charts/workload
+    values:
+      - apps/mcp/values.yaml
+      - apps/mcp/values-dev.yaml.gotmpl
+    secrets:
+      - apps/mcp/secrets.sops.yaml
+    needs:
+      - monitoring/prometheus-operator
+      - registry/registry
+      - apps/api
 
   - name: agenda
     namespace: apps
@@ -251,6 +276,7 @@ releases:
             kubectl create namespace apps --dry-run=client -o yaml | kubectl apply -f -
             kubectl apply -f apps/runner/rbac.yaml
     needs:
+      - monitoring/prometheus-operator
       - registry/registry
 
   - name: django

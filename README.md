@@ -44,6 +44,7 @@ Personal Kubernetes homelab running on [K3s](https://k3s.io/), fully declared in
 | [Pi-hole](services/pihole)                             | DNS and `.home` records                                        |
 | [Authentik](services/authentik)                        | SSO / OIDC; Terraform-managed on `make up`                     |
 | [API](apps/api/)                                       | REST API app for custom workloads                              |
+| [MCP](apps/mcp/)                                       | Private read-only MCP interface for homelab data and health    |
 | [Django](apps/django/)                                 | Database migration tool and admin interface                    |
 | [Runner](apps/runner/)                                 | Internal UI for running approved app-owned jobs                |
 | [Agenda](apps/agenda/)                                 | Next.js app for personal reminders and a daily agenda view     |
