@@ -53,7 +53,7 @@ SHOWMIGRATIONS_EXTRAS := $(if $(filter showmigrations,$(_FIRST_GOAL)),$(wordlist
 
 STUBS_RAW := $(strip $(MIGRATE_EXTRAS) $(MIGRATIONS_EXTRAS) $(SHOWMIGRATIONS_EXTRAS))
 # Trailing words must be stub targets; exclude real Makefile goals so we never override them.
-_RESERVED_FOR_STUB := up sync dev dev-down authentik-apply down validate validate-fast update-charts django-manage image-build image-push image-build-push image-ref pihole-dns-enable pihole-dns-disable pihole-dns-status sops-age-generate migrate migrations showmigrations
+_RESERVED_FOR_STUB := up sync dev dev-down authentik-apply down validate validate-fast update-charts django-manage image-build image-push image-build-push image-ref pihole-dns-enable pihole-dns-disable pihole-dns-status sops-age-generate talos-secrets talos-config talos-validate migrate migrations showmigrations
 STUBS := $(filter-out $(_RESERVED_FOR_STUB),$(STUBS_RAW))
 
 ifneq ($(STUBS),)
@@ -192,3 +192,15 @@ sops-age-generate:
 		exit 1; \
 	fi
 	@bash ./scripts/setup-sops-age.sh "$(BACKUP_KEY_PATH)"
+
+.PHONY: talos-secrets
+talos-secrets:
+	@bash ./scripts/generate-talos-secrets.sh
+
+.PHONY: talos-config
+talos-config:
+	@bash ./scripts/generate-talos-config.sh
+
+.PHONY: talos-validate
+talos-validate:
+	@bash ./scripts/validate-talos-config.sh

@@ -4,6 +4,14 @@
 .decrypted/
 notes/plans
 
+# Generated Talos machine configurations and administrative credentials
+talos/_out/
+talos/talosconfig
+talos/kubeconfig
+talos/secrets.yaml
+talos/controlplane.yaml
+talos/worker.yaml
+
 # Terraform local state and input secrets
 terraform/.terraform/
 terraform/terraform.tfstate

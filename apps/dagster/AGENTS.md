@@ -43,7 +43,7 @@ apps/dagster/
 
 Place registered definitions at module scope under `defs/`; do not add manual imports or registration lists to `definitions.py`. A new file is discovered automatically. Keep demo-only code in `defs/assets/internal/` or a module whose filename starts with `example`; those modules are excluded unless `DAGSTER_INCLUDE_EXAMPLES=true`.
 
-Organize assets by pipeline area: use `defs/assets/ingestion/` for external reads, `transformations/` for derived data, `exports/` for writes out of the source layer, and `internal/` only for examples. Give each asset a stable `group_name`, meaningful `compute_kind`, description, and metadata. Add blocking `AssetCheckSpec` checks for invariants that must stop downstream work.
+Organize assets by pipeline area: use `src/dagster_project/defs/assets/ingestion/` for external reads, `src/dagster_project/defs/assets/transformations/` for derived data, `src/dagster_project/defs/assets/exports/` for writes out of the source layer, and `src/dagster_project/defs/assets/internal/` only for examples. Give each asset a stable `group_name`, meaningful `compute_kind`, description, and metadata. Add blocking `AssetCheckSpec` checks for invariants that must stop downstream work.
 
 Use `dagster_project.resources.RESOURCES` for shared resources. Add a new `ConfigurableResource` to `resources/`, construct it from environment variables, then register it in `RESOURCES`; do not read secrets directly inside an asset. Keep secret values in `secrets.sops.yaml` and non-secret runtime settings in `values-common.yaml`.
 
@@ -57,6 +57,7 @@ Pass exactly one of `assets=` or `selection=`. Passing neither or both raises `V
 
 ```python
 from dagster import AssetSelection
+from dagster_project.common.docs import load_doc
 from dagster_project.defs.jobs.utils import Audience, Domain, create_job
 
 calendar_sync_job, calendar_sync_schedule = create_job(
@@ -99,7 +100,7 @@ make image-build-push SERVICE=dagster
 
 An `ImagePullBackOff` or `not found` error means the worker never ran your asset code; inspect the Job/Pod and publish the image before debugging the integration. A completed worker Job is retained for 24 hours.
 
-`helmfile sync` runs the Dagster presync hook that applies `kubectl apply -k apps/dagster`. Tilt renders Helmfile without hooks, so ensure Tilt also applies the Kustomize output (or run `kubectl apply -k apps/dagster`) before starting webserver, daemon, or jobs. Otherwise Pods cannot find the `dagster-runner` ServiceAccount and workers cannot find the `dagster-instance` ConfigMap.
+`helmfile sync` runs the Dagster presync hook that server-side applies `apps/dagster/` with Kustomize. Tilt renders Helmfile without hooks, so ensure Tilt also applies the Kustomize output (or run `kubectl apply -k apps/dagster`) before starting webserver, daemon, or jobs. Otherwise Pods cannot find the `dagster-runner` ServiceAccount and workers cannot find the `dagster-instance` ConfigMap.
 
 ## Development and validation
 
@@ -110,7 +111,7 @@ Tilt live-syncs `src/` and restarts Dagster processes, but a run-worker still ne
 Run the narrowest useful test while iterating, then the app suite when practical:
 
 ```bash
-UV_CACHE_DIR=/tmp/uv-cache /home/jacob/.local/bin/uv run --directory apps/dagster pytest
+UV_CACHE_DIR=/tmp/uv-cache uv run --directory apps/dagster pytest
 ```
 
 Use unit tests for definition discovery, jobs, schedules, resource parsing, and pure asset behavior. Add or update integration tests for database-backed materializations. Preserve the existing test markers and the 80% coverage gate.
@@ -118,7 +119,9 @@ Use unit tests for definition discovery, jobs, schedules, resource parsing, and 
 For a stuck run, inspect the generated worker rather than only the Dagster UI:
 
 ```bash
-kubectl -n apps get jobs,pods -l dagster/run-id=<run-id>
-kubectl -n apps describe pod <worker-pod>
-kubectl -n apps logs job/dagster-run-<run-id>
+kubectl -n apps get jobs,pods -l dagster/run-id
+kubectl -n apps describe pods -l dagster/run-id
+kubectl -n apps logs -l dagster/run-id --all-containers=true --prefix=true
 ```
+
+If several runs are present, narrow the `dagster/run-id` selector to the affected run before describing Pods or reading logs.
