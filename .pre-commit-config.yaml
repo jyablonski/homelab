@@ -89,6 +89,15 @@ repos:
         require_serial: true
 
       # Repository validation.
+      - id: agentslint
+        name: agentslint
+        entry: agentslint check .
+        language: python
+        additional_dependencies: [agentslint==0.1.0]
+        pass_filenames: false
+        always_run: true
+      # TODO(talos): Add a `make talos-validate` system hook after the node inventory is complete,
+      # generated configs exist, and talosctl v1.13 is available to the hook locally and in CI.
       - id: validate-fast
         name: make validate-fast
         entry: make validate-fast
