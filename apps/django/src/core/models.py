@@ -205,3 +205,20 @@ class EventsGoogleCalendar(models.Model):
 
     def __str__(self) -> str:
         return str(self.event_name)
+
+
+class RssFeedEntry(models.Model):
+    """Posted RSS entry identifiers used by the Dagster feed poller."""
+
+    feed_url = models.TextField()
+    entry_guid = models.TextField()
+    posted_at = models.DateTimeField(db_default=Now())
+
+    class Meta:
+        db_table = "rss_feed_entries"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["feed_url", "entry_guid"],
+                name="uniq_rss_feed_entries_feed_guid",
+            )
+        ]

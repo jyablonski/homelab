@@ -1,7 +1,22 @@
+import importlib
 import os
 import subprocess
 
 import pytest
+
+
+def test_rss_feed_entries_migration_shape():
+    migration_module = importlib.import_module("core.migrations.0007_rssfeedentry")
+    migration = migration_module.Migration
+    operation = migration.operations[0]
+
+    assert migration.dependencies == [("core", "0006_eventsgooglecalendar")]
+    assert operation.name == "RssFeedEntry"
+    assert operation.options["db_table"] == "rss_feed_entries"
+    assert any(
+        constraint.name == "uniq_rss_feed_entries_feed_guid"
+        for constraint in operation.options["constraints"]
+    )
 
 
 @pytest.mark.integration

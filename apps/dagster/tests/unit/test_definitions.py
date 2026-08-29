@@ -1,5 +1,5 @@
 import pytest
-from dagster import AssetsDefinition, JobDefinition
+from dagster import AssetsDefinition, JobDefinition, ScheduleDefinition
 
 from dagster_project.definitions import build_definitions, defs
 from dagster_project.defs.jobs.utils import UnresolvedAssetJobDefinition
@@ -24,11 +24,18 @@ def test_real_job_and_schedule_registered():
     definitions = build_definitions(with_examples=False)
     assert "reminders_pipeline" in _job_names(definitions)
     assert "daily_events" in _job_names(definitions)
+    assert "rss_feed_poller" in _job_names(definitions)
     assert {"nba_job", "cs_job", "ufc_job"}.isdisjoint(_job_names(definitions))
     assert any(
         s.name == "reminders_pipeline_schedule" for s in (definitions.schedules or [])
     )
     assert any(s.name == "daily_events_schedule" for s in (definitions.schedules or []))
+    assert any(
+        isinstance(s, ScheduleDefinition)
+        and s.name == "rss_feed_poller_schedule"
+        and s.cron_schedule == "*/30 * * * *"
+        for s in (definitions.schedules or [])
+    )
 
 
 def test_failure_sensor_registered():
