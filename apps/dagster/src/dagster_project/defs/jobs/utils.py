@@ -1,5 +1,5 @@
 from __future__ import annotations
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable, Mapping
 from enum import StrEnum
 from typing import Any, cast, overload
 
@@ -8,6 +8,7 @@ from dagster import (
     JobDefinition,
     ScheduleDefinition,
     define_asset_job,
+    job,
 )
 
 # Not exported from the top-level package; this is what define_asset_job returns.
@@ -32,6 +33,7 @@ class Domain(StrEnum):
     CALENDAR = "calendar"
     EVENTS = "events"
     REMINDERS = "reminders"
+    RSS = "rss"
     EXAMPLES = "examples"
 
 
@@ -50,6 +52,7 @@ def schedule_for_job(
     cron_schedule: str,
     name: str | None = None,
     execution_timezone: str | None = None,
+    run_config: Mapping[str, Any] | None = None,
 ) -> ScheduleDefinition:
     """Create a schedule for a job with optional explicit name and timezone."""
     return ScheduleDefinition(
@@ -57,6 +60,44 @@ def schedule_for_job(
         job=job,
         cron_schedule=cron_schedule,
         execution_timezone=execution_timezone,
+        run_config=run_config,
+    )
+
+
+def create_op_job(
+    *,
+    name: str,
+    op_fn: Callable[[], Any],
+    audience: Audience,
+    domain: Domain,
+    pii: bool,
+    schedule: str | None = None,
+    schedule_name: str | None = None,
+    execution_timezone: str | None = None,
+    run_config: Mapping[str, Any] | None = None,
+    description: str | None = None,
+    hooks: Any = None,
+) -> JobLike | tuple[JobLike, ScheduleDefinition]:
+    """Create a standard job around one op, optionally paired with a schedule."""
+
+    @job(
+        name=name,
+        tags=standard_tags(audience=audience, domain=domain, pii=pii),
+        description=description,
+        hooks=hooks,
+    )
+    def op_job() -> None:
+        op_fn()
+
+    if schedule is None:
+        return op_job
+
+    return op_job, schedule_for_job(
+        job=op_job,
+        cron_schedule=schedule,
+        name=schedule_name,
+        execution_timezone=execution_timezone,
+        run_config=run_config,
     )
 
 

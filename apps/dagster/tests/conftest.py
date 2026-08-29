@@ -12,6 +12,7 @@ EVENT_LANDING_TABLES = (
     "source.events_ufc",
     "source.events_ufc_fighters",
 )
+RSS_STATE_TABLES = ("source.rss_feed_entries",)
 SOURCE_SCHEMA_PATH = Path(__file__).resolve().parents[2] / "django/schema/source.sql"
 
 
@@ -43,7 +44,7 @@ def postgres_resource(postgres_container) -> PostgresResource:
         password="postgres",
         connect_timeout=10,
     )
-    table_list = ", ".join(EVENT_LANDING_TABLES)
+    table_list = ", ".join((*EVENT_LANDING_TABLES, *RSS_STATE_TABLES))
     resource.execute(f"TRUNCATE {table_list} RESTART IDENTITY CASCADE")
     resource.execute("DROP TABLE IF EXISTS source.integration_values")
     resource.execute("DROP TABLE IF EXISTS source.reminders CASCADE")
