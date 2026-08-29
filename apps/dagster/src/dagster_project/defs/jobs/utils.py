@@ -64,6 +64,40 @@ def schedule_for_job(
     )
 
 
+@overload
+def create_op_job(
+    *,
+    name: str,
+    op_fn: Callable[[], Any],
+    audience: Audience,
+    domain: Domain,
+    pii: bool,
+    schedule: None = None,
+    schedule_name: str | None = ...,
+    execution_timezone: str | None = ...,
+    run_config: Mapping[str, Any] | None = ...,
+    description: str | None = ...,
+    hooks: Any = ...,
+) -> JobDefinition: ...
+
+
+@overload
+def create_op_job(
+    *,
+    name: str,
+    op_fn: Callable[[], Any],
+    audience: Audience,
+    domain: Domain,
+    pii: bool,
+    schedule: str,
+    schedule_name: str | None = ...,
+    execution_timezone: str | None = ...,
+    run_config: Mapping[str, Any] | None = ...,
+    description: str | None = ...,
+    hooks: Any = ...,
+) -> tuple[JobDefinition, ScheduleDefinition]: ...
+
+
 def create_op_job(
     *,
     name: str,
@@ -77,7 +111,7 @@ def create_op_job(
     run_config: Mapping[str, Any] | None = None,
     description: str | None = None,
     hooks: Any = None,
-) -> JobLike | tuple[JobLike, ScheduleDefinition]:
+) -> JobDefinition | tuple[JobDefinition, ScheduleDefinition]:
     """Create a standard job around one op, optionally paired with a schedule."""
 
     @job(

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass
 
@@ -52,7 +53,7 @@ class FakeResponse:
 
 class FakeClient:
     def __init__(
-        self, responses: dict[str, object], post_statuses: list[int] | None = None
+        self, responses: Mapping[str, object], post_statuses: list[int] | None = None
     ):
         self.responses = responses
         self.post_statuses = post_statuses or [204]

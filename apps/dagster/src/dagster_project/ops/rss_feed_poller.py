@@ -17,6 +17,7 @@ REQUEST_TIMEOUT_SECONDS = 10.0
 POST_DELAY_SECONDS = 2.0
 EMBED_COLOR = 7_506_394
 
+# Consider moving feed configuration into the database and exposing it through a UI later.
 DEFAULT_FEEDS = [
     {
         "name": "DHH",
