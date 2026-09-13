@@ -2,7 +2,19 @@
 
 ![Validate](https://github.com/jyablonski/homelab/actions/workflows/validate.yaml/badge.svg?branch=main)
 
-Personal Kubernetes homelab running on [K3s](https://k3s.io/), fully declared in Git and deployed with [Helmfile](https://github.com/helmfile/helmfile).
+Personal Kubernetes homelab built on [K3s](https://k3s.io/) and managed with [Helmfile](https://github.com/helmfile/helmfile). Infrastructure, services, and self-hosted applications are declared in Git so the cluster can be maintained and extended from one place.
+
+The project is primarily a platform for personal use, experimentation, and learning. It includes:
+
+- Core infrastructure for networking (MetalLB, Traefik), storage (Longhorn), observability (Prometheus, Grafana, and Loki), and DNS (Pi-hole).
+- Home Assistant as the central home-automation hub, with MQTT and optional Zigbee and Thread integrations.
+- Custom applications in `apps/` for automation, personal workflows, and experimentation.
+
+Repository organization:
+
+- `services/` contains third-party service configuration and the local PostgreSQL chart.
+- `apps/` contains self-hosted applications and their source code.
+- `charts/workload/` contains the reusable Helm chart used to deploy stateless applications.
 
 ## Quick Start
 
