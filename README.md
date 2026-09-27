@@ -29,12 +29,15 @@ Repository organization:
 | Homepage       | [apps.home](http://apps.home)                                        | —                                                 |
 | Grafana        | [grafana.home](http://grafana.home)                                  | Authentik SSO (`auto_login`, login form disabled) |
 | Prometheus     | [prometheus.home](http://prometheus.home)                            | —                                                 |
+| Alertmanager   | [alertmanager.home](http://alertmanager.home)                        | None                                              |
 | Home Assistant | [homeassistant.home](http://homeassistant.home)                      | Setup on first visit                              |
 | Authentik      | [authentik.home](http://authentik.home)                              | Setup on first visit                              |
 | Longhorn UI    | [longhorn.home](http://longhorn.home)                                | —                                                 |
 | Pi-hole        | [pihole.home/admin/](http://pihole.home/admin/)                      | admin / `pihole`                                  |
 | Apps           | api.home, django.home, runner.home, workload-chart.home, agenda.home | —                                                 |
 | PostgreSQL     | `192.168.76.243:5432` / in-cluster service                           | SOPS-managed postgres credentials                 |
+
+Metrics, logs, dashboards, alerting, and runbooks are documented in [notes/services/monitoring.md](notes/services/monitoring.md).
 
 ## Services
 
@@ -45,10 +48,10 @@ Repository organization:
 | [MetalLB](services/metallb/)                           | Manages static LAN IPs for Kubernetes services                 |
 | [Traefik](services/traefik/)                           | Ingress controller for browser-facing services                 |
 | [Longhorn](services/longhorn/)                         | Persistent storage for Kubernetes workloads                    |
-| [Prometheus](services/prometheus/)                     | Collects CPU, memory, and other metrics from Kubernetes        |
+| [Prometheus](services/prometheus/)                     | Metrics and alert rules; Alertmanager routes alerts to Slack   |
 | [Grafana](services/prometheus/)                        | Dashboards for metrics and logs, bundled with Prometheus chart |
 | [Loki](services/loki/)                                 | Aggregates and stores logs from Kubernetes workloads           |
-| [Promtail](services/promtail/)                         | DaemonSet that ships pod logs to Loki                          |
+| [Alloy](services/alloy/)                               | DaemonSet that ships pod logs to Loki                          |
 | [PostgreSQL](services/postgres/)                       | Shared database for homelab-owned applications                 |
 | [Registry](services/registry/)                         | Local registry for Docker images built from `apps/`            |
 | [Home Assistant](services/home-assistant/)             | Home automation platform                                       |

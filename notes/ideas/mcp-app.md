@@ -38,7 +38,7 @@ The repository already has most of the application boundaries an MCP server need
 - [The Agenda app](../../apps/agenda/) demonstrates that the API is already treated as the source for personal agenda and reminder data.
 - [The Runner app](../../apps/runner/) discovers only labeled Kubernetes CronJobs, lists run history, and creates one-off Jobs from approved templates. Its service account is namespace-scoped and cannot edit arbitrary workloads.
 - [Dagster](../../apps/dagster/) owns scheduled reminders, event, and Google Calendar pipelines and already records run state in PostgreSQL.
-- Prometheus, Grafana, Loki, and Promtail provide the monitoring and logging substrate needed for operational summaries.
+- Prometheus, Grafana, Loki, and Alloy provide the monitoring and logging substrate needed for operational summaries.
 - Home Assistant and Mosquitto provide a future home-automation surface.
 - Authentik is the identity provider, with the `homelab-admins` group used as the current administrator boundary.
 - The local [workload chart](../../charts/workload/) already supports the deployment shape needed by a stateless Python MCP server: one container, a ClusterIP Service, ingress, probes, environment-backed secrets, a service account, resource limits, and a ServiceMonitor.

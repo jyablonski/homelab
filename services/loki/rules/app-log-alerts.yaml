@@ -1,0 +1,51 @@
+# LogQL alert rules evaluated by the Loki ruler. The rules sidecar loads any
+# ConfigMap labelled loki_rule: "1"; the helmfile postsync hook on the loki
+# release applies this directory. These complement the metric-based rules in
+# services/prometheus/values.yaml, which are the primary signal; see
+# notes/services/monitoring.md.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: loki-rules-app-logs
+  namespace: monitoring
+  labels:
+    loki_rule: "1"
+data:
+  app-log-alerts.yaml: |
+    groups:
+      - name: app-logs
+        rules:
+          # `__error__=""` drops lines that are not JSON (startup banners,
+          # third-party output) before the numeric status comparison.
+          - alert: AppHighHttp5xxRateFromLogs
+            expr: |
+              (
+                sum by (namespace, app) (
+                  count_over_time({namespace="apps"} | json | __error__="" | status != "" | route !~ "/healthz|/readyz|/metrics" | status >= 500 [5m])
+                )
+                /
+                sum by (namespace, app) (
+                  count_over_time({namespace="apps"} | json | __error__="" | status != "" | route !~ "/healthz|/readyz|/metrics" [5m])
+                )
+              ) > 0.05
+            for: 2m
+            labels:
+              severity: critical
+              source: loki
+            annotations:
+              summary: "{{ $labels.app }} 5xx rate above 5% (from logs)"
+              description: "More than 5% of non-probe requests to {{ $labels.app }} in {{ $labels.namespace }} returned 5xx over the last 5 minutes, based on access log lines."
+              runbook_url: "https://github.com/jyablonski/homelab/blob/main/notes/services/monitoring.md#apphighhttp5xxratefromlogs"
+
+          - alert: AppUnhandledExceptionsFromLogs
+            expr: |
+              sum by (namespace, app) (
+                count_over_time({namespace="apps"} | json | __error__="" | level="error" | exception != "" [5m])
+              ) > 0
+            labels:
+              severity: warning
+              source: loki
+            annotations:
+              summary: "{{ $labels.app }} logged unhandled exceptions"
+              description: "{{ $labels.app }} in {{ $labels.namespace }} logged {{ $value }} error lines with a traceback in the last 5 minutes."
+              runbook_url: "https://github.com/jyablonski/homelab/blob/main/notes/services/monitoring.md#appunhandledexceptionsfromlogs"

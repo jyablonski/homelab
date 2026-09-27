@@ -63,17 +63,28 @@ releases:
       - services/loki/values.yaml
     needs:
       - longhorn-system/longhorn
+    hooks:
+      # Rule ConfigMaps are picked up by the Loki ruler's rules sidecar.
+      - events:
+          - postsync
+        showlogs: true
+        command: kubectl
+        args:
+          - apply
+          - -f
+          - services/loki/rules/
 
-  - name: promtail
+  - name: alloy
     namespace: monitoring
     labels:
       bootstrap: infra
-    chart: grafana/promtail
-    version: 6.17.1
+    chart: grafana/alloy
+    version: 1.13.0
     values:
-      - services/promtail/values.yaml
+      - services/alloy/values.yaml
     needs:
       - monitoring/loki
+      - monitoring/prometheus-operator
 
   - name: postgres
     namespace: postgres
@@ -254,6 +265,7 @@ releases:
     secrets:
       - apps/agenda/secrets.sops.yaml
     needs:
+      - monitoring/prometheus-operator
       - registry/registry
       - apps/api
 
@@ -290,6 +302,7 @@ releases:
     secrets:
       - apps/django/secrets.sops.yaml
     needs:
+      - monitoring/prometheus-operator
       - postgres/postgres
       - registry/registry
 

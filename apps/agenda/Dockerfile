@@ -21,7 +21,7 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
-COPY package.json next.config.ts tsconfig.json postcss.config.mjs ./
+COPY package.json next.config.ts tsconfig.json postcss.config.mjs server.ts ./
 COPY src ./src
 
 # `next dev` writes auxiliary files (next-env.d.ts, .next/dev/*) directly under

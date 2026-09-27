@@ -20,6 +20,22 @@ loki:
     working_directory: /var/loki/compactor
     retention_enabled: true
     delete_request_store: filesystem
+  # The ruler evaluates LogQL alert rules from services/loki/rules/ (loaded by
+  # the rules sidecar into /rules/<tenant>; "fake" is the single tenant when
+  # auth_enabled is false) and sends alerts to kube-prometheus-stack's
+  # Alertmanager. If alertmanager.enabled is false there, rules still evaluate
+  # but notifications fail and are only logged.
+  rulerConfig:
+    wal:
+      dir: /var/loki/ruler-wal
+    storage:
+      type: local
+      local:
+        directory: /rules
+    rule_path: /var/loki/rules-temp
+    alertmanager_url: http://prometheus-operator-kube-p-alertmanager.monitoring.svc.cluster.local:9093
+    external_url: http://grafana.home/explore
+    enable_api: true
 
 deploymentMode: SingleBinary
 
@@ -32,6 +48,12 @@ singleBinary:
 
 gateway:
   enabled: true
+
+sidecar:
+  rules:
+    label: loki_rule
+    labelValue: "1"
+    folder: /rules/fake
 
 # Disable minio - using filesystem
 minio:

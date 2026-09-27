@@ -163,6 +163,8 @@ def node_app(name, sync_dirs, links=[]):
     )
     k8s_resource(name, links=links)
 
+# server.ts and src/server/ are loaded once by the custom Node server, so live
+# sync does not reload them; edits there need a pod restart (or image rebuild).
 node_app(
     "agenda",
     sync_dirs=["src"],

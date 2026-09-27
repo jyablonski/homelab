@@ -28,10 +28,15 @@ spec:
       {{- with .Values.serviceMonitor.scrapeTimeout }}
       scrapeTimeout: {{ . | quote }}
       {{- end }}
-      {{- with .Values.serviceMonitor.relabelings }}
       relabelings:
+        # Same `app` label Alloy puts on Loki streams, so one dashboard variable
+        # filters both metrics and logs.
+        - sourceLabels:
+            - __meta_kubernetes_pod_label_app_kubernetes_io_name
+          targetLabel: app
+        {{- with .Values.serviceMonitor.relabelings }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
       {{- with .Values.serviceMonitor.metricRelabelings }}
       metricRelabelings:
         {{- toYaml . | nindent 8 }}

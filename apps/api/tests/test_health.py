@@ -1,7 +1,13 @@
 import json
 import logging
+import sys
 
+import pytest
+from fastapi.testclient import TestClient
+
+from config import Settings
 from logging_config import JsonFormatter
+from main import create_app
 
 
 def test_healthz_returns_ok(test_client):
@@ -32,7 +38,11 @@ def test_metrics_endpoint_returns_prometheus_metrics(test_client):
 
     assert response.status_code == 200
     assert "text/plain" in response.headers["content-type"]
-    assert "api_http_requests_total" in response.text
+    assert (
+        'http_server_requests_total{method="GET",route="/healthz",status="200"}'
+        in response.text
+    )
+    assert "http_server_request_duration_seconds_bucket" in response.text
 
 
 def test_request_logging_adds_request_id(test_client, caplog):
@@ -47,15 +57,60 @@ def test_request_logging_adds_request_id(test_client, caplog):
     assert request_log.request_id == "test-request"
     assert request_log.method == "GET"
     assert request_log.route == "/healthz"
-    assert request_log.status_code == 200
-    assert request_log.app == "Homelab API"
+    assert request_log.status == 200
+    assert request_log.duration_ms >= 0
+    assert request_log.service == "api"
     assert request_log.environment == "local"
+
+
+def test_unmatched_paths_share_one_route_label(test_client, caplog):
+    with caplog.at_level(logging.INFO, logger="api.access"):
+        test_client.get("/does-not-exist/123")
+
+    request_log = next(
+        record for record in caplog.records if record.message == "request completed"
+    )
+
+    assert request_log.status == 404
+    assert request_log.route == "unmatched"
+
+
+@pytest.fixture()
+def failing_client():
+    # Built before caplog: create_app's dictConfig replaces root handlers,
+    # which would drop caplog's handler if it were installed first.
+    app = create_app(Settings())
+
+    @app.get("/boom")
+    def boom() -> None:
+        raise RuntimeError("kaboom")
+
+    return TestClient(app, raise_server_exceptions=False)
+
+
+def test_unhandled_exception_is_logged_and_counted_as_500(failing_client, caplog):
+    client = failing_client
+    with caplog.at_level(logging.INFO, logger="api.access"):
+        response = client.get("/boom")
+
+    failed_log = next(
+        record for record in caplog.records if record.message == "request failed"
+    )
+    metrics = client.get("/metrics").text
+
+    assert response.status_code == 500
+    assert failed_log.levelno == logging.ERROR
+    assert failed_log.status == 500
+    assert failed_log.route == "/boom"
+    assert (
+        'http_server_requests_total{method="GET",route="/boom",status="500"}' in metrics
+    )
 
 
 def test_json_formatter_outputs_structured_log():
     record = logging.LogRecord(
         name="api.test",
-        level=logging.INFO,
+        level=logging.WARNING,
         pathname=__file__,
         lineno=1,
         msg="request completed",
@@ -66,8 +121,30 @@ def test_json_formatter_outputs_structured_log():
 
     payload = json.loads(JsonFormatter().format(record))
 
-    assert payload["level"] == "info"
+    assert payload["level"] == "warn"
     assert payload["logger"] == "api.test"
-    assert payload["message"] == "request completed"
+    assert payload["msg"] == "request completed"
     assert payload["request_id"] == "test-request"
-    assert "timestamp" in payload
+    assert "time" in payload
+
+
+def test_json_formatter_puts_exception_on_one_line():
+    try:
+        raise ValueError("bad input")
+    except ValueError:
+        record = logging.LogRecord(
+            name="api.test",
+            level=logging.ERROR,
+            pathname=__file__,
+            lineno=1,
+            msg="request failed",
+            args=(),
+            exc_info=sys.exc_info(),
+        )
+
+    line = JsonFormatter().format(record)
+    payload = json.loads(line)
+
+    assert "\n" not in line
+    assert payload["error"] == "ValueError: bad input"
+    assert "Traceback" in payload["exception"]

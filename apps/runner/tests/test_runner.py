@@ -1,3 +1,6 @@
+import logging
+
+
 def test_healthz_returns_ok(test_client):
     response = test_client.get("/healthz")
 
@@ -12,7 +15,24 @@ def test_metrics_endpoint_returns_prometheus_metrics(test_client):
 
     assert response.status_code == 200
     assert "text/plain" in response.headers["content-type"]
-    assert "runner_http_requests_total" in response.text
+    assert (
+        'http_server_requests_total{method="GET",route="/healthz",status="200"}'
+        in response.text
+    )
+
+
+def test_access_log_uses_shared_schema(test_client, caplog):
+    with caplog.at_level(logging.INFO, logger="runner.access"):
+        test_client.get("/static/app.js", headers={"X-Request-ID": "test-request"})
+
+    request_log = next(
+        record for record in caplog.records if record.message == "request completed"
+    )
+
+    assert request_log.request_id == "test-request"
+    assert request_log.route == "/static/{path}"
+    assert request_log.status == 200
+    assert request_log.service == "runner"
 
 
 def test_home_page_loads_runner_shell(test_client):

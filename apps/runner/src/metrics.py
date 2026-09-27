@@ -1,39 +1,21 @@
-from time import perf_counter
-
-from fastapi import FastAPI, Request, Response
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
+from starlette.requests import Request
+from starlette.responses import Response
 
-REQUEST_COUNT = Counter(
-    "runner_http_requests_total",
-    "Total HTTP requests served by Runner.",
-    ("method", "path", "status_code"),
+# Shared HTTP metric names across every homelab app; Prometheus adds the `app`
+# label from the ServiceMonitor, so names carry no service prefix.
+HTTP_REQUESTS = Counter(
+    "http_server_requests_total",
+    "Total HTTP requests handled.",
+    ("method", "route", "status"),
 )
 
-REQUEST_LATENCY = Histogram(
-    "runner_http_request_duration_seconds",
-    "HTTP request latency in seconds.",
-    ("method", "path", "status_code"),
+HTTP_REQUEST_DURATION = Histogram(
+    "http_server_request_duration_seconds",
+    "HTTP request duration in seconds.",
+    ("method", "route"),
 )
 
 
-def _route_path(request: Request) -> str:
-    route = request.scope.get("route")
-    return getattr(route, "path", "unmatched")
-
-
-def setup_metrics(app: FastAPI) -> None:
-    @app.middleware("http")
-    async def prometheus_metrics_middleware(request: Request, call_next):
-        start = perf_counter()
-        response = await call_next(request)
-        path = _route_path(request)
-        status_code = str(response.status_code)
-        REQUEST_COUNT.labels(request.method, path, status_code).inc()
-        REQUEST_LATENCY.labels(request.method, path, status_code).observe(
-            perf_counter() - start
-        )
-        return response
-
-    @app.get("/metrics", include_in_schema=False)
-    def metrics() -> Response:
-        return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+def metrics_endpoint(_request: Request) -> Response:
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)

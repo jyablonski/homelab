@@ -96,17 +96,17 @@ livenessProbe:
 
 ### Defaults and why
 
-| Value                           | Default                                     | Why                                                                                       |
-| ------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `image.repository`              | `registry.home:5000/homelab/<Release.Name>` | Matches `apps/<app>/`, helmfile release `name`, and `make image-build-push SERVICE=<app>` |
-| `image.tag`                     | `dev`                                       | Single homelab image line; no per-environment tags in app values                          |
-| `image.pullPolicy`              | `Always`                                    | Ensures nodes pull fresh layers after local registry pushes                               |
-| `scale.replicas`                | `1`                                         | Sufficient for most homelab apps; use `scale.autoscaling` when you need more              |
-| `deployment.enabled`            | `true`                                      | Set to `false` for a release that only owns app-defined CronJobs                          |
-| `service.port`                  | — (required in app values)                  | Sets both Service port and container listen port                                          |
-| `service.targetPort`            | falls back to `service.port`                | Escape hatch when ingress Service port ≠ app port (see `examples/frontend.yaml`)          |
-| `podLabels`                     | `component: <Release.Name>`                 | Avoids repeating the same label in every app file                                         |
-| `serviceMonitor` (when enabled) | `/metrics`, `30s`, `release: prometheus`    | Aligns with kube-prometheus-stack in this cluster                                         |
+| Value                           | Default                                                      | Why                                                                                       |
+| ------------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| `image.repository`              | `registry.home:5000/homelab/<Release.Name>`                  | Matches `apps/<app>/`, helmfile release `name`, and `make image-build-push SERVICE=<app>` |
+| `image.tag`                     | `dev`                                                        | Single homelab image line; no per-environment tags in app values                          |
+| `image.pullPolicy`              | `Always`                                                     | Ensures nodes pull fresh layers after local registry pushes                               |
+| `scale.replicas`                | `1`                                                          | Sufficient for most homelab apps; use `scale.autoscaling` when you need more              |
+| `deployment.enabled`            | `true`                                                       | Set to `false` for a release that only owns app-defined CronJobs                          |
+| `service.port`                  | — (required in app values)                                   | Sets both Service port and container listen port                                          |
+| `service.targetPort`            | falls back to `service.port`                                 | Escape hatch when ingress Service port ≠ app port (see `examples/frontend.yaml`)          |
+| `podLabels`                     | `component: <Release.Name>`                                  | Avoids repeating the same label in every app file                                         |
+| `serviceMonitor` (when enabled) | `/metrics`, `30s`, `release: prometheus`, `app` target label | Aligns with kube-prometheus-stack; `app` matches the Loki stream label                    |
 
 Probes are **not** defaulted: paths differ per app (`/healthz`, `/django/healthz`, `/health/ready`, etc.), so each app keeps its own `readinessProbe` / `livenessProbe` blocks.
 

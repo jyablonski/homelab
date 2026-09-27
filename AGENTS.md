@@ -33,7 +33,8 @@ This repo declares a personal K3s homelab in Git. Helmfile is the main source of
 - `services/*/values.yaml`: chart-specific service configuration, including prepared-but-not-deployed services.
 - `services/*/secrets.sops.yaml`: encrypted secrets merged by Helmfile.
 - `services/metallb/ip-pool.yaml`: standalone MetalLB address pool.
-- `apps/workload-chart-example/`: reference app-owned workload.
+- `apps/workload-chart-example/`: frozen reference for chart wiring; do not modify (see App-Owned Workloads).
+- `notes/services/monitoring.md`: metrics, log schema, dashboards, alert routing, and runbooks.
 - `apps/tools/`: standalone Go tools app, including the backup command and future jobs-only workload.
 - `talos/cluster.yaml`: tracked Talos versions and hardware inventory; node-specific values remain empty until verified on physical hardware.
 - `talos/schematic.yaml`: Image Factory extensions required by the future Talos nodes.
@@ -103,10 +104,10 @@ Service configuration lives in `services/`.
 - `metallb`: bare-metal LoadBalancer IP assignment.
 - `traefik`: ingress controller.
 - `longhorn`: default persistent storage.
-- `prometheus`: kube-prometheus-stack.
+- `prometheus`: kube-prometheus-stack (Prometheus, Alertmanager with Slack routing, Grafana, app alert rules).
 - `grafana`: dashboards and SOPS-managed admin secret.
 - `loki`: log aggregation.
-- `promtail`: pod log shipping.
+- `alloy`: Grafana Alloy DaemonSet shipping pod logs to Loki (replaced Promtail).
 - `postgres`: local chart for Postgres 17 and bootstrap SQL.
 - `registry`: local OCI registry.
 - `pihole`: DNS and `.home` records.
@@ -125,7 +126,8 @@ When adding a service:
 3. Add or update the release in `helmfile.yaml`.
 4. Add `needs:` dependencies when ordering matters.
 5. Use `wait: true` when later bootstrap steps depend on readiness.
-6. Run validation before handoff.
+6. Wire up observability or document the exemption (see Observability).
+7. Run validation before handoff.
 
 ## App-Owned Workloads
 
@@ -140,7 +142,7 @@ apps/<app>/
 
 The app directory name becomes the Helm release name and the image name. Image helpers target `registry.home:5000/homelab/<app>:dev`. Chart defaults exist because this is a single personal homelab (no environment matrix): image repo/tag, pull policy, replica count, component label, and ServiceMonitor scrape settings are inferred unless overridden. See `charts/workload/README.md`.
 
-Use `apps/workload-chart-example/` as the reference. It has Go source, a Dockerfile, a minimal `apps/workload-chart-example/values.yaml`, probes, Prometheus metrics, and Traefik shared-host ingress.
+Use `apps/workload-chart-example/` as the reference for chart wiring: Dockerfile, a minimal `values.yaml`, probes, ServiceMonitor, and Traefik ingress. It is a frozen example: do not modify it, and do not copy its metrics or logging code, which predate the shared observability contract. For metrics and logging, copy from `apps/api/` (Python) or `apps/agenda/` (Next.js) instead.
 
 When adding an app:
 
@@ -151,7 +153,26 @@ When adding an app:
 5. Add `needs:` for required infra such as Prometheus or registry.
 6. Add or update the app section in `Tiltfile` so the local dev loop builds, renders, and live-syncs the new app.
 7. Build and push with the `image-build-push` Make target, setting `SERVICE` to the app directory name; for example, `make image-build-push SERVICE=api`.
-8. Validate Helmfile rendering; add chart tests if chart behavior changed.
+8. Meet the observability contract (see Observability).
+9. Validate Helmfile rendering; add chart tests if chart behavior changed.
+
+## Observability
+
+Every new app or service must ship with monitoring, or state a specific reason it does not need it. Full details are in `notes/services/monitoring.md`.
+
+For app-owned workloads (`apps/<app>/`):
+
+- Expose `GET /metrics` with the shared `http_server_requests_total{method,route,status}` counter and `http_server_request_duration_seconds{method,route}` histogram. Use route templates, collapse unknown paths to `unmatched`, and count unhandled exceptions as `500`.
+- Log one JSON object per line to stdout using the shared schema (`time`, `level`, `msg`, `service`, and for requests `method`, `route`, `path`, `status`, `duration_ms`, `request_id`, plus `error`/`exception` for failures). Exactly one access line per request, with tracebacks kept in one field.
+- Set `serviceMonitor.enabled: true` and add `needs: monitoring/prometheus-operator` to the release.
+- Add tests for the metrics endpoint and access log fields.
+
+For third-party services (`services/<service>/`):
+
+- Enable the chart's ServiceMonitor or metrics endpoint when it has one, and add alert rules only for failure modes the default kube-prometheus-stack rules do not already cover.
+- Logs are collected automatically by Alloy; do not add log shippers or sidecars.
+
+Exemptions: if a workload cannot or should not meet this (no HTTP surface, third-party binary without a metrics endpoint, disabled hardware-dependent service), record the reason in the "Not instrumented, on purpose" list in `notes/services/monitoring.md`. Never add high-cardinality values (request IDs, user IDs, raw paths) as Prometheus or Loki labels.
 
 ## Workload Chart
 

@@ -4,16 +4,18 @@ from typing import Iterator
 
 from prometheus_client import Counter, Histogram
 
+# Shared HTTP metric names across every homelab app; Prometheus adds the `app`
+# label from the ServiceMonitor, so names carry no service prefix.
 HTTP_REQUESTS = Counter(
-    "mcp_http_requests_total",
-    "Total HTTP requests served by the MCP app.",
-    ("method", "path", "status_code"),
+    "http_server_requests_total",
+    "Total HTTP requests handled.",
+    ("method", "route", "status"),
 )
 
 HTTP_REQUEST_DURATION = Histogram(
-    "mcp_http_request_duration_seconds",
-    "HTTP request latency in seconds.",
-    ("method", "path", "status_code"),
+    "http_server_request_duration_seconds",
+    "HTTP request duration in seconds.",
+    ("method", "route"),
 )
 
 TOOL_CALLS = Counter(
