@@ -2,6 +2,7 @@ import httpx
 import pytest
 from pydantic import AnyHttpUrl, SecretStr
 
+from http_observability import _route_template
 from main import create_app
 
 INITIALIZE_REQUEST = {
@@ -51,7 +52,10 @@ async def test_http_metadata_health_and_metrics(
     assert root.json()["read_only"] is True
     assert health.json() == {"status": "ok"}
     assert ready.json() == {"status": "ready"}
-    assert "mcp_http_requests_total" in metrics.text
+    assert (
+        'http_server_requests_total{method="GET",route="/healthz",status="200"}'
+        in metrics.text
+    )
     assert missing.status_code == 404
 
 
@@ -168,3 +172,20 @@ async def test_mcp_transport_requires_configured_bearer_token(settings) -> None:
     assert invalid.status_code == 401
     assert accepted.status_code == 200
     assert accepted.json()["result"]["serverInfo"]["name"] == "Homelab MCP"
+
+
+@pytest.mark.parametrize(
+    ("path", "status", "expected"),
+    [
+        ("/mcp", 200, "/mcp"),
+        ("/mcp/session", 200, "/mcp"),
+        ("/healthz", 200, "/healthz"),
+        ("/metrics", 200, "/metrics"),
+        ("/wp-admin", 200, "unmatched"),
+        ("/healthz", 404, "unmatched"),
+    ],
+)
+def test_route_template_bounds_cardinality(
+    path: str, status: int, expected: str
+) -> None:
+    assert _route_template(path, status) == expected

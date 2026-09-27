@@ -298,6 +298,27 @@ tests:
       - equal:
           path: spec.endpoints[0].port
           value: http
+      - equal:
+          path: spec.endpoints[0].relabelings[0]
+          value:
+            sourceLabels:
+              - __meta_kubernetes_pod_label_app_kubernetes_io_name
+            targetLabel: app
+
+  - it: appends custom relabelings after the app label
+    set:
+      service.enabled: true
+      serviceMonitor.enabled: true
+      serviceMonitor.relabelings:
+        - targetLabel: team
+          replacement: homelab
+    asserts:
+      - lengthEqual:
+          path: spec.endpoints[0].relabelings
+          count: 2
+      - equal:
+          path: spec.endpoints[0].relabelings[1].targetLabel
+          value: team
 ---
 suite: workload jobs
 templates:

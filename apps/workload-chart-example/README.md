@@ -1,5 +1,7 @@
 # Workload Chart Example
 
+> **Frozen example.** This app exists only to demonstrate `charts/workload` wiring. Do not modify it further. Its metrics (`random_string_api_*`) and hand-rolled log lines predate the shared observability contract and are intentionally left as is; new apps should copy metrics and logging from `apps/api/` or `apps/agenda/` instead (see [`notes/services/monitoring.md`](../../notes/services/monitoring.md)).
+
 Minimal example application that follows the repo's app-owned service golden path:
 
 - Go source in `apps/workload-chart-example/src/`
@@ -19,7 +21,7 @@ This is a bare-bones example to test:
 
 - building and pushing an image to the local registry
 - scraping application metrics with Prometheus
-- collecting container stdout logs with Promtail/Loki
+- collecting container stdout logs with Alloy/Loki
 - exposing an app-owned workload through Traefik on its own `workload-chart.home` host
 
 ## Build and push
@@ -68,7 +70,7 @@ curl http://workload-chart.home/metrics
 - Prometheus scraping is still enabled through the chart `ServiceMonitor` and the internal `ClusterIP` service
 - the liveness and readiness probes still hit the app's root-level health endpoints inside the cluster
 - Grafana can visualize the metrics through the existing Prometheus datasource
-- Request logs are written to stdout, so Promtail/Loki should ingest them automatically
+- Request logs are written to stdout, so Alloy/Loki should ingest them automatically
 - the example now uses the chart HPA with a floor of 2 replicas and can scale up to 5 replicas at 80% average CPU utilization
 
 ## Important note

@@ -1,0 +1,724 @@
+# Provisioned by the Grafana dashboard sidecar (grafana_dashboard label); the
+# prometheus-operator release's postsync hook applies this directory. The
+# namespace/app variables filter Prometheus and Loki panels alike because the
+# workload chart ServiceMonitor and Alloy both set the same `app` label.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-services-overview-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  services-overview.json: |-
+    {
+      "title": "Services Overview",
+      "uid": "services-overview",
+      "tags": [
+        "apps",
+        "red",
+        "logs"
+      ],
+      "schemaVersion": 38,
+      "version": 1,
+      "refresh": "30s",
+      "editable": true,
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
+      "templating": {
+        "list": [
+          {
+            "name": "namespace",
+            "label": "Namespace",
+            "type": "query",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "prometheus"
+            },
+            "query": {
+              "query": "label_values(http_server_requests_total, namespace)",
+              "refId": "ns"
+            },
+            "definition": "label_values(http_server_requests_total, namespace)",
+            "refresh": 2,
+            "sort": 1,
+            "includeAll": false,
+            "multi": false,
+            "current": {
+              "text": "apps",
+              "value": "apps"
+            }
+          },
+          {
+            "name": "app",
+            "label": "App",
+            "type": "query",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "prometheus"
+            },
+            "query": {
+              "query": "label_values(http_server_requests_total{namespace=~\"$namespace\"}, app)",
+              "refId": "app"
+            },
+            "definition": "label_values(http_server_requests_total{namespace=~\"$namespace\"}, app)",
+            "refresh": 2,
+            "sort": 1,
+            "includeAll": true,
+            "allValue": ".+",
+            "multi": true,
+            "current": {
+              "text": "All",
+              "value": "$__all"
+            }
+          }
+        ]
+      },
+      "annotations": {
+        "list": []
+      },
+      "links": [
+        {
+          "title": "Explore logs",
+          "type": "link",
+          "url": "/explore",
+          "icon": "external link"
+        }
+      ],
+      "panels": [
+        {
+          "type": "row",
+          "title": "HTTP (shared http_server_* metrics)",
+          "id": 1,
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "panels": []
+        },
+        {
+          "type": "timeseries",
+          "title": "Request rate",
+          "id": 2,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 0,
+            "y": 1
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum by (app) (rate(http_server_requests_total{namespace=~\"$namespace\", app=~\"$app\", route!~\"/healthz|/readyz|/metrics\"}[$__rate_interval]))",
+              "legendFormat": "{{app}}",
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              }
+            }
+          ],
+          "description": "Excludes kubelet probes and Prometheus scrapes."
+        },
+        {
+          "type": "timeseries",
+          "title": "5xx error ratio",
+          "id": 3,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 8,
+            "y": 1
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum by (app) (rate(http_server_requests_total{namespace=~\"$namespace\", app=~\"$app\", route!~\"/healthz|/readyz|/metrics\", status=~\"5..\"}[$__rate_interval])) / sum by (app) (rate(http_server_requests_total{namespace=~\"$namespace\", app=~\"$app\", route!~\"/healthz|/readyz|/metrics\"}[$__rate_interval]))",
+              "legendFormat": "{{app}}",
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              }
+            }
+          ],
+          "description": "AppHighHttpErrorRate fires above 5% for 2m."
+        },
+        {
+          "type": "timeseries",
+          "title": "Latency p50 / p95 / p99",
+          "id": 4,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 16,
+            "y": 1
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.5, sum by (app, le) (rate(http_server_request_duration_seconds_bucket{namespace=~\"$namespace\", app=~\"$app\", route!~\"/healthz|/readyz|/metrics\"}[$__rate_interval])))",
+              "legendFormat": "{{app}} p50",
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              }
+            },
+            {
+              "expr": "histogram_quantile(0.95, sum by (app, le) (rate(http_server_request_duration_seconds_bucket{namespace=~\"$namespace\", app=~\"$app\", route!~\"/healthz|/readyz|/metrics\"}[$__rate_interval])))",
+              "legendFormat": "{{app}} p95",
+              "refId": "B",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              }
+            },
+            {
+              "expr": "histogram_quantile(0.99, sum by (app, le) (rate(http_server_request_duration_seconds_bucket{namespace=~\"$namespace\", app=~\"$app\", route!~\"/healthz|/readyz|/metrics\"}[$__rate_interval])))",
+              "legendFormat": "{{app}} p99",
+              "refId": "C",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              }
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Requests by route and status",
+          "id": 5,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 9
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum by (app, route, status) (rate(http_server_requests_total{namespace=~\"$namespace\", app=~\"$app\"}[$__rate_interval]))",
+              "legendFormat": "{{app}} {{route}} {{status}}",
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              }
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "p95 latency by route",
+          "id": 6,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 9
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum by (app, route, le) (rate(http_server_request_duration_seconds_bucket{namespace=~\"$namespace\", app=~\"$app\"}[$__rate_interval])))",
+              "legendFormat": "{{app}} {{route}}",
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              }
+            }
+          ]
+        },
+        {
+          "type": "row",
+          "title": "Pods",
+          "id": 7,
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 17
+          },
+          "panels": []
+        },
+        {
+          "type": "timeseries",
+          "title": "CPU usage vs limit",
+          "id": 8,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 0,
+            "y": 18
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "cores",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", container=~\"$app\"}[$__rate_interval]))",
+              "legendFormat": "{{pod}}",
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              }
+            },
+            {
+              "expr": "sum by (pod) (kube_pod_container_resource_limits{namespace=~\"$namespace\", container=~\"$app\", resource=\"cpu\"})",
+              "legendFormat": "{{pod}} limit",
+              "refId": "B",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              }
+            }
+          ],
+          "description": "Workload chart containers are named after the release, which equals the app label."
+        },
+        {
+          "type": "timeseries",
+          "title": "Memory working set vs limit",
+          "id": 9,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 8,
+            "y": 18
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum by (pod) (container_memory_working_set_bytes{namespace=~\"$namespace\", container=~\"$app\"})",
+              "legendFormat": "{{pod}}",
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              }
+            },
+            {
+              "expr": "sum by (pod) (kube_pod_container_resource_limits{namespace=~\"$namespace\", container=~\"$app\", resource=\"memory\"})",
+              "legendFormat": "{{pod}} limit",
+              "refId": "B",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              }
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Container restarts (1h)",
+          "id": 10,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 16,
+            "y": 18
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum by (pod) (increase(kube_pod_container_status_restarts_total{namespace=~\"$namespace\", container=~\"$app\"}[1h]))",
+              "legendFormat": "{{pod}}",
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              }
+            }
+          ]
+        },
+        {
+          "type": "row",
+          "title": "Logs (Loki)",
+          "id": 11,
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 26
+          },
+          "panels": []
+        },
+        {
+          "type": "timeseries",
+          "title": "Error log lines",
+          "id": 12,
+          "datasource": {
+            "type": "loki",
+            "uid": "Loki"
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 27
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum by (app) (count_over_time({namespace=~\"$namespace\", app=~\"$app\"} | json | __error__=\"\" | level=\"error\" [$__interval]))",
+              "legendFormat": "{{app}}",
+              "queryType": "range",
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "Loki"
+              }
+            }
+          ]
+        },
+        {
+          "type": "logs",
+          "title": "Error logs",
+          "id": 13,
+          "datasource": {
+            "type": "loki",
+            "uid": "Loki"
+          },
+          "gridPos": {
+            "h": 12,
+            "w": 24,
+            "x": 0,
+            "y": 33
+          },
+          "options": {
+            "showTime": true,
+            "wrapLogMessage": true,
+            "prettifyLogMessage": false,
+            "enableLogDetails": true,
+            "sortOrder": "Descending",
+            "dedupStrategy": "none"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "Loki"
+              },
+              "expr": "{namespace=~\"$namespace\", app=~\"$app\"} | json | __error__=\"\" | level=\"error\"",
+              "queryType": "range"
+            }
+          ]
+        },
+        {
+          "type": "row",
+          "title": "MCP tools",
+          "id": 14,
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 45
+          },
+          "panels": []
+        },
+        {
+          "type": "timeseries",
+          "title": "Tool calls by result",
+          "id": 15,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 46
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum by (tool, result) (rate(mcp_tool_calls_total{namespace=~\"$namespace\"}[$__rate_interval]))",
+              "legendFormat": "{{tool}} {{result}}",
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              }
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Tool p95 latency",
+          "id": 16,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 46
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum by (tool, le) (rate(mcp_tool_duration_seconds_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+              "legendFormat": "{{tool}}",
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              }
+            }
+          ]
+        }
+      ]
+    }

@@ -1,5 +1,6 @@
 env:
   RUNNER_ENVIRONMENT: "production"
+  RUNNER_LOG_LEVEL: "INFO"
   RUNNER_NAMESPACE: "apps"
   RUNNER_SSO_ENABLED: "true"
   RUNNER_SSO_ALLOWED_GROUP: "homelab-admins"

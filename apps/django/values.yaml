@@ -1,5 +1,7 @@
 env:
   DJANGO_DEBUG: "false"
+  DJANGO_ENVIRONMENT: "production"
+  DJANGO_LOG_LEVEL: "INFO"
   DJANGO_ALLOWED_HOSTS: "*"
   DJANGO_CSRF_TRUSTED_ORIGINS: "http://django.home"
   DJANGO_SSO_ENABLED: "true"
@@ -97,3 +99,6 @@ ingress:
   traefik:
     stripPrefix:
       enabled: false
+
+serviceMonitor:
+  enabled: true

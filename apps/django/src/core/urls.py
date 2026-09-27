@@ -3,6 +3,7 @@ from django.http import JsonResponse
 from django.urls import path
 
 from core import sso
+from core.observability import metrics_view
 
 # Default "View site" would link to the host root, which has no page.
 admin.site.site_url = "/admin/"
@@ -18,4 +19,5 @@ urlpatterns = [
     path("sso/callback/", sso.sso_callback, name="django_sso_callback"),
     path("admin/", admin.site.urls),
     path("healthz", healthz),
+    path("metrics", metrics_view),
 ]

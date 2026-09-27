@@ -1,6 +1,10 @@
 import importlib
+import json
+import logging
+import sys
 from typing import Any, cast
 
+from core.log_format import JsonFormatter
 from core.models import Reminder
 from django.test import override_settings
 
@@ -147,3 +151,65 @@ def test_admin_append_slash_under_django_prefix(client):
     response = client.get("/admin", HTTP_HOST="django.home")
     assert response.status_code == 301
     assert response["Location"] == "/admin/"
+
+
+def test_metrics_endpoint_counts_requests_by_route_template(client):
+    client.get("/healthz")
+
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+    assert (
+        'http_server_requests_total{method="GET",route="/healthz",status="200"}'
+        in response.content.decode()
+    )
+
+
+def test_access_log_uses_shared_schema(client, caplog):
+    with caplog.at_level(logging.INFO, logger="core.access"):
+        response = client.get("/healthz", headers={"X-Request-ID": "test-request"})
+
+    request_log = next(
+        record for record in caplog.records if record.message == "request completed"
+    )
+
+    assert response.headers["X-Request-ID"] == "test-request"
+    assert request_log.request_id == "test-request"
+    assert request_log.route == "/healthz"
+    assert request_log.status == 200
+    assert request_log.service == "django"
+
+
+def test_unknown_paths_share_one_route_label(client, caplog):
+    with caplog.at_level(logging.INFO, logger="core.access"):
+        client.get("/does-not-exist/123")
+
+    request_log = next(
+        record for record in caplog.records if record.message == "request completed"
+    )
+
+    assert request_log.status == 404
+    assert request_log.route == "unmatched"
+
+
+def test_json_formatter_puts_exception_on_one_line():
+    try:
+        raise ValueError("bad input")
+    except ValueError:
+        record = logging.LogRecord(
+            name="core.test",
+            level=logging.ERROR,
+            pathname=__file__,
+            lineno=1,
+            msg="boom",
+            args=(),
+            exc_info=sys.exc_info(),
+        )
+
+    line = JsonFormatter().format(record)
+    payload = json.loads(line)
+
+    assert "\n" not in line
+    assert payload["level"] == "error"
+    assert payload["error"] == "ValueError: bad input"
+    assert "Traceback" in payload["exception"]

@@ -28,6 +28,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    # Outermost so it times and counts every request, including static files.
+    "core.observability.HttpObservabilityMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -88,6 +90,30 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+LOG_LEVEL = os.getenv("DJANGO_LOG_LEVEL", "INFO").upper()
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {"app_context": {"()": "core.log_format.AppContextFilter"}},
+    "formatters": {"json": {"()": "core.log_format.JsonFormatter"}},
+    "handlers": {
+        "default": {
+            "class": "logging.StreamHandler",
+            "formatter": "json",
+            "filters": ["app_context"],
+            "stream": "ext://sys.stdout",
+        },
+    },
+    "root": {"handlers": ["default"], "level": LOG_LEVEL},
+    "loggers": {
+        "django": {"handlers": ["default"], "level": LOG_LEVEL, "propagate": False},
+        # HttpObservabilityMiddleware writes the structured access log; drop
+        # runserver's plain-text one so each request logs exactly once.
+        "django.server": {"handlers": [], "propagate": False},
+    },
+}
 
 DJANGO_SSO_ENABLED = os.getenv("DJANGO_SSO_ENABLED", "false").lower() == "true"
 DJANGO_OIDC_CLIENT_ID = os.getenv("DJANGO_OIDC_CLIENT_ID", "")

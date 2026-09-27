@@ -27,6 +27,7 @@ class Settings(BaseSettings):
 
     app_name: str = "Runner"
     environment: str = "local"
+    log_level: str = "INFO"
     # Ingress path prefix for browser-facing URLs only (not FastAPI root_path).
     url_prefix: str = ""
     namespace: str = "apps"

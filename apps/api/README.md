@@ -49,15 +49,16 @@ uv run pytest
 
 Integration tests use `testcontainers` and skip automatically when the Docker socket is unavailable.
 
-## Logging
+## Logging and metrics
 
-The API writes structured JSON logs to stdout so Kubernetes, Promtail, and Loki can collect them without sidecar or file-based logging. Uvicorn's default access log is disabled in the container because `request_logging.py` emits one structured request log per HTTP request.
+The API follows the shared observability contract in [`notes/services/monitoring.md`](../../notes/services/monitoring.md). It writes one JSON object per line to stdout, which Alloy ships to Loki. `src/http_observability.py` emits exactly one access log line per request and records the shared `http_server_requests_total` and `http_server_request_duration_seconds` metrics on `/metrics`. Uvicorn's own access log is silenced in `logging_config.py`.
 
-Request logs include:
+Access log lines include:
 
-- `request_id`: propagated from `X-Request-ID` or generated per request.
-- `method`, `path`, `route`, `status_code`, `duration_ms`, and `client_ip`.
-- `app`, `environment`, and `version` from application settings.
+- `request_id`: propagated from `X-Request-ID` or generated per request, and echoed in the response header.
+- `method`, `route` (template), `path`, `status`, `duration_ms`, and `client_ip`.
+- `service`, `environment`, and `version`.
+- `error` and `exception` (single-line traceback) when a request fails with an unhandled exception, which is also counted as a `500`.
 
 Application logs use normal `logging.getLogger(__name__)`. The active `request_id` is attached automatically when a log is emitted while handling a request, so endpoint and service logs can be correlated with the request log in Loki.
 
@@ -69,7 +70,7 @@ Example Loki queries:
 {app="api"} | json
 {app="api"} | json | request_id="..."
 {app="api"} | json | logger="routers.reminders"
-{app="api"} | json | status_code >= 500
+{app="api"} | json | status >= 500
 ```
 
 Keep Loki labels low-cardinality. Query request-specific fields such as `request_id`, `path`, `route`, and `reminder_id` from the JSON log body instead of promoting them to labels.

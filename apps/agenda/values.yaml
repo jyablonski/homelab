@@ -1,5 +1,6 @@
 env:
   AGENDA_API_BASE_URL: "http://api.apps.svc.cluster.local:8000"
+  AGENDA_LOG_LEVEL: "info"
 
 # memory.limits is generous because `next dev` (used under Tilt) runs
 # Turbopack, which spikes well past a typical `next start` footprint while
@@ -61,3 +62,6 @@ ingress:
   traefik:
     stripPrefix:
       enabled: false
+
+serviceMonitor:
+  enabled: true

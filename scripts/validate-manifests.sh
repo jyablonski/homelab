@@ -10,6 +10,8 @@ done
 
 standalone_manifests=(
   services/metallb/ip-pool.yaml
+  services/grafana/dashboards/*.yaml
+  services/loki/rules/*.yaml
 )
 
 tmp_manifest="$(mktemp /tmp/homelab-standalone-manifests.XXXXXX.yaml)"

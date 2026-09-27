@@ -11,11 +11,11 @@ prometheus:
               storage: 10Gi
     resources:
       requests:
-        cpu: 100m
-        memory: 256Mi
-      limits:
         cpu: 200m
         memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
   service:
     type: ClusterIP
     port: 9090
@@ -37,8 +37,197 @@ prometheus:
       - /
     pathType: Prefix
 
+# Set to false to turn off alert delivery. Prometheus and Loki rules still
+# evaluate (visible on prometheus.home/alerts), they just go nowhere.
 alertmanager:
+  enabled: true
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    annotations:
+      gethomepage.dev/enabled: "true"
+      gethomepage.dev/name: "Alertmanager"
+      gethomepage.dev/group: "Monitoring"
+      gethomepage.dev/icon: "alertmanager.png"
+      gethomepage.dev/description: "Alert routing and silences"
+      gethomepage.dev/app: "alertmanager"
+    hosts:
+      - alertmanager.home
+    paths:
+      - /
+    pathType: Prefix
+  alertmanagerSpec:
+    # Used to build silence links in Slack messages.
+    externalUrl: http://alertmanager.home
+    # Mounted at /etc/alertmanager/secrets/<name>/; see extraManifests below.
+    secrets:
+      - alertmanager-slack
+    resources:
+      requests:
+        cpu: 25m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+  config:
+    global:
+      resolve_timeout: 5m
+    route:
+      receiver: slack
+      group_by: ["alertname", "namespace", "app"]
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+      routes:
+        # Watchdog always fires to prove the pipeline works; keep it out of Slack.
+        - receiver: "null"
+          matchers:
+            - alertname =~ "Watchdog|InfoInhibitor"
+        - receiver: "null"
+          matchers:
+            - severity = "info"
+        - receiver: slack
+          matchers:
+            - severity =~ "critical|warning"
+    inhibit_rules:
+      # A critical alert mutes the matching warning for the same alert (the
+      # stock kube-prometheus pattern, e.g. KubePersistentVolumeFillingUp).
+      - source_matchers:
+          - severity = "critical"
+        target_matchers:
+          - severity = "warning"
+        equal: ["namespace", "alertname"]
+      # A critical alert on an app mutes that app's warnings (e.g. the 5xx
+      # alert mutes the exception-count alert during the same incident).
+      - source_matchers:
+          - severity = "critical"
+          - app =~ ".+"
+        target_matchers:
+          - severity = "warning"
+        equal: ["namespace", "app"]
+    receivers:
+      - name: "null"
+      - name: slack
+        slack_configs:
+          - api_url_file: /etc/alertmanager/secrets/alertmanager-slack/webhook-url
+            send_resolved: true
+            title: '{{ template "slack.homelab.title" . }}'
+            text: '{{ template "slack.homelab.text" . }}'
+    templates:
+      - "/etc/alertmanager/config/*.tmpl"
+  templateFiles:
+    slack.tmpl: |-
+      {{ define "slack.homelab.title" -}}
+      [{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .CommonLabels.alertname }}{{ with .CommonLabels.app }} ({{ . }}){{ end }}
+      {{- end }}
+
+      {{ define "slack.homelab.silence" -}}
+      {{ .ExternalURL }}/#/silences/new?filter=%7B
+      {{- range .CommonLabels.SortedPairs -}}
+      {{- if ne .Name "alertname" -}}{{ .Name }}%3D%22{{ .Value | urlquery }}%22%2C{{- end -}}
+      {{- end -}}
+      alertname%3D%22{{ .CommonLabels.alertname }}%22%7D
+      {{- end }}
+
+      {{ define "slack.homelab.text" -}}
+      {{ range .Alerts -}}
+      *Severity:* {{ .Labels.severity }}{{ with .Labels.source }} (from {{ . }}){{ end }}
+      *Target:* {{ with .Labels.namespace }}{{ . }}{{ else }}cluster{{ end }}{{ with .Labels.app }}/{{ . }}{{ end }}
+      *Summary:* {{ .Annotations.summary }}
+      {{ with .Annotations.description }}*Description:* {{ . }}
+      {{ end }}{{ with .Annotations.runbook_url }}*Runbook:* <{{ . }}|runbook>
+      {{ end }}
+      {{ end -}}
+      {{ with .CommonLabels.app }}<http://grafana.home/d/services-overview/services-overview?var-namespace={{ $.CommonLabels.namespace }}&var-app={{ . }}|Dashboard> | {{ end -}}
+      <{{ template "slack.homelab.silence" . }}|Silence> | <{{ .ExternalURL }}|Alertmanager>
+      {{- end }}
+
+# The webhook URL comes from secrets.sops.yaml (alertmanagerSlack.webhookUrl)
+# and only ever lands in this Secret, which Alertmanager reads via
+# api_url_file. Rotate with `sops services/prometheus/secrets.sops.yaml` and
+# `make sync`; Alertmanager rereads the file on every send.
+extraManifests:
+  - apiVersion: v1
+    kind: Secret
+    metadata:
+      name: alertmanager-slack
+      namespace: monitoring
+    type: Opaque
+    stringData:
+      webhook-url: "{{ .Values.alertmanagerSlack.webhookUrl }}"
+
+# K3s runs the scheduler, controller-manager, and kube-proxy inside the k3s
+# process bound to localhost, and uses SQLite rather than etcd, so these
+# targets are never reachable and their rules would always fire. Revisit after
+# the Talos migration, which has real control-plane pods and etcd.
+kubeEtcd:
   enabled: false
+kubeScheduler:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeProxy:
+  enabled: false
+
+defaultRules:
+  rules:
+    etcd: false
+    kubeControllerManager: false
+    kubeProxy: false
+    kubeSchedulerAlerting: false
+    kubeSchedulerRecording: false
+  disabled:
+    # Always true on a single node where limits intentionally exceed capacity.
+    KubeCPUOvercommit: true
+    KubeMemoryOvercommit: true
+
+# Metric-based app alerts; the primary signal. Every app exports the shared
+# http_server_* metrics and the workload chart's ServiceMonitor adds the `app`
+# label. Probe and scrape routes are excluded so kubelet and Prometheus
+# traffic does not dilute error ratios.
+additionalPrometheusRulesMap:
+  app-http:
+    groups:
+      - name: app-http
+        rules:
+          - alert: AppHighHttpErrorRate
+            expr: |
+              (
+                sum by (namespace, app) (rate(http_server_requests_total{status=~"5..", route!~"/healthz|/readyz|/metrics"}[5m]))
+                /
+                sum by (namespace, app) (rate(http_server_requests_total{route!~"/healthz|/readyz|/metrics"}[5m]))
+              ) > 0.05
+            for: 2m
+            labels:
+              severity: critical
+              source: prometheus
+            annotations:
+              summary: "{{ $labels.app }} 5xx rate above 5%"
+              description: "{{ $value | humanizePercentage }} of non-probe requests to {{ $labels.app }} in {{ $labels.namespace }} returned 5xx over the last 5 minutes."
+              runbook_url: "https://github.com/jyablonski/homelab/blob/main/notes/services/monitoring.md#apphighhttperrorrate"
+          - alert: AppHighHttpLatency
+            expr: |
+              histogram_quantile(0.95,
+                sum by (namespace, app, le) (rate(http_server_request_duration_seconds_bucket{route!~"/healthz|/readyz|/metrics"}[5m]))
+              ) > 1
+            for: 10m
+            labels:
+              severity: warning
+              source: prometheus
+            annotations:
+              summary: "{{ $labels.app }} p95 latency above 1s"
+              description: "p95 latency for {{ $labels.app }} in {{ $labels.namespace }} has been {{ $value | humanizeDuration }} for 10 minutes."
+              runbook_url: "https://github.com/jyablonski/homelab/blob/main/notes/services/monitoring.md#apphighhttplatency"
+          - alert: AppMetricsTargetDown
+            expr: up{namespace="apps", app!=""} == 0
+            for: 5m
+            labels:
+              severity: warning
+              source: prometheus
+            annotations:
+              summary: "{{ $labels.app }} metrics endpoint is down"
+              description: "Prometheus has not been able to scrape {{ $labels.pod }} ({{ $labels.app }}) for 5 minutes."
+              runbook_url: "https://github.com/jyablonski/homelab/blob/main/notes/services/monitoring.md#appmetricstargetdown"
 
 pushgateway:
   enabled: false

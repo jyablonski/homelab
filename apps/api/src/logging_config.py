@@ -21,15 +21,25 @@ RESERVED_LOG_RECORD_FIELDS = frozenset(
 )
 
 
+# Matches the Loki `app` label and the Helm release name. Field names follow
+# the shared log schema in notes/services/monitoring.md.
+SERVICE_NAME = "api"
+
+# uvicorn attaches an ANSI-colored duplicate of each message.
+IGNORED_EXTRA_FIELDS = frozenset({"color_message"})
+
+LEVEL_NAMES = {"WARNING": "warn"}
+
+
 class AppContextFilter(logging.Filter):
-    def __init__(self, app_name: str, environment: str, version: str) -> None:
+    def __init__(self, service: str, environment: str, version: str) -> None:
         super().__init__()
-        self.app_name = app_name
+        self.service = service
         self.environment = environment
         self.version = version
 
     def filter(self, record: logging.LogRecord) -> bool:
-        record.app = self.app_name
+        record.service = self.service
         record.environment = self.environment
         record.version = self.version
         return True
@@ -38,20 +48,28 @@ class AppContextFilter(logging.Filter):
 class JsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         payload: dict[str, Any] = {
-            "timestamp": datetime.fromtimestamp(
+            "time": datetime.fromtimestamp(
                 record.created,
                 tz=timezone.utc,
             ).isoformat(),
-            "level": record.levelname.lower(),
+            "level": LEVEL_NAMES.get(record.levelname, record.levelname.lower()),
+            "msg": record.getMessage(),
             "logger": record.name,
-            "message": record.getMessage(),
         }
 
         for key, value in record.__dict__.items():
-            if key not in RESERVED_LOG_RECORD_FIELDS and key not in payload:
+            if (
+                key not in RESERVED_LOG_RECORD_FIELDS
+                and key not in IGNORED_EXTRA_FIELDS
+                and key not in payload
+            ):
                 payload[key] = value
 
-        if record.exc_info:
+        # One line per event: the traceback goes in a field instead of
+        # spilling across lines that Loki would ingest separately.
+        if record.exc_info and record.exc_info[1] is not None:
+            exc = record.exc_info[1]
+            payload["error"] = f"{type(exc).__name__}: {exc}"
             payload["exception"] = self.formatException(record.exc_info)
 
         return json.dumps(payload, default=str, separators=(",", ":"))
@@ -65,7 +83,7 @@ def configure_logging(settings: Settings) -> None:
             "filters": {
                 "app_context": {
                     "()": AppContextFilter,
-                    "app_name": settings.app_name,
+                    "service": SERVICE_NAME,
                     "environment": settings.environment,
                     "version": __version__,
                 },
@@ -99,9 +117,11 @@ def configure_logging(settings: Settings) -> None:
                 "uvicorn.error": {
                     "level": settings.log_level.upper(),
                 },
+                # HttpObservabilityMiddleware writes the structured access
+                # log; silence uvicorn's so each request logs exactly once,
+                # even under the dev overlay that drops --no-access-log.
                 "uvicorn.access": {
-                    "handlers": ["default"],
-                    "level": settings.log_level.upper(),
+                    "handlers": [],
                     "propagate": False,
                 },
             },

@@ -22,8 +22,9 @@ from auth import (
 )
 from config import Settings, get_settings
 from jobs_api import run_to_response
+from http_observability import setup_observability
 from kubernetes_runner import KubernetesRunnerClient
-from metrics import setup_metrics
+from logging_config import configure_logging
 from runner_client import RunnerClient
 
 templates = Jinja2Templates(directory="src/templates")
@@ -43,11 +44,11 @@ def _fastapi_version() -> str:
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     active_settings = settings or get_settings()
+    configure_logging(active_settings)
     validate_sso_settings(active_settings)
     app = FastAPI(title=active_settings.app_name)
 
     app.mount("/static", StaticFiles(directory="src/static"), name="static")
-    setup_metrics(app)
 
     @app.middleware("http")
     async def require_sso_session(request: Request, call_next):
@@ -208,6 +209,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         runner.run(namespace=namespace, cronjob_name=cronjob_name)
         return RedirectResponse(request.url_for("index"), status_code=303)
 
+    # Added last so it is the outermost middleware and times auth redirects too.
+    setup_observability(app)
     return app
 
 
