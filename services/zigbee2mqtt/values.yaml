@@ -2,9 +2,6 @@ controllers:
   main:
     replicas: 1
     strategy: Recreate
-    pod:
-      nodeSelector:
-        smart-home: "true"
     containers:
       main:
         image:
@@ -18,11 +15,6 @@ controllers:
           - name: http
             containerPort: 8080
             protocol: TCP
-        securityContext:
-          privileged: true
-          capabilities:
-            add:
-              - SYS_ADMIN
         probes:
           liveness:
             enabled: true
@@ -66,8 +58,10 @@ configMaps:
         permit_join: false
         mqtt:
           server: mqtt://mosquitto.home-automation.svc.cluster.local:1883
+        # PoE coordinator on the LAN; the TCP port and adapter type (zstack or ember) depend on the hardware.
         serial:
-          port: /dev/ttyZigbee
+          port: tcp://REPLACE_WITH_ZIGBEE_COORDINATOR_IP:6638
+          adapter: REPLACE_WITH_ZIGBEE_ADAPTER_TYPE
         frontend:
           enabled: true
           port: 8080
@@ -120,16 +114,3 @@ persistence:
     size: 2Gi
     globalMounts:
       - path: /app/data
-  zigbee-adapter:
-    type: hostPath
-    hostPath: /dev/serial/by-id/REPLACE_WITH_ZIGBEE_ADAPTER
-    hostPathType: CharDevice
-    globalMounts:
-      - path: /dev/ttyZigbee
-  run-udev:
-    type: hostPath
-    hostPath: /run/udev
-    hostPathType: Directory
-    globalMounts:
-      - path: /run/udev
-        readOnly: true

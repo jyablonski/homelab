@@ -8,35 +8,7 @@ Home Assistant (HA) is a self-hosted smart home platform that unifies devices ac
 
 ## Protocols
 
-Smart home devices communicate over different radio protocols. Each protocol needs its own USB coordinator plugged into a server and its own software translator. HA sits on top of all of them.
-
-### Zigbee
-
-Best for: sensors, bulbs, outlets. Cheap, low power, local control.
-
-- Runs on 2.4GHz
-- Devices form a mesh — plugged-in devices repeat signals and extend range
-- Needs a USB coordinator (Sonoff Zigbee 3.0 Dongle Plus ~$20)
-- Software: Zigbee2MQTT + Mosquitto MQTT broker
-- Data flow: `device -> USB dongle -> Zigbee2MQTT -> MQTT broker -> HA`
-
-### Z-Wave
-
-Best for: locks. More reliable and better security than Zigbee for critical devices.
-
-- Runs on 908MHz (US) — less congested than 2.4GHz
-- Stronger encryption (S2 security framework)
-- Needs a USB stick (Zooz 800 series ~$40)
-- Software: Z-Wave JS + optionally Z-Wave JS UI for device management
-- Data flow: `lock -> USB stick -> Z-Wave JS -> HA`
-
-### Wi-Fi
-
-Best for: thermostats, cameras. No extra coordinator needed — devices join your normal network and HA talks to them via their own integrations.
-
-### Matter / Thread
-
-Newer standard backed by Apple, Google, Amazon. HA has solid support. Thread devices need a border router (Apple TV 4K or HomePod mini).
+HA sits on top of several device protocols; this homelab uses Zigbee (via Zigbee2MQTT and Mosquitto) and Matter-over-Thread, each through a PoE coordinator on the LAN rather than a USB stick in a cluster node. Protocol details, hardware selection, and data flows are in [device_protocols.md](../hardware/device_protocols.md).
 
 ---
 
@@ -55,55 +27,20 @@ Newer standard backed by Apple, Google, Amazon. HA has solid support. Thread dev
 
 ## K3s Cluster Setup
 
-### USB Coordinator Placement
+### Radio Placement
 
-Each USB dongle must be physically plugged into a specific node. The coordinator pod must run on that same node.
+Use PoE coordinators on the wired LAN and keep the radios out of the cluster nodes. Zigbee2MQTT connects to the Zigbee coordinator over TCP, so it is a normal single-replica workload that can run on any node: no node label, `nodeSelector`, `hostPath` device mount, or privileged USB access.
 
-Label the node:
-
-```bash
-kubectl label node <node-name> protocol=zwave
-kubectl label node <node-name> protocol=zigbee
-```
-
-Pin the deployment to that node:
-
-```yaml
-spec:
-  template:
-    spec:
-      nodeSelector:
-        protocol: zwave
-```
-
-### USB Device Passthrough
-
-Mount the USB device into the container:
-
-```yaml
-volumeMounts:
-  - name: zwave-usb
-    mountPath: /dev/ttyUSB0
-volumes:
-  - name: zwave-usb
-    hostPath:
-      path: /dev/serial/by-id/usb-<device-id>
-      type: CharDevice
-securityContext:
-  privileged: true
-```
-
-Use `/dev/serial/by-id/` paths instead of `/dev/ttyUSB0` — they are stable across reboots.
+A USB stick is the fallback, not the default. It pins the pod to whichever node holds the stick and takes the radio network down with that node. The trade-offs and the Thread options are covered in [device_protocols.md](../hardware/device_protocols.md#kubernetes-placement).
 
 ### Cluster Layout
 
 ```
-node-1: Z-Wave USB stick -> Z-Wave JS pod
-node-2: Zigbee dongle -> Zigbee2MQTT pod + Mosquitto pod
-any node: HA pod (talks to coordinators over cluster network)
+wired LAN: PoE Zigbee coordinator, PoE Thread border router
+any node:  Zigbee2MQTT pod, Mosquitto pod, HA pod
 ```
 
-HA communicates with coordinators over the network, so it can run on any node. Persistent config and database should be backed by Longhorn.
+HA, Mosquitto, and Zigbee2MQTT communicate over the network, so they can run on any node. Persistent config and database should be backed by Longhorn.
 
 ---
 

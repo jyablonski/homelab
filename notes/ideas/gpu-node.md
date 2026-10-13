@@ -107,7 +107,7 @@ spec:
               nvidia.com/gpu: 1
 ```
 
-The `nvidia.com/gpu` resource limit is what gates GPU access. The NVIDIA device plugin makes that resource available on the node. The node label ensures the pod schedules on the right machine — same pattern as the Zigbee and Z-Wave coordinator pods.
+The `nvidia.com/gpu` resource limit is what gates GPU access. The NVIDIA device plugin makes that resource available on the node. The node label ensures the pod schedules on the right machine.
 
 Then expose via a Traefik IngressRoute:
 
@@ -131,7 +131,6 @@ spec:
 
 - Fully cluster-managed — same deployment, monitoring, and ingress patterns as everything else
 - Clean hostname via Traefik (`http://llm.home/v1/api`)
-- Node labeling pattern is consistent with USB dongle nodes
 
 ### Cons
 

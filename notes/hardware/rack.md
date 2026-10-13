@@ -4,15 +4,15 @@
 
 **Gear going in:**
 
-| Item                          | Qty | Rack space                      |
-| ----------------------------- | --- | ------------------------------- |
-| Mini PCs (Beelink or similar) | 3   | 1U on a shared tray             |
-| PoE switch                    | 1   | 1U                              |
-| Router                        | 1   | 1U shelf                        |
-| Patch panel, 24-port          | 1   | 1U                              |
-| PDU                           | 1   | 1U                              |
-| Cable management              | 1   | 1U                              |
-| Thread/Zigbee dongles         | 2–3 | 0U — mounted _outside_ the rack |
+| Item                           | Qty | Rack space                      |
+| ------------------------------ | --- | ------------------------------- |
+| Mini PCs (Beelink or similar)  | 3   | 1U on a shared tray             |
+| PoE switch                     | 1   | 1U                              |
+| Router                         | 1   | 1U shelf                        |
+| Patch panel, 24-port           | 1   | 1U                              |
+| PDU                            | 1   | 1U                              |
+| Cable management               | 1   | 1U                              |
+| PoE Zigbee/Thread coordinators | 2   | 0U — mounted _outside_ the rack |
 
 **Total: ~6U in an 18U rack.** Room to double without replanning.
 
@@ -27,7 +27,7 @@ The frame everything bolts to. 19" is EIA-310, unchanged for a century — anyth
 Mini PCs have no rack ears. A 1U tray holds all three side by side. Options: a purpose-built metal tray, or a 3D-printed model-specific mount. Printed mounts are cheaper and fit the exact chassis; metal trays are more generic.
 
 **PoE switch**
-Powers and connects the Thread/Zigbee dongles' host devices, APs, cameras, anything PoE. This is the one component with a real lifespan — plan to replace it in 5–10 years as PoE standards (af → at → bt) and port speeds (1G → 2.5G) move.
+Powers and connects the Zigbee/Thread coordinators, APs, cameras, anything PoE. This is the one component with a real lifespan — plan to replace it in 5–10 years as PoE standards (af → at → bt) and port speeds (1G → 2.5G) move.
 
 **Router**
 Almost certainly a desktop box, so it goes on a 1U shelf regardless of rack width.
@@ -41,8 +41,8 @@ Rack-mount power strip. Front-mounted is fine on an open frame. The mess isn't t
 **Cable management (1U finger duct or D-ring panel)**
 Keeps patch cables from becoming a nest. On an open frame, a brush panel is less useful than it'd be in an enclosure — a D-ring panel plus velcro does more.
 
-**USB 2.0 extension cables**
-Non-negotiable for the Thread/Zigbee dongles. Get the coordinators out of the rack and away from USB 3.0 ports and SSDs, which emit right in the 2.4GHz band. Must be USB **2.0**, not 3.0.
+**PoE Zigbee/Thread coordinators**
+Each one needs a single Ethernet run from the PoE switch and no USB connection to a mini PC. Mount them at a central spot outside the rack, away from USB 3.0 ports and SSDs, which emit right in the 2.4GHz band. Placement guidance is in [device_protocols.md](device_protocols.md#physical-placement).
 
 **Label maker**
 Label both ends of every run, and every patch panel port.
@@ -150,5 +150,4 @@ MyElectronics 1U frame for 1–3 NUCs, with three blanked front-panel holes you 
 - 1U vented shelf for the router
 - 1U cable management panel
 - Cage nuts + screws to match your rack's hole type
-- USB 2.0 extension cables, 1–2m
 - Label maker

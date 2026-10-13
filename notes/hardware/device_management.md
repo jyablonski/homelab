@@ -38,7 +38,7 @@ With this design, a CR2032 coin cell (~220 mAh) can last 2-5 years in a door sen
 
 ## Naming devices
 
-When devices join via Zigbee/Thread coordinator stick, they show up with cryptic identifiers (IEEE addresses, manufacturer-assigned names). Rename them once during onboarding and the friendly name propagates everywhere.
+When devices join via the Zigbee coordinator or Thread border router, they show up with cryptic identifiers (IEEE addresses, manufacturer-assigned names). Rename them once during onboarding and the friendly name propagates everywhere.
 
 In Home Assistant the hierarchy is:
 
