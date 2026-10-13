@@ -100,7 +100,7 @@ Consumer hubs such as Hue Bridges and Echos do not expose a general-purpose coor
 
 Built into many consumer devices because Matter requires Thread border routers to be multi-admin and interoperable:
 
-- Apple TV 4K (2nd gen+), HomePod mini
+- Apple TV 4K (2nd gen+), HomePod mini. On the 3rd gen Apple TV 4K, only the Wi-Fi + Ethernet model has the Thread radio; the Wi-Fi-only model does not.
 - Google Nest Hub (2nd gen), Nest Hub Max
 - Amazon Echo (4th gen+)
 
@@ -161,13 +161,37 @@ Coordinator radios do nothing useful for Home Assistant without software driving
 - Talks to OTBR over IPv6 (for Thread/Matter devices)
 - Memory: 500 MB - 2 GB
 
+## Physical Placement
+
+Only compute and core networking live in the rack. The radios sit out in the house:
+
+| Location                       | Hardware                                                              |
+| ------------------------------ | --------------------------------------------------------------------- |
+| Rack                           | Mini PCs, PoE switch, router, patch panel, PDU                        |
+| House, wired to the PoE switch | PoE Zigbee coordinator, Wi-Fi access points, PoE cameras and doorbell |
+| House, on the normal network   | Apple TV or other Thread border router, at the TV                     |
+| House, radio only              | Zigbee and Thread devices (switches, sensors, locks)                  |
+
+Placing the PoE Zigbee coordinator:
+
+- Central to the devices rather than in a corner, garage, or basement; on the main floor of a multi-storey house
+- Away from 2.4 GHz noise: the rack, USB 3.0 ports, SSDs, and at least a metre from any Wi-Fi access point
+- High and in the open, antenna vertical, not inside a metal enclosure or cupboard
+- One Cat6 run back to the PoE switch (up to 100 m), so plan it alongside the access point runs
+
+The exact spot is forgiving. Mains-powered devices such as the wall switches route for the mesh, so most sensors reach the coordinator through a nearby switch. Moving the coordinator to another wall jack later does not require re-pairing, because the network identity lives in the coordinator and Zigbee2MQTT's data.
+
+A consumer border router such as an Apple TV sits wherever the TV is, not somewhere central, so Thread coverage leans on mains-powered Thread devices to relay. Wire it over Ethernet where possible, and check its distance to Thread devices that have no routers nearby, such as the front-door locks.
+
 ## Kubernetes Placement
 
-A USB radio creates a hard dependency on one node. Its pod needs a `hostPath` device mount, elevated device access, and a `nodeSelector` or affinity rule. If that node fails, Kubernetes cannot restore service on another node without physically moving the adapter.
+Best practice is a PoE coordinator, with no node-specific USB radio and no node labels. A USB radio creates a hard dependency on one node. Its pod needs a `hostPath` device mount, elevated device access, and a `nodeSelector` or affinity rule. If that node fails, Kubernetes cannot restore service on another node without physically moving the adapter.
 
 A PoE Zigbee coordinator removes that dependency. Zigbee2MQTT becomes a normal single-replica workload that can connect to the coordinator from any cluster node. The deployment no longer needs the radio `hostPath`, USB-related privileges, or smart-home node selector. Its persistent data still needs to be available after rescheduling.
 
 The same benefit applies to an OTBR pod using a network RCP, although OTBR still needs host networking, `/dev/net/tun`, and network-administration privileges to route Thread traffic. A standalone PoE border router moves that entire function out of Kubernetes.
+
+The prepared `services/zigbee2mqtt/values.yaml` follows the PoE layout, with placeholders for the coordinator address and adapter type. `services/openthread-border-router/values.yaml` still carries the older USB layout (a `smart-home: "true"` node selector and a `hostPath` device placeholder) because the right shape depends on the Thread hardware: remove the release entirely for a standalone border router, or rework it for a network RCP.
 
 Keep coordinators on the local wired management or IoT network with stable IP reservations. Allow only the required coordinator port from the consuming workload or cluster nodes, keep management interfaces restricted, and ensure IPv6 plus required multicast discovery can pass between a standalone Thread border router and Matter controllers.
 

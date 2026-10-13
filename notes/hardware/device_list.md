@@ -83,11 +83,13 @@ Lutron Serena is the premium upgrade (~$350/window) if bedroom motor noise becom
 
 ## Radio Coordinators
 
-| Device                                              | Notes                                                                                                  | Qty | Unit | Subtotal |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | --- | ---- | -------- |
-| Home Assistant Connect ZBT-1 (or Sonoff ZBDongle-E) | Concurrent Zigbee + Thread on a single stick. Pin to a specific K3s node via nodeSelector.             | 1   | $40  | $40      |
-| USB 2.0 extension cable (1m)                        | Moves coordinator away from host chassis to reduce 2.4 GHz RF interference. USB 2.0 only, not USB 3.0. | 1   | $8   | $8       |
-| Subtotal                                            |                                                                                                        |     |      | $48      |
+| Device                   | Notes                                                                                                                                                | Qty | Unit | Subtotal |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- | --- | ---- | -------- |
+| PoE Zigbee coordinator   | Wired to the PoE switch and reached by Zigbee2MQTT over TCP, so no K3s node holds the radio. Pick a Zigbee2MQTT-supported `zstack` or `ember` model. | 1   | $40  | $40      |
+| PoE Thread border router | Separate radio from Zigbee. Prefer a standalone border router; otherwise a PoE Thread RCP driven by the OTBR pod.                                    | 1   | $40  | $40      |
+| Subtotal                 |                                                                                                                                                      |     |      | $80      |
+
+Prices here are placeholders until specific models are chosen. See [device_protocols.md](device_protocols.md) for the selection criteria.
 
 ## Wall Display
 
@@ -110,9 +112,9 @@ Lutron Serena is the premium upgrade (~$350/window) if bedroom motor noise becom
 | Water Protection                   | $200     |
 | Energy Monitoring                  | $350     |
 | Cleaning Robots                    | $800     |
-| Radio Coordinators                 | $48      |
+| Radio Coordinators                 | $80      |
 | Wall Display                       | $220     |
-| Grand Total                        | $5,562   |
+| Grand Total                        | $5,594   |
 
 ## Notes on Sequencing
 
